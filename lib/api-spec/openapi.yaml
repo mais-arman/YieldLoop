@@ -11,6 +11,28 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/reports/overview:
+    get:
+      operationId: getReportOverview
+      parameters:
+        - {name: start_date, in: query, schema: {type: string, format: date}}
+        - {name: end_date, in: query, schema: {type: string, format: date}}
+        - {name: timezone, in: query, schema: {type: string, enum: [UTC, Asia/Jerusalem]}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/JobStatus"}}
+        - {name: material_id, in: query, schema: {type: integer}}
+        - {name: job_page, in: query, schema: {type: integer}}
+        - {name: lot_page, in: query, schema: {type: integer}}
+        - {name: page_size, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          description: Current balances for jobs created in the selected dates, scoped by role. Never historical flows.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ReportOverview"}
+        "400": {description: Invalid filters}
+        "401": {description: Authentication required}
+        "403": {description: Password change required}
+        "404": {description: Hidden material or out-of-range page}
   /v1/inventory:
     get:
       operationId: listInventory
@@ -401,6 +423,104 @@ components:
   securitySchemes:
     sessionCookie: {type: apiKey, in: cookie, name: yieldloop_session}
   schemas:
+    ReportMeasures:
+      type: object
+      required: [issued, good, scrap, offcut, accounted, variance, yield_rate, scrap_rate, offcut_rate]
+      properties:
+        issued: {type: string}
+        good: {type: string}
+        scrap: {type: string}
+        offcut: {type: string}
+        accounted: {type: string}
+        variance: {type: string}
+        yield_rate: {type: [string, "null"]}
+        scrap_rate: {type: [string, "null"]}
+        offcut_rate: {type: [string, "null"]}
+    ReportSnapshot:
+      allOf:
+        - {$ref: "#/components/schemas/ReportMeasures"}
+        - type: object
+          required: [id, revision, created_at, material_id, material_name, specification]
+          properties:
+            id: {type: integer}
+            revision: {type: integer}
+            created_at: {type: string, format: date-time}
+            material_id: {type: integer}
+            material_name: {type: string}
+            specification: {type: string}
+    ReportJob:
+      type: object
+      required: [id, job_number, title, status, created_at, reconciliation]
+      properties:
+        id: {type: integer}
+        job_number: {type: string}
+        title: {type: string}
+        status: {$ref: "#/components/schemas/JobStatus"}
+        created_at: {type: string, format: date-time}
+        reconciliation:
+          anyOf:
+            - {$ref: "#/components/schemas/ReportSnapshot"}
+            - {type: "null"}
+    ReportJobPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/ReportJob"}}
+    ReportInventoryState:
+      type: object
+      required: [count, original_quantity, remaining]
+      properties:
+        count: {type: integer}
+        original_quantity: {type: [string, "null"]}
+        remaining: {type: [string, "null"]}
+    ReportOverview:
+      type: object
+      required: [generated_at, date_basis, timezone, start_date, end_date, status, material, unit, job_counts, job_count, measured_jobs, unmeasured_jobs, production, quantity_unavailable_reason, inventory, jobs, lots]
+      properties:
+        generated_at: {type: string, format: date-time}
+        date_basis: {type: string, enum: [job_created_at]}
+        timezone: {type: string, enum: [UTC, Asia/Jerusalem]}
+        start_date: {type: [string, "null"]}
+        end_date: {type: [string, "null"]}
+        status:
+          anyOf:
+            - {$ref: "#/components/schemas/JobStatus"}
+            - {type: "null"}
+        material:
+          type: [object, "null"]
+          required: [id, name, specification]
+          properties:
+            id: {type: integer}
+            name: {type: string}
+            specification: {type: string}
+        unit: {type: string, enum: [kg]}
+        job_counts:
+          type: object
+          required: [draft, open, cancelled]
+          properties:
+            draft: {type: integer}
+            open: {type: integer}
+            cancelled: {type: integer}
+        job_count: {type: integer}
+        measured_jobs: {type: integer}
+        unmeasured_jobs: {type: integer}
+        production:
+          anyOf:
+            - {$ref: "#/components/schemas/ReportMeasures"}
+            - {type: "null"}
+        quantity_unavailable_reason: {type: [string, "null"], enum: [select_material, null]}
+        inventory:
+          type: object
+          required: [available, voided]
+          properties:
+            available: {$ref: "#/components/schemas/ReportInventoryState"}
+            voided: {$ref: "#/components/schemas/ReportInventoryState"}
+        jobs: {$ref: "#/components/schemas/ReportJobPage"}
+        lots: {$ref: "#/components/schemas/InventoryPage"}
     InventoryInput:
       type: object
       additionalProperties: false

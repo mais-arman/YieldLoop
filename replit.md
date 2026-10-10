@@ -46,8 +46,10 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 - Phase 5 inventory foundation and migrations are approved only for the positively
   identified development database. The user selected foundation only: reservation
   and consumption stay blocked pending compatibility and receiving-job accounting
-  policy. See docs/phase-5.md. Stop at Phase 5; no dashboards, exports, optimization,
-  AI, publishing or multi-tenant onboarding.
+  policy. See docs/phase-5.md. Phase 6 read-only dashboard/reporting is approved:
+  current balances for source-job creation-date cohorts, exact per-material totals,
+  existing role scope, no schema changes. See docs/phase-6.md. Stop after Phase 6;
+  no exports, optimization, AI, publishing or multi-tenant onboarding.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
 - Follow the YieldLoop domain, design-system, and engineering-quality skills.

@@ -1,0 +1,52 @@
+Implement Phase 6: **Dashboard & Reports** for YieldLoop.
+
+Before coding, inspect the existing skills, `docs/phase-3.md`, `docs/phase-4.md`, `docs/phase-5.md`, current Django models, API permissions, job lifecycle, reconciliation snapshots, inventory history, frontend routing, and design system. Use the existing Django/PostgreSQL architecture as authoritative.
+
+## Goals
+Build a useful, bilingual operational dashboard and reports based only on persisted, verified business data. Prioritize accurate numbers, clear definitions, useful filters, and a polished responsive experience over decorative charts.
+
+## Dashboard metrics
+Implement only metrics supported by existing data:
+- Production job counts by lifecycle status.
+- Actual material issued, good output, scrap, reusable offcut output, and unexplained reconciliation variance.
+- Registered inventory quantities and counts, clearly distinguishing available registered lots from voided lots.
+- Useful date filters and job-level drill-downs where the underlying timestamps support them.
+
+For every metric, document its source fields, aggregation logic, unit, date basis, and treatment of voided/corrected records. Use the authoritative reconciliation snapshots and correction/void rules already implemented. Avoid double-counting original records and replacements.
+
+## Accuracy and safety
+- Do not treat unexplained variance as scrap.
+- Do not call registered offcuts confirmed reusable or physically compatible.
+- Do not imply that inventory registration, reservation, or consumption changes reconciliation totals.
+- Do not invent historical measurements, units, factory targets, tolerances, or missing policies.
+- Use Decimal-safe server-side aggregation where appropriate and protect endpoints with existing role permissions.
+- Prevent cross-job or unauthorized data disclosure.
+- Make empty data, missing dates, unavailable rates, and invalid filters explicit.
+- Ensure dashboard totals reconcile with the underlying detail records and explain when a metric is unavailable.
+
+## Reports and interface
+- Create a bilingual Arabic/English dashboard with correct RTL/LTR layout.
+- Use a small number of meaningful KPI cards and charts only when they make comparisons easier.
+- Include clear date filtering, status filtering where relevant, pagination for detailed tables, and links to the underlying jobs or inventory records.
+- Include skeleton loading, empty states, actionable errors, and responsive mobile layouts.
+- Display units and metric definitions; do not rely on color alone to convey status.
+- Use consistent styling with the existing design system and avoid overwhelming the user.
+
+## Authorization
+- Enforce data access on the backend.
+- Respect the existing Manager, Production Supervisor, and Cutting Operator roles.
+- Use the current approved permission model; do not broaden access merely to make the dashboard easier to implement.
+- Ensure the UI never exposes records that the current user cannot retrieve through the API.
+
+## Tests and verification
+Add tests for aggregation accuracy, date boundaries, timezone handling, corrected/voided records, inventory state counts, zero denominators, pagination, role restrictions, and consistency between KPI totals and detail records.
+
+Run relevant backend tests, lint, migration-drift checks, workspace typecheck, frontend lint/build, and browser checks for Arabic/English, RTL/LTR, mobile, filters, empty/error states, and role-based visibility. Use isolated PostgreSQL test data and do not weaken database safety guards.
+
+Do not add database migrations unless required and justified. Never run production migrations or add startup migrations.
+
+## Scope exclusions
+Do not implement cutting optimization, offcut reservation/consumption, exports, AI, voice, deployment, or multi-tenant onboarding in this phase.
+
+## Final report
+Document every metric's definition and source, permissions, filters, tests and results, any migration and its target, and unresolved business policies. Distinguish verified data from unavailable or not-yet-defined metrics. Stop after Phase 6.

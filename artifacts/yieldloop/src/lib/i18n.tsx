@@ -4,7 +4,9 @@ export type Lang = 'en' | 'ar';
 
 const en = {
   brand: 'YieldLoop',
-  phase: 'Phase 5 · Inventory foundation',
+  phase: 'Phase 6 · Operational reports',
+  navDashboard: 'Dashboard',
+  navReports: 'Reports',
   title: 'System connectivity',
   subtitle: 'Live checks against the YieldLoop server and its PostgreSQL database. Results are shown exactly as the server reports them.',
   switchLang: 'العربية',
@@ -408,7 +410,9 @@ const en = {
 
 const ar: typeof en = {
   brand: 'YieldLoop',
-  phase: 'المرحلة 5 · أساس المخزون',
+  phase: 'المرحلة 6 · التقارير التشغيلية',
+  navDashboard: 'لوحة المتابعة',
+  navReports: 'التقارير',
   title: 'اتصال النظام',
   subtitle: 'فحوصات مباشرة لخادم YieldLoop وقاعدة بيانات PostgreSQL. تُعرض النتائج كما يُبلغ عنها الخادم تمامًا.',
   switchLang: 'English',

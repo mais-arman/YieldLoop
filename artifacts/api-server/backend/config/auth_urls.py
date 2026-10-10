@@ -3,10 +3,12 @@ from django.urls import path
 from inventory.views import BlockedReuse, InventoryDetail, InventoryView, InventoryVoid
 from jobs.views import JobsView, JobView
 from materials.views import EntriesView, JobMaterialsView, MaterialsView, VoidView
+from reports.views import OverviewView
 
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
+    path("api/v1/reports/overview", OverviewView.as_view()),
     path("api/v1/inventory", InventoryView.as_view()),
     path("api/v1/inventory/<int:pk>", InventoryDetail.as_view()),
     path("api/v1/inventory/<int:pk>/void", InventoryVoid.as_view()),

@@ -1,0 +1,571 @@
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useLocation, useSearch } from 'wouter';
+import { AlertTriangle, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Info, RotateCw, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FieldError, JobNumber, StatusBadge, useFormatDate } from '@/components/job-ui';
+import { Kg, LotStateBadge } from '@/components/inventory-ui';
+import { MaterialPicker } from '@/components/materials/material-picker';
+import { AuthError } from '@/lib/auth';
+import { useI18n, type Lang } from '@/lib/i18n';
+import type { Material } from '@/lib/materials';
+import { useReportOverview, type GetReportOverviewParams, type ReportMeasures, type ReportOverview } from '@/lib/reports';
+import { errorMessage } from '@/lib/session';
+import { cn } from '@/lib/utils';
+
+const S = {
+  en: {
+    dashTitle: 'Material dashboard', dashSub: 'Current material balances for a cohort of production jobs. Values are recorded figures, never inferred.',
+    repTitle: 'Job & inventory report', repSub: 'Every job and inventory lot in the selected cohort, with its latest reconciliation.',
+    filters: 'Filters', startDate: 'Created from', endDate: 'Created to', timezone: 'Date timezone', status: 'Job status', anyStatus: 'Any status',
+    material: 'Material', allMaterials: 'All materials (quantities hidden)', chooseMaterial: 'Choose material', hidePicker: 'Hide list', clearMaterial: 'Clear material',
+    apply: 'Apply', reset: 'Reset', refresh: 'Refresh', refreshing: 'Refreshing',
+    dateFormat: 'Use the format YYYY-MM-DD.', dateOrder: 'The start date must be on or before the end date.',
+    invalidChoice: 'Choose one of the listed options.', invalidFilter: 'Enter a valid value or clear this filter.',
+    generated: 'Generated {time}', tzLabel: 'Timezone {tz}', basis: 'Dates select jobs by when the job was created.',
+    allTime: 'All time', range: '{a} to {b}', from: 'From {a}', until: 'Until {b}',
+    jobs: 'Jobs in cohort', measured: 'Measured', unmeasured: 'Unmeasured',
+    production: 'Production balance', inventory: 'Offcut inventory', available: 'Available lots', voided: 'Voided lots',
+    lots: '{n} lots', original: 'Original', remaining: 'Remaining',
+    selectMaterial: 'Select one material to see kg totals, rates and inventory weights. Totals across different materials would mix unrelated kg.',
+    unavailable: 'Unavailable', noData: 'No reconciliation recorded',
+    openReport: 'Open detailed report', openDashboard: 'Back to dashboard',
+    jobsTable: 'Jobs', lotsTable: 'Inventory lots', colJob: 'Job', colStatus: 'Status', colCreated: 'Created', colMaterial: 'Material',
+    colLot: 'Lot', colSource: 'Source job', colState: 'State',
+    snapshot: 'Reconciliation #{id} · revision {rev} · {time}',
+    emptyTitle: 'No jobs in this cohort', emptyDesc: 'No production jobs visible to you were created in this range. Widen the dates or clear filters.',
+    emptyLots: 'No inventory lots come from jobs in this cohort.',
+    loadError: 'The report could not be loaded.', notFound: 'The selected material or page does not exist or is not visible to you.',
+    validation: 'The server rejected some filters. Your inputs are kept below.', clearFilters: 'Clear filters',
+    pageOf: 'Page {p} of {n} · {c} total', prev: 'Previous page', next: 'Next page',
+    defs: 'Definitions', defsHint: 'What every number means',
+    viewing: 'Showing {status} · {material}',
+  },
+  ar: {
+    dashTitle: 'لوحة المواد', dashSub: 'أرصدة المواد الحالية لمجموعة من أوامر الإنتاج. القيم مسجّلة فعليًا وليست مستنتجة.',
+    repTitle: 'تقرير الأوامر والمخزون', repSub: 'كل أمر وكل دفعة مخزون في المجموعة المحددة مع آخر تسوية لها.',
+    filters: 'عوامل التصفية', startDate: 'تاريخ الإنشاء من', endDate: 'تاريخ الإنشاء إلى', timezone: 'المنطقة الزمنية للتاريخ', status: 'حالة الأمر', anyStatus: 'أي حالة',
+    material: 'المادة', allMaterials: 'كل المواد (الكميات مخفية)', chooseMaterial: 'اختر مادة', hidePicker: 'إخفاء القائمة', clearMaterial: 'إزالة المادة',
+    apply: 'تطبيق', reset: 'إعادة الضبط', refresh: 'تحديث', refreshing: 'جارٍ التحديث',
+    dateFormat: 'استخدم الصيغة YYYY-MM-DD.', dateOrder: 'يجب أن يكون تاريخ البداية في تاريخ النهاية أو قبله.',
+    invalidChoice: 'اختر أحد الخيارات المدرجة.', invalidFilter: 'أدخل قيمة صالحة أو امسح عامل التصفية هذا.',
+    generated: 'أُنشئ {time}', tzLabel: 'المنطقة الزمنية {tz}', basis: 'تحدد التواريخ الأوامر حسب وقت إنشاء الأمر.',
+    allTime: 'كل الأوقات', range: 'من {a} إلى {b}', from: 'من {a}', until: 'حتى {b}',
+    jobs: 'الأوامر في المجموعة', measured: 'مقيسة', unmeasured: 'غير مقيسة',
+    production: 'رصيد الإنتاج', inventory: 'مخزون القصاصات', available: 'دفعات متاحة', voided: 'دفعات ملغاة',
+    lots: '{n} دفعات', original: 'الأصلية', remaining: 'المتبقية',
+    selectMaterial: 'اختر مادة واحدة لعرض إجماليات الكيلوغرام والنسب وأوزان المخزون. جمع مواد مختلفة يخلط كيلوغرامات غير مرتبطة.',
+    unavailable: 'غير متاح', noData: 'لا توجد تسوية مسجّلة',
+    openReport: 'فتح التقرير المفصل', openDashboard: 'العودة إلى اللوحة',
+    jobsTable: 'الأوامر', lotsTable: 'دفعات المخزون', colJob: 'الأمر', colStatus: 'الحالة', colCreated: 'الإنشاء', colMaterial: 'المادة',
+    colLot: 'الدفعة', colSource: 'الأمر المصدر', colState: 'الحالة',
+    snapshot: 'التسوية #{id} · المراجعة {rev} · {time}',
+    emptyTitle: 'لا توجد أوامر في هذه المجموعة', emptyDesc: 'لم يُنشأ في هذا النطاق أي أمر إنتاج مرئي لك. وسّع التواريخ أو امسح عوامل التصفية.',
+    emptyLots: 'لا توجد دفعات مخزون من أوامر هذه المجموعة.',
+    loadError: 'تعذّر تحميل التقرير.', notFound: 'المادة أو الصفحة المحددة غير موجودة أو غير مرئية لك.',
+    validation: 'رفض الخادم بعض عوامل التصفية. مدخلاتك محفوظة أدناه.', clearFilters: 'مسح عوامل التصفية',
+    pageOf: 'الصفحة {p} من {n} · الإجمالي {c}', prev: 'الصفحة السابقة', next: 'الصفحة التالية',
+    defs: 'التعريفات', defsHint: 'معنى كل رقم',
+    viewing: 'عرض {status} · {material}',
+  },
+};
+type SKey = keyof typeof S.en;
+
+const DEFS: Record<Lang, [string, string][]> = {
+  en: [
+    ['Date basis', 'Start and end dates (inclusive, in the chosen timezone) select jobs by their creation date. The same cohort drives every metric, including inventory. They are not production-activity dates, lot registration dates, or a historical as-of view. With no dates, all time is shown.'],
+    ['Current balances', 'Every value is the latest current state, including corrections made after the date range. Only the highest reconciliation revision per job contributes; voided entries are excluded. Inventory registration and voiding never change production totals.'],
+    ['Job counts', 'Distinct visible jobs by their current Draft, Open or Cancelled status. All statuses includes Cancelled jobs for permitted readers; Operators see Open jobs only.'],
+    ['Measured / Unmeasured', 'A measured job has a reconciliation snapshot. A job without one is unmeasured; it is not counted as zero.'],
+    ['Issued', 'Material issued to the job, in kg.'],
+    ['Good', 'Recorded good output, in kg.'],
+    ['Scrap', 'Recorded scrap, in kg.'],
+    ['Offcut', 'Recorded potential offcut output. It is not confirmed reusable.'],
+    ['Accounted', 'Good + Scrap + Offcut.'],
+    ['Variance', 'Issued minus Accounted, signed. It is unaccounted material, not scrap. Negative means more was accounted than issued. Opposing job variances can cancel in the net total; inspect each job for discrepancies.'],
+    ['Rates', 'Yield = total Good / total Issued × 100; Scrap rate = Scrap / Issued × 100; Offcut rate = Offcut / Issued × 100. Weighted across measured jobs, rounded to 3 decimals, not clamped above 100%. Unavailable when Issued is zero.'],
+    ['Material selection', 'Quantity totals, rates and inventory weights are returned only for one selected material. Job counts and per-job quantities are always shown.'],
+    ['Available lot', 'Registered in inventory only. It does not mean suitable or approved for reuse. All reuse is blocked.'],
+    ['Voided lot', 'The original registered quantity was removed from inventory. It was not consumed.'],
+    ['Inventory counts and weights', 'Lots from the selected source jobs, counted separately by absence or presence of a void event. Original kg is the sum of source offcut weights. Available remaining equals original; voided remaining is zero. Voided original weight is retained history, not consumption.'],
+    ['Not available here', 'No historical targets, rework or completion data exist in YieldLoop, so they are not reported.'],
+  ],
+  ar: [
+    ['أساس التاريخ', 'تحدد تواريخ البداية والنهاية (شاملة، بالمنطقة الزمنية المختارة) الأوامر حسب تاريخ إنشائها. المجموعة نفسها تُستخدم لكل المقاييس بما فيها المخزون. ليست تواريخ نشاط إنتاج ولا تواريخ تسجيل دفعات ولا عرضًا تاريخيًا. بلا تواريخ تُعرض كل الأوقات.'],
+    ['الأرصدة الحالية', 'كل قيمة هي أحدث حالة حالية، بما فيها التصحيحات اللاحقة لنطاق التاريخ. تساهم آخر مراجعة تسوية لكل أمر فقط وتُستبعد القيود الملغاة. تسجيل المخزون وإلغاؤه لا يغيران إجماليات الإنتاج.'],
+    ['أعداد الأوامر', 'أوامر مرئية مميزة حسب حالتها الحالية: مسودة أو مفتوحة أو ملغاة. تشمل كل الحالات الأوامر الملغاة لمن يملك الصلاحية؛ يرى المشغل الأوامر المفتوحة فقط.'],
+    ['مقيس / غير مقيس', 'الأمر المقيس له لقطة تسوية. الأمر بدونها غير مقيس ولا يُحتسب صفرًا.'],
+    ['المصروف', 'المادة المصروفة للأمر بالكيلوغرام.'],
+    ['الجيد', 'الناتج الجيد المسجّل بالكيلوغرام.'],
+    ['الهالك', 'الهالك المسجّل بالكيلوغرام.'],
+    ['القصاصات', 'ناتج قصاصات محتمل مسجّل. ليس مؤكدًا أنه قابل لإعادة الاستخدام.'],
+    ['المحتسب', 'الجيد + الهالك + القصاصات.'],
+    ['الفرق', 'المصروف ناقص المحتسب، بإشارة. هو مادة غير محتسبة وليس هالكًا. السالب يعني احتساب أكثر من المصروف. قد تتعادل فروق الأوامر المتعاكسة في الإجمالي الصافي؛ راجع كل أمر.'],
+    ['النسب', 'المردود = إجمالي الجيد / إجمالي المصروف × 100؛ نسبة الهالك = الهالك / المصروف × 100؛ نسبة القصاصات = القصاصات / المصروف × 100. مرجّحة عبر الأوامر المقيسة، مقرّبة إلى 3 منازل، وغير مقيّدة بحد 100%. غير متاحة عندما يكون المصروف صفرًا.'],
+    ['اختيار المادة', 'تُعاد إجماليات الكميات والنسب وأوزان المخزون لمادة واحدة مختارة فقط. أعداد الأوامر وكميات كل أمر تُعرض دائمًا.'],
+    ['دفعة متاحة', 'مسجّلة في المخزون فقط. لا تعني أنها مناسبة أو معتمدة لإعادة الاستخدام. كل إعادة استخدام محظورة.'],
+    ['دفعة ملغاة', 'أُزيلت الكمية المسجّلة الأصلية من المخزون. لم تُستهلك.'],
+    ['أعداد وأوزان المخزون', 'دفعات من الأوامر المصدر المحددة، تُعدّ حسب وجود حدث إلغاء أو غيابه. الوزن الأصلي هو مجموع أوزان القصاصات المصدر. المتبقي للمتاح يساوي الأصلي وللملغى صفر. الوزن الأصلي الملغى سجل تاريخي وليس استهلاكًا.'],
+    ['غير متاح هنا', 'لا توجد أهداف تاريخية أو بيانات إعادة تشغيل أو إكمال في YieldLoop، لذا لا تُعرض.'],
+  ],
+};
+
+const MEASURE_LABEL: Record<Lang, Record<string, string>> = {
+  en: { issued: 'Issued', good: 'Good', scrap: 'Scrap', offcut: 'Offcut', accounted: 'Accounted', variance: 'Variance', yield_rate: 'Yield', scrap_rate: 'Scrap rate', offcut_rate: 'Offcut rate' },
+  ar: { issued: 'المصروف', good: 'الجيد', scrap: 'الهالك', offcut: 'القصاصات', accounted: 'المحتسب', variance: 'الفرق', yield_rate: 'المردود', scrap_rate: 'نسبة الهالك', offcut_rate: 'نسبة القصاصات' },
+};
+
+function useS() {
+  const { lang } = useI18n();
+  return (k: SKey, v?: Record<string, string | number>) => {
+    let s: string = S[lang][k];
+    if (v) for (const [a, b] of Object.entries(v)) s = s.replace(`{${a}}`, String(b));
+    return s;
+  };
+}
+
+/* ---------- URL filter state ---------- */
+type Tz = 'UTC' | 'Asia/Jerusalem';
+type Status = 'draft' | 'open' | 'cancelled';
+type Filters = { start_date: string; end_date: string; timezone: Tz; status: '' | Status; material_id: number | null; material_name: string; job_page: number; lot_page: number };
+const EMPTY: Filters = { start_date: '', end_date: '', timezone: 'UTC', status: '', material_id: null, material_name: '', job_page: 1, lot_page: 1 };
+
+function parse(search: string): Filters {
+  const p = new URLSearchParams(search);
+  // Preserve invalid supplied values for authoritative server validation.
+  const num = (k: string) => p.has(k) ? Number(p.get(k)) : null;
+  const st = p.get('status');
+  return {
+    start_date: p.get('start_date') ?? '', end_date: p.get('end_date') ?? '',
+    timezone: (p.get('timezone') ?? 'UTC') as Tz,
+    status: (st ?? '') as Filters['status'],
+    material_id: num('material_id'), material_name: p.get('mname') ?? '',
+    job_page: num('job_page') ?? 1, lot_page: num('lot_page') ?? 1,
+  };
+}
+function toQuery(f: Filters, pages = true) {
+  const p = new URLSearchParams();
+  if (f.start_date) p.set('start_date', f.start_date);
+  if (f.end_date) p.set('end_date', f.end_date);
+  p.set('timezone', f.timezone);
+  if (f.status) p.set('status', f.status);
+  if (f.material_id) { p.set('material_id', String(f.material_id)); if (f.material_name) p.set('mname', f.material_name); }
+  if (pages && f.job_page > 1) p.set('job_page', String(f.job_page));
+  if (pages && f.lot_page > 1) p.set('lot_page', String(f.lot_page));
+  return p.toString();
+}
+function toParams(f: Filters): GetReportOverviewParams {
+  return {
+    start_date: f.start_date || undefined, end_date: f.end_date || undefined, timezone: f.timezone,
+    status: f.status || undefined, material_id: f.material_id ?? undefined,
+    job_page: f.job_page, lot_page: f.lot_page, page_size: 20,
+  };
+}
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function validDate(s: string) { if (!DATE_RE.test(s)) return false; const d = new Date(`${s}T00:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s; }
+
+function useReportState(path: string) {
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const applied = useMemo(() => parse(search), [search]);
+  const go = (f: Filters) => navigate(`${path}?${toQuery(f)}`);
+  return { applied, go };
+}
+
+/* ---------- small pieces ---------- */
+function Pct({ v }: { v: string | null }) {
+  const s = useS();
+  if (v === null) return <span className="text-sm text-muted-foreground">{s('unavailable')}</span>;
+  return <span><span dir="ltr" className="font-mono tabular-nums">{v}</span><span className="text-xs text-muted-foreground"> %</span></span>;
+}
+function Signed({ v }: { v: string }) {
+  const neg = v.startsWith('-');
+  const zero = Number(v) === 0;
+  return <Kg v={zero || neg ? v : `+${v}`} className={cn(!zero && 'text-[hsl(32_81%_29%)]')} />;
+}
+
+function MeasureGrid({ m, compact }: { m: ReportMeasures; compact?: boolean }) {
+  const { lang } = useI18n();
+  const L = MEASURE_LABEL[lang];
+  const cell = (k: string, node: ReactNode, strong?: boolean) => (
+    <div key={k} className={cn('flex flex-col gap-0.5', compact ? 'py-1' : 'rounded-md border bg-card px-3 py-2.5')}>
+      <dt className="text-xs text-muted-foreground">{L[k]}</dt>
+      <dd className={cn(strong ? 'text-base font-semibold' : 'text-sm font-medium')}>{node}</dd>
+    </div>
+  );
+  return (
+    <dl className={cn('grid gap-2', compact ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3')}>
+      {cell('issued', <Kg v={m.issued} />, true)}
+      {cell('good', <Kg v={m.good} />)}
+      {cell('scrap', <Kg v={m.scrap} />)}
+      {cell('offcut', <Kg v={m.offcut} />)}
+      {cell('accounted', <Kg v={m.accounted} />)}
+      {cell('variance', <Signed v={m.variance} />)}
+      {cell('yield_rate', <Pct v={m.yield_rate} />)}
+      {cell('scrap_rate', <Pct v={m.scrap_rate} />)}
+      {cell('offcut_rate', <Pct v={m.offcut_rate} />)}
+    </dl>
+  );
+}
+
+function Definitions() {
+  const { lang } = useI18n();
+  const s = useS();
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="rounded-lg border bg-card" data-testid="panel-definitions">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="report-defs"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start text-sm font-medium" data-testid="button-toggle-definitions">
+        <span className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" aria-hidden />{s('defs')} <span className="font-normal text-muted-foreground">· {s('defsHint')}</span></span>
+        <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />
+      </button>
+      {open && (
+        <dl id="report-defs" className="grid gap-x-6 gap-y-3 border-t px-4 py-4 text-sm sm:grid-cols-2">
+          {DEFS[lang].map(([k, v]) => (
+            <div key={k}><dt className="font-medium">{k}</dt><dd className="mt-0.5 leading-relaxed text-muted-foreground">{v}</dd></div>
+          ))}
+        </dl>
+      )}
+    </section>
+  );
+}
+
+function Pager({ page, total, count, onPage, disabled, testId }: { page: number; total: number; count: number; onPage: (p: number) => void; disabled: boolean; testId: string }) {
+  const s = useS();
+  if (total <= 1) return <p className="text-xs text-muted-foreground">{s('pageOf', { p: page, n: Math.max(total, 1), c: count })}</p>;
+  return (
+    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+      <span>{s('pageOf', { p: page, n: total, c: count })}</span>
+      <div className="flex gap-1">
+        <Button size="icon" variant="outline" className="h-8 w-8" disabled={disabled || page <= 1} onClick={() => onPage(page - 1)} aria-label={s('prev')} data-testid={`button-${testId}-prev`}><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></Button>
+        <Button size="icon" variant="outline" className="h-8 w-8" disabled={disabled || page >= total} onClick={() => onPage(page + 1)} aria-label={s('next')} data-testid={`button-${testId}-next`}><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- filters ---------- */
+function FilterBar({ applied, go, serverFields }: { applied: Filters; go: (f: Filters) => void; serverFields: Record<string, string> }) {
+  const s = useS();
+  const { t } = useI18n();
+  const [draft, setDraft] = useState<Filters>(applied);
+  const [errs, setErrs] = useState<Record<string, string>>({});
+  const [picker, setPicker] = useState(false);
+  const key = toQuery(applied, false);
+  useEffect(() => { setDraft(applied); setErrs({}); }, [key]);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const er: Record<string, string> = {};
+    if (draft.start_date && !validDate(draft.start_date)) er.start_date = s('dateFormat');
+    if (draft.end_date && !validDate(draft.end_date)) er.end_date = s('dateFormat');
+    if (!er.start_date && !er.end_date && draft.start_date && draft.end_date && draft.start_date > draft.end_date) er.end_date = s('dateOrder');
+    setErrs(er);
+    if (Object.keys(er).length) return;
+    go({ ...draft, job_page: 1, lot_page: 1 });
+  };
+  const fe = (k: string) => {
+    if (errs[k]) return errs[k];
+    const code = serverFields[k];
+    if (!code) return undefined;
+    if (code.includes('invalid_choice')) return s('invalidChoice');
+    if (code.includes('date_order')) return s('dateOrder');
+    return s('invalidFilter');
+  };
+  const matValue = draft.material_id ? ({ id: draft.material_id, name: draft.material_name, specification: '', unit: 'kg', created_at: '' } as Material) : null;
+  const sel = 'h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+  return (
+    <form onSubmit={submit} noValidate className="rounded-lg border bg-card p-4" aria-label={s('filters')} data-testid="form-report-filters">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rf-start">{s('startDate')}</Label>
+          <Input id="rf-start" type="date" dir="ltr" value={draft.start_date} onChange={(e) => setDraft({ ...draft, start_date: e.target.value })} aria-invalid={!!fe('start_date')} aria-describedby="rf-start-err" data-testid="input-start-date" />
+          <FieldError id="rf-start-err" msg={fe('start_date')} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rf-end">{s('endDate')}</Label>
+          <Input id="rf-end" type="date" dir="ltr" value={draft.end_date} onChange={(e) => setDraft({ ...draft, end_date: e.target.value })} aria-invalid={!!fe('end_date')} aria-describedby="rf-end-err" data-testid="input-end-date" />
+          <FieldError id="rf-end-err" msg={fe('end_date')} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rf-tz">{s('timezone')}</Label>
+          <select id="rf-tz" className={sel} value={draft.timezone} onChange={(e) => setDraft({ ...draft, timezone: e.target.value as Tz })} data-testid="select-timezone">
+            <option value="UTC">UTC</option><option value="Asia/Jerusalem">Asia/Jerusalem</option>
+          </select>
+          <FieldError msg={fe('timezone')} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rf-status">{s('status')}</Label>
+          <select id="rf-status" className={sel} value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Filters['status'] })} data-testid="select-status">
+            <option value="">{s('anyStatus')}</option>
+            {(['draft', 'open', 'cancelled'] as const).map((v) => <option key={v} value={v}>{t(`status_${v}`)}</option>)}
+          </select>
+          <FieldError msg={fe('status')} />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-col gap-2">
+        <span className="text-sm font-medium" id="rf-mat-label">{s('material')}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn('rounded-md border px-2.5 py-1.5 text-sm', draft.material_id ? 'border-primary/40 bg-primary/5 font-medium' : 'text-muted-foreground')} data-testid="text-selected-material">
+            {draft.material_id ? (draft.material_name || `#${draft.material_id}`) : s('allMaterials')}
+          </span>
+          <Button type="button" size="sm" variant="outline" onClick={() => setPicker((p) => !p)} aria-expanded={picker} data-testid="button-toggle-material">{picker ? s('hidePicker') : s('chooseMaterial')}</Button>
+          {draft.material_id && (
+            <Button type="button" size="sm" variant="ghost" onClick={() => setDraft({ ...draft, material_id: null, material_name: '' })} data-testid="button-clear-material"><X className="h-3.5 w-3.5" aria-hidden />{s('clearMaterial')}</Button>
+          )}
+        </div>
+        {picker && (
+          <div className="max-w-md" aria-labelledby="rf-mat-label">
+            <MaterialPicker value={matValue} canCreate={false} onChange={(m) => { setDraft({ ...draft, material_id: m.id, material_name: m.name }); setPicker(false); }} />
+          </div>
+        )}
+        <FieldError msg={fe('material_id')} />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
+        <Button type="submit" size="sm" data-testid="button-apply-filters">{s('apply')}</Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(EMPTY); setErrs({}); go(EMPTY); }} data-testid="button-reset-filters">{s('reset')}</Button>
+      </div>
+    </form>
+  );
+}
+
+/* ---------- freshness / scope ---------- */
+function useDay() {
+  const { lang } = useI18n();
+  return (d: string) => {
+    const x = new Date(`${d}T00:00:00Z`);
+    return Number.isNaN(x.getTime()) ? d : new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', { dateStyle: 'medium', timeZone: 'UTC' }).format(x);
+  };
+}
+function Freshness({ data, refetch, fetching }: { data: ReportOverview; refetch: () => void; fetching: boolean }) {
+  const s = useS();
+  const { lang, t } = useI18n();
+  const day = useDay();
+  const gen = new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', { dateStyle: 'medium', timeStyle: 'medium', timeZone: data.timezone }).format(new Date(data.generated_at));
+  const range = data.start_date && data.end_date ? s('range', { a: day(data.start_date), b: day(data.end_date) })
+    : data.start_date ? s('from', { a: day(data.start_date) }) : data.end_date ? s('until', { b: day(data.end_date) }) : s('allTime');
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-testid="panel-freshness">
+      <div className="min-w-0 space-y-0.5 text-sm">
+        <p className="font-semibold" data-testid="text-report-range">{range}</p>
+        <p className="text-xs text-muted-foreground">{s('viewing', { status: data.status ? t(`status_${data.status}`) : s('anyStatus'), material: data.material ? `${data.material.name} · ${data.material.specification}` : s('allMaterials') })}</p>
+        <p className="text-xs text-muted-foreground"><span data-testid="text-generated-at">{s('generated', { time: gen })}</span> · <span dir="ltr">{s('tzLabel', { tz: data.timezone })}</span></p>
+        <p className="text-xs text-muted-foreground">{s('basis')}</p>
+      </div>
+      <Button size="sm" variant="outline" onClick={refetch} disabled={fetching} className="self-start sm:self-center" data-testid="button-refresh-report">
+        <RotateCw className={cn('h-3.5 w-3.5', fetching && 'animate-spin')} aria-hidden />{fetching ? s('refreshing') : s('refresh')}
+      </Button>
+    </div>
+  );
+}
+
+/* ---------- summary ---------- */
+function Summary({ data }: { data: ReportOverview }) {
+  const s = useS();
+  const { t } = useI18n();
+  const inv = data.inventory;
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+      <section className="rounded-lg border bg-card p-4" aria-labelledby="h-jobs">
+        <h2 id="h-jobs" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s('jobs')}</h2>
+        <p className="mt-1 font-mono text-4xl font-semibold tabular-nums" dir="ltr" data-testid="text-job-count">{data.job_count}</p>
+        <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+          {(['draft', 'open', 'cancelled'] as const).map((k) => (
+            <div key={k}><dt className="text-xs text-muted-foreground">{t(`status_${k}`)}</dt><dd className="font-mono tabular-nums" dir="ltr">{data.job_counts[k]}</dd></div>
+          ))}
+        </dl>
+        <div className="mt-4 border-t pt-3">
+          <div className="flex justify-between text-sm"><span>{s('measured')}</span><span className="font-mono tabular-nums" data-testid="text-measured">{data.measured_jobs}</span></div>
+          <div className="mt-1 flex justify-between text-sm"><span>{s('unmeasured')}</span><span className="font-mono tabular-nums" data-testid="text-unmeasured">{data.unmeasured_jobs}</span></div>
+        </div>
+      </section>
+      <section className="rounded-lg border bg-card p-4" aria-labelledby="h-prod">
+        <h2 id="h-prod" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s('production')}</h2>
+        <div className="mt-3">
+          {data.production ? <MeasureGrid m={data.production} /> : (
+            <p className="flex items-start gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground" data-testid="text-select-material">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{data.quantity_unavailable_reason === 'select_material' ? s('selectMaterial') : s('unavailable')}
+            </p>
+          )}
+        </div>
+      </section>
+      <section className="rounded-lg border bg-card p-4 lg:col-span-2" aria-labelledby="h-inv">
+        <h2 id="h-inv" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s('inventory')}</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {(['available', 'voided'] as const).map((k) => (
+            <div key={k} className="rounded-md border px-3 py-2.5" data-testid={`panel-inv-${k}`}>
+              <div className="flex items-center justify-between"><LotStateBadge state={k} /><span className="text-sm font-medium">{s('lots', { n: inv[k].count })}</span></div>
+              <dl className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                <div><dt className="text-xs text-muted-foreground">{s('original')}</dt><dd>{inv[k].original_quantity !== null ? <Kg v={inv[k].original_quantity!} /> : <span className="text-muted-foreground">{s('unavailable')}</span>}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">{s('remaining')}</dt><dd>{inv[k].remaining !== null ? <Kg v={inv[k].remaining!} /> : <span className="text-muted-foreground">{s('unavailable')}</span>}</dd></div>
+              </dl>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">{t('invAvailableHint')}</p>
+      </section>
+    </div>
+  );
+}
+
+/* ---------- drilldowns ---------- */
+function JobsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p: number) => void; fetching: boolean }) {
+  const s = useS();
+  const fmt = useFormatDate();
+  const j = data.jobs;
+  return (
+    <section aria-labelledby="h-jobs-list" className="space-y-3">
+      <h2 id="h-jobs-list" className="text-lg font-semibold">{s('jobsTable')}</h2>
+      {j.results.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{s('emptyTitle')}</p> : (
+        <ul className="space-y-2">
+          {j.results.map((job) => {
+            const r = job.reconciliation;
+            return (
+              <li key={job.id} className="rounded-lg border bg-card p-3 sm:p-4" data-testid={`row-report-job-${job.id}`}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link href={`/jobs/${job.id}`} className="font-medium hover:text-primary hover:underline"><JobNumber value={job.job_number} className="me-2 text-foreground" />{job.title}</Link>
+                    <p className="text-xs text-muted-foreground">{s('colCreated')} {fmt(job.created_at)}{r && <> · {r.material_name} · {r.specification}</>}</p>
+                  </div>
+                  <StatusBadge status={job.status} />
+                </div>
+                <div className="mt-2 border-t pt-2">
+                  {r ? <><MeasureGrid m={r} compact /><p className="mt-1 text-[11px] text-muted-foreground">{s('snapshot', { id: r.id, rev: r.revision, time: fmt(r.created_at) })}</p></>
+                    : <p className="text-sm text-muted-foreground">{s('unmeasured')} · {s('noData')}</p>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <Pager page={j.page} total={j.total_pages} count={j.count} onPage={onPage} disabled={fetching} testId="jobs" />
+    </section>
+  );
+}
+
+function LotsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p: number) => void; fetching: boolean }) {
+  const s = useS();
+  const fmt = useFormatDate();
+  const l = data.lots;
+  return (
+    <section aria-labelledby="h-lots" className="space-y-3">
+      <h2 id="h-lots" className="text-lg font-semibold">{s('lotsTable')}</h2>
+      {l.results.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{s('emptyLots')}</p> : (
+        <div className="overflow-x-auto rounded-lg border bg-card">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+              <tr>{(['colLot', 'colSource', 'colMaterial', 'original', 'remaining', 'colState'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-start font-medium">{s(k)}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y">
+              {l.results.map((lot) => (
+                <tr key={lot.id} data-testid={`row-report-lot-${lot.id}`}>
+                  <td className="px-3 py-2"><Link href={`/inventory/${lot.id}`} className="font-mono text-primary hover:underline" dir="ltr">#{lot.id}</Link><div className="text-[11px] text-muted-foreground">{fmt(lot.created_at)}</div></td>
+                  <td className="px-3 py-2"><Link href={`/jobs/${lot.source_job_id}`} className="hover:underline"><JobNumber value={lot.source_job_number} /></Link></td>
+                  <td className="px-3 py-2"><div className="font-medium">{lot.material_name}</div><div className="text-xs text-muted-foreground">{lot.specification}</div></td>
+                  <td className="px-3 py-2"><Kg v={lot.quantity} /></td>
+                  <td className="px-3 py-2"><Kg v={lot.remaining} /></td>
+                  <td className="px-3 py-2"><LotStateBadge state={lot.state} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Pager page={l.page} total={l.total_pages} count={l.count} onPage={onPage} disabled={fetching} testId="lots" />
+    </section>
+  );
+}
+
+/* ---------- states ---------- */
+function ReportSkeleton({ detailed }: { detailed: boolean }) {
+  return (
+    <div className="space-y-4" aria-busy>
+      <Skeleton className="h-20 w-full" />
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.6fr]"><Skeleton className="h-48" /><Skeleton className="h-48" /></div>
+      <Skeleton className="h-28 w-full" />
+      {detailed && [0, 1, 2].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
+    </div>
+  );
+}
+
+function ReportError({ error, retry, clear }: { error: unknown; retry: () => void; clear: () => void }) {
+  const s = useS();
+  const { t } = useI18n();
+  const status = error instanceof AuthError ? error.status : 0;
+  const msg = status === 404 ? s('notFound') : status === 400 ? s('validation') : `${s('loadError')} ${errorMessage(error, t)}`;
+  return (
+    <div role="alert" className="flex flex-col items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4" data-testid="panel-report-error">
+      <p className="flex items-start gap-2 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />{msg}</p>
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" onClick={retry} data-testid="button-retry-report"><RotateCw className="h-3.5 w-3.5" aria-hidden />{t('retry')}</Button>
+        {(status === 400 || status === 404) && <Button size="sm" variant="ghost" onClick={clear} data-testid="button-clear-report-filters">{s('clearFilters')}</Button>}
+      </div>
+    </div>
+  );
+}
+
+function serverFieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof AuthError) || error.status !== 400 || !error.fields) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(error.fields)) out[k] = Array.isArray(v) ? v.join(' ') : String(v);
+  return out;
+}
+
+/* ---------- pages ---------- */
+function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
+  const s = useS();
+  const { applied, go } = useReportState(path);
+  const params = useMemo(() => toParams(detailed ? applied : { ...applied, job_page: 1, lot_page: 1 }), [applied, detailed]);
+  const q = useReportOverview(params);
+  const qs = toQuery(applied, false);
+  const fields = serverFieldErrors(q.error);
+  const data = q.data;
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{detailed ? s('repTitle') : s('dashTitle')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{detailed ? s('repSub') : s('dashSub')}</p>
+        </div>
+        <Link href={`${detailed ? '/dashboard' : '/reports'}?${qs}`} className="group inline-flex shrink-0 items-center gap-2 self-start rounded-md border bg-card px-3 py-2 text-sm font-medium hover:border-primary/40" data-testid={detailed ? 'link-to-dashboard' : 'link-to-report'}>
+          {detailed ? <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> : <FileText className="h-4 w-4 text-primary" aria-hidden />}
+          {detailed ? s('openDashboard') : s('openReport')}
+          {!detailed && <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />}
+        </Link>
+      </header>
+      <FilterBar applied={applied} go={go} serverFields={fields} />
+      {q.isPending ? <ReportSkeleton detailed={detailed} /> : q.isError || !data ? (
+        <ReportError error={q.error} retry={() => q.refetch()} clear={() => go(EMPTY)} />
+      ) : (
+        <>
+          <Freshness data={data} refetch={() => q.refetch()} fetching={q.isFetching} />
+          {data.job_count === 0 ? (
+            <div className="rounded-lg border border-dashed bg-card px-6 py-10 text-center" data-testid="panel-report-empty">
+              <h2 className="font-semibold">{s('emptyTitle')}</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{s('emptyDesc')}</p>
+              <Button size="sm" variant="outline" className="mt-4" onClick={() => go(EMPTY)}>{s('clearFilters')}</Button>
+            </div>
+          ) : (
+            <>
+              <Summary data={data} />
+              {detailed && (
+                <>
+                  <JobsList data={data} fetching={q.isFetching} onPage={(p) => go({ ...applied, job_page: p })} />
+                  <LotsList data={data} fetching={q.isFetching} onPage={(p) => go({ ...applied, lot_page: p })} />
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
+      <Definitions />
+    </div>
+  );
+}
+
+export function DashboardPage() { return <ReportView path="/dashboard" detailed={false} />; }
+export function ReportsPage() { return <ReportView path="/reports" detailed />; }

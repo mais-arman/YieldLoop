@@ -8,6 +8,134 @@
 import * as zod from 'zod';
 
 
+export const GetReportOverviewQueryParams = zod.object({
+  "start_date": zod.date().optional(),
+  "end_date": zod.date().optional(),
+  "timezone": zod.enum(['UTC', 'Asia/Jerusalem']).optional(),
+  "status": zod.enum(['draft', 'open', 'cancelled']).optional(),
+  "material_id": zod.coerce.number().int().optional(),
+  "job_page": zod.coerce.number().int().optional(),
+  "lot_page": zod.coerce.number().int().optional(),
+  "page_size": zod.coerce.number().int().optional()
+})
+
+export const GetReportOverviewResponse = zod.object({
+  "generated_at": zod.coerce.date(),
+  "date_basis": zod.enum(['job_created_at']),
+  "timezone": zod.enum(['UTC', 'Asia/Jerusalem']),
+  "start_date": zod.string().nullable(),
+  "end_date": zod.string().nullable(),
+  "status": zod.union([zod.enum(['draft', 'open', 'cancelled']),zod.null()]),
+  "material": zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "specification": zod.string()
+}).nullable(),
+  "unit": zod.enum(['kg']),
+  "job_counts": zod.object({
+  "draft": zod.number().int(),
+  "open": zod.number().int(),
+  "cancelled": zod.number().int()
+}),
+  "job_count": zod.number().int(),
+  "measured_jobs": zod.number().int(),
+  "unmeasured_jobs": zod.number().int(),
+  "production": zod.union([zod.object({
+  "issued": zod.string(),
+  "good": zod.string(),
+  "scrap": zod.string(),
+  "offcut": zod.string(),
+  "accounted": zod.string(),
+  "variance": zod.string(),
+  "yield_rate": zod.string().nullable(),
+  "scrap_rate": zod.string().nullable(),
+  "offcut_rate": zod.string().nullable()
+}),zod.null()]),
+  "quantity_unavailable_reason": zod.union([zod.literal('select_material'),zod.literal(null)]).nullable(),
+  "inventory": zod.object({
+  "available": zod.object({
+  "count": zod.number().int(),
+  "original_quantity": zod.string().nullable(),
+  "remaining": zod.string().nullable()
+}),
+  "voided": zod.object({
+  "count": zod.number().int(),
+  "original_quantity": zod.string().nullable(),
+  "remaining": zod.string().nullable()
+})
+}),
+  "jobs": zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "job_number": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['draft', 'open', 'cancelled']),
+  "created_at": zod.coerce.date(),
+  "reconciliation": zod.union([zod.object({
+  "issued": zod.string(),
+  "good": zod.string(),
+  "scrap": zod.string(),
+  "offcut": zod.string(),
+  "accounted": zod.string(),
+  "variance": zod.string(),
+  "yield_rate": zod.string().nullable(),
+  "scrap_rate": zod.string().nullable(),
+  "offcut_rate": zod.string().nullable()
+}).and(zod.object({
+  "id": zod.number().int(),
+  "revision": zod.number().int(),
+  "created_at": zod.coerce.date(),
+  "material_id": zod.number().int(),
+  "material_name": zod.string(),
+  "specification": zod.string()
+})),zod.null()])
+}))
+}),
+  "lots": zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "source_job_id": zod.number().int(),
+  "source_job_number": zod.string(),
+  "source_entry_id": zod.number().int(),
+  "reconciliation_id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "material_name": zod.string(),
+  "specification": zod.string(),
+  "quantity": zod.string(),
+  "remaining": zod.string(),
+  "unit": zod.enum(['kg']),
+  "state": zod.enum(['available', 'voided']),
+  "revision": zod.number().int(),
+  "source_status": zod.enum(['draft', 'open', 'cancelled']),
+  "source_voided": zod.boolean(),
+  "compatibility": zod.enum(['unverified']),
+  "reuse_blocked_reason": zod.enum(['policy_not_defined']),
+  "created_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "void": zod.boolean(),
+  "reserve": zod.boolean(),
+  "consume": zod.boolean()
+}),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "action": zod.enum(['addition', 'void']),
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "created_at": zod.coerce.date()
+})).optional()
+}))
+})
+})
+
+
 export const ListInventoryQueryParams = zod.object({
   "page": zod.coerce.number().int().optional(),
   "page_size": zod.coerce.number().int().optional(),

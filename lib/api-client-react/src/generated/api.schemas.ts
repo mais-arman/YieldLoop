@@ -5,42 +5,115 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface InventoryInput {
-  job_id: number;
-  source_entry_id: number;
-  request_id: string;
-  /**
-     * @minLength 1
-     * @maxLength 1000
-     */
-  reason: string;
+export interface ReportMeasures {
+  issued: string;
+  good: string;
+  scrap: string;
+  offcut: string;
+  accounted: string;
+  variance: string;
+  /** @nullable */
+  yield_rate: string | null;
+  /** @nullable */
+  scrap_rate: string | null;
+  /** @nullable */
+  offcut_rate: string | null;
 }
 
-export interface InventoryVoidInput {
+export type ReportSnapshot = ReportMeasures & {
+  id: number;
   revision: number;
-  request_id: string;
-  /**
-     * @minLength 1
-     * @maxLength 1000
-     */
-  reason: string;
-}
+  created_at: string;
+  material_id: number;
+  material_name: string;
+  specification: string;
+};
 
-export type InventoryEventAction = typeof InventoryEventAction[keyof typeof InventoryEventAction];
+export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
 
 
-export const InventoryEventAction = {
-  addition: 'addition',
-  void: 'void',
+export const JobStatus = {
+  draft: 'draft',
+  open: 'open',
+  cancelled: 'cancelled',
 } as const;
 
-export interface InventoryEvent {
+export interface ReportJob {
   id: number;
-  action: InventoryEventAction;
-  actor: string;
-  reason: string;
+  job_number: string;
+  title: string;
+  status: JobStatus;
   created_at: string;
+  reconciliation: ReportSnapshot | null;
 }
+
+export interface ReportJobPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: ReportJob[];
+}
+
+export interface ReportInventoryState {
+  count: number;
+  /** @nullable */
+  original_quantity: string | null;
+  /** @nullable */
+  remaining: string | null;
+}
+
+export type ReportOverviewDateBasis = typeof ReportOverviewDateBasis[keyof typeof ReportOverviewDateBasis];
+
+
+export const ReportOverviewDateBasis = {
+  job_created_at: 'job_created_at',
+} as const;
+
+export type ReportOverviewTimezone = typeof ReportOverviewTimezone[keyof typeof ReportOverviewTimezone];
+
+
+export const ReportOverviewTimezone = {
+  UTC: 'UTC',
+  'Asia/Jerusalem': 'Asia/Jerusalem',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ReportOverviewMaterial = {
+  id: number;
+  name: string;
+  specification: string;
+} | null;
+
+export type ReportOverviewUnit = typeof ReportOverviewUnit[keyof typeof ReportOverviewUnit];
+
+
+export const ReportOverviewUnit = {
+  kg: 'kg',
+} as const;
+
+export type ReportOverviewJobCounts = {
+  draft: number;
+  open: number;
+  cancelled: number;
+};
+
+/**
+ * @nullable
+ */
+export type ReportOverviewQuantityUnavailableReason = typeof ReportOverviewQuantityUnavailableReason[keyof typeof ReportOverviewQuantityUnavailableReason] | null;
+
+
+export const ReportOverviewQuantityUnavailableReason = {
+  select_material: 'select_material',
+} as const;
+
+export type ReportOverviewInventory = {
+  available: ReportInventoryState;
+  voided: ReportInventoryState;
+};
 
 export type InventoryLotUnit = typeof InventoryLotUnit[keyof typeof InventoryLotUnit];
 
@@ -71,20 +144,27 @@ export const InventoryLotReuseBlockedReason = {
   policy_not_defined: 'policy_not_defined',
 } as const;
 
+export type InventoryEventAction = typeof InventoryEventAction[keyof typeof InventoryEventAction];
+
+
+export const InventoryEventAction = {
+  addition: 'addition',
+  void: 'void',
+} as const;
+
+export interface InventoryEvent {
+  id: number;
+  action: InventoryEventAction;
+  actor: string;
+  reason: string;
+  created_at: string;
+}
+
 export type InventoryLotPermissions = {
   void: boolean;
   reserve: boolean;
   consume: boolean;
 };
-
-export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
-
-
-export const JobStatus = {
-  draft: 'draft',
-  open: 'open',
-  cancelled: 'cancelled',
-} as const;
 
 export interface InventoryLot {
   id: number;
@@ -115,6 +195,51 @@ export interface InventoryPage {
   page_size: number;
   total_pages: number;
   results: InventoryLot[];
+}
+
+export interface ReportOverview {
+  generated_at: string;
+  date_basis: ReportOverviewDateBasis;
+  timezone: ReportOverviewTimezone;
+  /** @nullable */
+  start_date: string | null;
+  /** @nullable */
+  end_date: string | null;
+  status: JobStatus | null;
+  /** @nullable */
+  material: ReportOverviewMaterial;
+  unit: ReportOverviewUnit;
+  job_counts: ReportOverviewJobCounts;
+  job_count: number;
+  measured_jobs: number;
+  unmeasured_jobs: number;
+  production: ReportMeasures | null;
+  /** @nullable */
+  quantity_unavailable_reason: ReportOverviewQuantityUnavailableReason;
+  inventory: ReportOverviewInventory;
+  jobs: ReportJobPage;
+  lots: InventoryPage;
+}
+
+export interface InventoryInput {
+  job_id: number;
+  source_entry_id: number;
+  request_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export interface InventoryVoidInput {
+  revision: number;
+  request_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
 }
 
 export type MaterialInputUnit = typeof MaterialInputUnit[keyof typeof MaterialInputUnit];
@@ -395,6 +520,25 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetReportOverviewParams = {
+start_date?: string;
+end_date?: string;
+timezone?: GetReportOverviewTimezone;
+status?: JobStatus;
+material_id?: number;
+job_page?: number;
+lot_page?: number;
+page_size?: number;
+};
+
+export type GetReportOverviewTimezone = typeof GetReportOverviewTimezone[keyof typeof GetReportOverviewTimezone];
+
+
+export const GetReportOverviewTimezone = {
+  UTC: 'UTC',
+  'Asia/Jerusalem': 'Asia/Jerusalem',
+} as const;
 
 export type ListInventoryParams = {
 page?: number;

@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { ArrowRight, ClipboardList, KeyRound, ShieldCheck, Users } from 'lucide-react';
+import { ArrowRight, BarChart3, ClipboardList, KeyRound, ShieldCheck, Users } from 'lucide-react';
 import type { Employee } from '@/lib/auth';
 import { useI18n, type MsgKey } from '@/lib/i18n';
 import { displayName, initials, ROLES } from '@/lib/session';
@@ -72,6 +72,10 @@ export default function HomePage({ user }: { user: Employee }) {
       </div>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link href="/dashboard" data-testid="link-dashboard" className="group flex flex-1 items-center justify-between gap-3 rounded-lg border bg-card px-5 py-4 text-sm font-medium transition-colors hover:border-primary/40">
+          <span className="flex items-center gap-3"><BarChart3 className="h-4 w-4 text-primary" aria-hidden />{t('navDashboard')}</span>
+          <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" aria-hidden />
+        </Link>
         <Link href="/jobs" data-testid="link-jobs" className="group flex flex-1 items-center justify-between gap-3 rounded-lg border bg-card px-5 py-4 text-sm font-medium transition-colors hover:border-primary/40">
           <span className="flex items-center gap-3"><ClipboardList className="h-4 w-4 text-primary" aria-hidden />{t('openJobs')}</span>
           <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" aria-hidden />

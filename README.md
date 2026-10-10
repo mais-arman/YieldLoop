@@ -1,6 +1,7 @@
 # YieldLoop
 
-**Current status: Phase 5 offcut inventory foundation is active in verified development.**
+**Current status: Phase 6 operational dashboard and reports are implemented.**
+See [Phase 6 metric definitions, permissions and verification](docs/phase-6.md).
 See [Phase 5 inventory scope and policy limits](docs/phase-5.md). Reuse remains blocked.
 See [Phase 4 accounting, corrections and policy limits](docs/phase-4.md).
 See [Phase 3 implementation and permissions](docs/phase-3.md) for the job
