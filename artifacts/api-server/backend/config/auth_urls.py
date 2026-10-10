@@ -1,11 +1,16 @@
 from accounts import views
 from django.urls import path
+from inventory.views import BlockedReuse, InventoryDetail, InventoryView, InventoryVoid
 from jobs.views import JobsView, JobView
 from materials.views import EntriesView, JobMaterialsView, MaterialsView, VoidView
 
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
+    path("api/v1/inventory", InventoryView.as_view()),
+    path("api/v1/inventory/<int:pk>", InventoryDetail.as_view()),
+    path("api/v1/inventory/<int:pk>/void", InventoryVoid.as_view()),
+    path("api/v1/inventory/<int:pk>/<str:action>", BlockedReuse.as_view()),
     *health_patterns,
     path("api/v1/jobs", JobsView.as_view()),
     path("api/v1/jobs/<int:pk>", JobView.as_view()),

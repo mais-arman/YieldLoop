@@ -6,7 +6,7 @@ type T = (k: MsgKey, v?: Record<string, string | number>) => string;
 
 const MAT_CODES = new Set([
   'issue_required', 'material_mismatch', 'unit_mismatch', 'stale_revision', 'job_not_open',
-  'material_conflict', 'duplicate_record', 'already_voided', 'material_record_conflict',
+  'material_conflict', 'duplicate_record', 'already_voided', 'material_record_conflict', 'inventory_active',
 ]);
 const FIELDS = new Set(['quantity', 'note', 'kind', 'material_id', 'reason', 'name', 'specification', 'unit', 'revision', 'job_revision', 'non_field_errors']);
 const FE = new Set(['required', 'blank', 'max_length', 'invalid_choice', 'invalid', 'unknown_field']);
@@ -46,3 +46,10 @@ export function matFieldErrors(err: unknown, t: T): Record<string, string> {
 export const isConflict = (e: unknown) => e instanceof AuthError && e.status === 409;
 export const isUncertain = (e: unknown) => !!e && !(e instanceof AuthError);
 export const newRequestId = () => crypto.randomUUID();
+
+const INV_CODES = new Set(['inventory_conflict', 'already_registered', 'invalid_offcut_source', 'job_not_open', 'stale_revision', 'reuse_policy_required', 'inventory_active']);
+export function invErrorMessage(err: unknown, t: T): string {
+  if (err instanceof AuthError && INV_CODES.has(err.code)) return t(`inv_err_${err.code}` as MsgKey);
+  if (!(err instanceof AuthError)) return t('err_network');
+  return jobErrorMessage(err, t);
+}

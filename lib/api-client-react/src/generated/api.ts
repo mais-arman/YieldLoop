@@ -25,9 +25,14 @@ import type {
   Employee,
   GetJobMaterialsParams,
   HealthStatus,
+  InventoryInput,
+  InventoryLot,
+  InventoryPage,
+  InventoryVoidInput,
   JobInput,
   JobPage,
   JobUpdate,
+  ListInventoryParams,
   ListMaterialsParams,
   ListProductionJobsParams,
   Material,
@@ -71,6 +76,390 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListInventoryUrl = (params?: ListInventoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/inventory?${stringifiedParams}` : `/api/v1/inventory`
+}
+
+export const listInventory = async (params?: ListInventoryParams, options?: Parameters<typeof customFetch>[1]): Promise<InventoryPage> => {
+
+  return customFetch<InventoryPage>(getListInventoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInventoryQueryKey = (params?: ListInventoryParams,) => {
+    return [
+    `/api/v1/inventory`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListInventoryQueryOptions = <TData = Awaited<ReturnType<typeof listInventory>>, TError = ErrorType<unknown>>(params?: ListInventoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventory>>> = ({ signal }) => listInventory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInventoryQueryResult = NonNullable<Awaited<ReturnType<typeof listInventory>>>
+export type ListInventoryQueryError = ErrorType<unknown>
+
+
+
+export function useListInventory<TData = Awaited<ReturnType<typeof listInventory>>, TError = ErrorType<unknown>>(
+ params?: ListInventoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInventoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRegisterOffcutUrl = () => {
+
+
+
+
+  return `/api/v1/inventory`
+}
+
+export const registerOffcut = async (inventoryInput: InventoryInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryLot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryLot>(getRegisterOffcutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventoryInput)
+  }
+);}
+
+
+
+
+
+export const getRegisterOffcutMutationKey = () => ['registerOffcut'] as const;
+
+export const getRegisterOffcutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerOffcut>>, TError,RegisterOffcutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerOffcut>>, TError,RegisterOffcutMutationVariables, TContext> => {
+
+const mutationKey = getRegisterOffcutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerOffcut>>, RegisterOffcutMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerOffcut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterOffcutMutationResult = NonNullable<Awaited<ReturnType<typeof registerOffcut>>>
+    export type RegisterOffcutMutationBody = BodyType<InventoryInput>
+    export type RegisterOffcutMutationError = ErrorType<unknown>
+    export type RegisterOffcutMutationVariables = {data: BodyType<InventoryInput>}
+
+    export const useRegisterOffcut = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerOffcut>>, TError,RegisterOffcutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerOffcut>>,
+        TError,
+        RegisterOffcutMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRegisterOffcutMutationOptions(options));
+    }
+
+export const getGetInventoryLotUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/inventory/${id}`
+}
+
+export const getInventoryLot = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<InventoryLot> => {
+
+  return customFetch<InventoryLot>(getGetInventoryLotUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInventoryLotQueryKey = (id: number,) => {
+    return [
+    `/api/v1/inventory/${id}`
+    ] as const;
+    }
+
+
+export const getGetInventoryLotQueryOptions = <TData = Awaited<ReturnType<typeof getInventoryLot>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInventoryLot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInventoryLotQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInventoryLot>>> = ({ signal }) => getInventoryLot(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInventoryLot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInventoryLotQueryResult = NonNullable<Awaited<ReturnType<typeof getInventoryLot>>>
+export type GetInventoryLotQueryError = ErrorType<unknown>
+
+
+
+export function useGetInventoryLot<TData = Awaited<ReturnType<typeof getInventoryLot>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInventoryLot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInventoryLotQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getVoidInventoryLotUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/inventory/${id}/void`
+}
+
+export const voidInventoryLot = async (id: number,
+    inventoryVoidInput: InventoryVoidInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryLot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryLot>(getVoidInventoryLotUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventoryVoidInput)
+  }
+);}
+
+
+
+
+
+export const getVoidInventoryLotMutationKey = () => ['voidInventoryLot'] as const;
+
+export const getVoidInventoryLotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidInventoryLot>>, TError,VoidInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voidInventoryLot>>, TError,VoidInventoryLotMutationVariables, TContext> => {
+
+const mutationKey = getVoidInventoryLotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voidInventoryLot>>, VoidInventoryLotMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  voidInventoryLot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoidInventoryLotMutationResult = NonNullable<Awaited<ReturnType<typeof voidInventoryLot>>>
+    export type VoidInventoryLotMutationBody = BodyType<InventoryVoidInput>
+    export type VoidInventoryLotMutationError = ErrorType<unknown>
+    export type VoidInventoryLotMutationVariables = {id: number;data: BodyType<InventoryVoidInput>}
+
+    export const useVoidInventoryLot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidInventoryLot>>, TError,VoidInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voidInventoryLot>>,
+        TError,
+        VoidInventoryLotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVoidInventoryLotMutationOptions(options));
+    }
+
+export const getBlockedInventoryReuseUrl = (id: number,
+    action: 'reserve' | 'release' | 'consume',) => {
+
+
+
+
+  return `/api/v1/inventory/${id}/${action}`
+}
+
+export const blockedInventoryReuse = async (id: number,
+    action: 'reserve' | 'release' | 'consume', options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getBlockedInventoryReuseUrl(id,action),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBlockedInventoryReuseMutationKey = () => ['blockedInventoryReuse'] as const;
+
+export const getBlockedInventoryReuseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof blockedInventoryReuse>>, TError,BlockedInventoryReuseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof blockedInventoryReuse>>, TError,BlockedInventoryReuseMutationVariables, TContext> => {
+
+const mutationKey = getBlockedInventoryReuseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof blockedInventoryReuse>>, BlockedInventoryReuseMutationVariables> = (props) => {
+          const {id,action} = props ?? {};
+
+          return  blockedInventoryReuse(id,action,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BlockedInventoryReuseMutationResult = NonNullable<Awaited<ReturnType<typeof blockedInventoryReuse>>>
+
+    export type BlockedInventoryReuseMutationError = ErrorType<void>
+    export type BlockedInventoryReuseMutationVariables = {id: number;action: 'reserve' | 'release' | 'consume'}
+
+    export const useBlockedInventoryReuse = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof blockedInventoryReuse>>, TError,BlockedInventoryReuseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof blockedInventoryReuse>>,
+        TError,
+        BlockedInventoryReuseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getBlockedInventoryReuseMutationOptions(options));
+    }
 
 export const getListMaterialsUrl = (params?: ListMaterialsParams,) => {
   const normalizedParams = new URLSearchParams();

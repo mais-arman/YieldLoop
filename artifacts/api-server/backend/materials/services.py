@@ -114,6 +114,11 @@ def mutate(request, pk, values, entry_id=None):
                     raise NotFound() from None
                 if MaterialVoid.objects.filter(entry=entry).exists():
                     raise Conflict(code="already_voided")
+                # Preserve inventory provenance: explicitly void the inventory lot first.
+                from inventory.models import InventoryEvent, OffcutLot
+                lot = OffcutLot.objects.filter(source=entry).first()
+                if lot and not InventoryEvent.objects.filter(lot=lot, action="void").exists():
+                    raise Conflict(code="inventory_active")
                 MaterialVoid.objects.create(entry=entry, reason=values["reason"], created_by=actor)
                 material = entry.material
             inputs = MaterialEntry.objects.filter(job=job, void__isnull=True)

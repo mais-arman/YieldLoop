@@ -11,6 +11,69 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/inventory:
+    get:
+      operationId: listInventory
+      parameters:
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: page_size, in: query, schema: {type: integer}}
+        - {name: search, in: query, schema: {type: string}}
+        - {name: state, in: query, schema: {type: string, enum: [available, voided]}}
+        - {name: job_id, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          description: Role scoped inventory
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryPage"}
+    post:
+      operationId: registerOffcut
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/InventoryInput"}
+      responses:
+        "201":
+          description: Registered whole output
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryLot"}
+  /v1/inventory/{id}:
+    get:
+      operationId: getInventoryLot
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Lot and bounded append only history
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryLot"}
+  /v1/inventory/{id}/void:
+    post:
+      operationId: voidInventoryLot
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/InventoryVoidInput"}
+      responses:
+        "200":
+          description: Voided without changing reconciliation
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryLot"}
+  /v1/inventory/{id}/{action}:
+    post:
+      operationId: blockedInventoryReuse
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: action, in: path, required: true, schema: {type: string, enum: [reserve, release, consume]}}
+      responses:
+        "409": {description: Reuse policy required; no mutation allowed}
   /v1/materials:
     get:
       operationId: listMaterials
@@ -338,6 +401,71 @@ components:
   securitySchemes:
     sessionCookie: {type: apiKey, in: cookie, name: yieldloop_session}
   schemas:
+    InventoryInput:
+      type: object
+      additionalProperties: false
+      required: [job_id, source_entry_id, request_id, reason]
+      properties:
+        job_id: {type: integer}
+        source_entry_id: {type: integer}
+        request_id: {type: string, format: uuid}
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    InventoryVoidInput:
+      type: object
+      additionalProperties: false
+      required: [revision, request_id, reason]
+      properties:
+        revision: {type: integer}
+        request_id: {type: string, format: uuid}
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    InventoryEvent:
+      type: object
+      required: [id, action, actor, reason, created_at]
+      properties:
+        id: {type: integer}
+        action: {type: string, enum: [addition, void]}
+        actor: {type: string}
+        reason: {type: string}
+        created_at: {type: string, format: date-time}
+    InventoryLot:
+      type: object
+      required: [id, source_job_id, source_job_number, source_entry_id, reconciliation_id, material_id, material_name, specification, quantity, remaining, unit, state, revision, source_status, source_voided, compatibility, reuse_blocked_reason, created_at, permissions]
+      properties:
+        id: {type: integer}
+        source_job_id: {type: integer}
+        source_job_number: {type: string}
+        source_entry_id: {type: integer}
+        reconciliation_id: {type: integer}
+        material_id: {type: integer}
+        material_name: {type: string}
+        specification: {type: string}
+        quantity: {type: string}
+        remaining: {type: string}
+        unit: {type: string, enum: [kg]}
+        state: {type: string, enum: [available, voided]}
+        revision: {type: integer}
+        source_status: {$ref: "#/components/schemas/JobStatus"}
+        source_voided: {type: boolean}
+        compatibility: {type: string, enum: [unverified]}
+        reuse_blocked_reason: {type: string, enum: [policy_not_defined]}
+        created_at: {type: string, format: date-time}
+        permissions:
+          type: object
+          required: [void, reserve, consume]
+          properties:
+            void: {type: boolean}
+            reserve: {type: boolean}
+            consume: {type: boolean}
+        history: {type: array, items: {$ref: "#/components/schemas/InventoryEvent"}}
+    InventoryPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/InventoryLot"}}
     MaterialInput:
       type: object
       additionalProperties: false

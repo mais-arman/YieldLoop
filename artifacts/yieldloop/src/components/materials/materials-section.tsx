@@ -22,6 +22,7 @@ import {
 import { useI18n, type MsgKey } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { MaterialPicker } from './material-picker';
+import { RegisterOffcutDialog } from './register-offcut-dialog';
 import { isConflict, isUncertain, isZero, matErrorMessage, matFieldErrors, newRequestId, quantityError, signed } from './mat-utils';
 
 type Kind = MaterialEntryInput['kind'];
@@ -48,6 +49,7 @@ export function MaterialsSection({ job }: { job: ProductionJob }) {
   const q = useJobMaterials(job.id, page);
   const [formOpen, setFormOpen] = useState(false);
   const [voiding, setVoiding] = useState<MaterialEntry | null>(null);
+  const [registering, setRegistering] = useState<MaterialEntry | null>(null);
 
   // Job status/revision changed elsewhere: re-read material state (form inputs are preserved separately).
   const firstJobRev = useRef(true);
@@ -94,12 +96,15 @@ export function MaterialsSection({ job }: { job: ProductionJob }) {
               {job.status === 'cancelled' ? t('matReadOnlyCancelled') : job.status === 'draft' ? t('matReadOnlyDraft') : t('matReadOnlyOpen')}
             </p>
           )}
-          <Entries s={s} canVoid={s.permissions.record && !formOpen} onVoid={setVoiding} page={page} setPage={setPage} busy={q.isFetching || formOpen || !!voiding} />
+          <Entries s={s} canVoid={s.permissions.record && !formOpen} onVoid={setVoiding} canRegister={s.permissions.record && job.status === 'open' && !formOpen} onRegister={setRegistering} page={page} setPage={setPage} busy={q.isFetching || formOpen || !!voiding || !!registering} />
         </div>
       ) : null}
 
       {voiding && s && (
         <VoidDialog entry={voiding} state={s} jobId={job.id} refetch={refetch} onClose={() => setVoiding(null)} />
+      )}
+      {registering && (
+        <RegisterOffcutDialog entry={registering} jobId={job.id} onClose={() => setRegistering(null)} />
       )}
     </section>
   );
@@ -330,7 +335,7 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
   );
 }
 
-function Entries({ s, canVoid, onVoid, page, setPage, busy }: { s: MaterialState; canVoid: boolean; onVoid: (e: MaterialEntry) => void; page: number; setPage: (p: number) => void; busy: boolean }) {
+function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, busy }: { s: MaterialState; canVoid: boolean; onVoid: (e: MaterialEntry) => void; canRegister: boolean; onRegister: (e: MaterialEntry) => void; page: number; setPage: (p: number) => void; busy: boolean }) {
   const { t } = useI18n();
   const fmt = useFormatDate();
   const e = s.entries;
@@ -363,8 +368,15 @@ function Entries({ s, canVoid, onVoid, page, setPage, busy }: { s: MaterialState
                     </div>
                   )}
                 </div>
-                {canVoid && !v && (
+                {(canVoid || canRegister) && !v && (
+                <div className="flex flex-wrap gap-1 self-start">
+                {canRegister && en.kind === 'offcut' && (
+                  <Button variant="outline" size="sm" onClick={() => onRegister(en)} disabled={busy} data-testid={`button-register-${en.id}`}>{t('invRegister')}</Button>
+                )}
+                {canVoid && (
                   <Button variant="ghost" size="sm" className="self-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => onVoid(en)} data-testid={`button-void-${en.id}`}>{t('matVoid')}</Button>
+                )}
+                </div>
                 )}
               </li>
             );

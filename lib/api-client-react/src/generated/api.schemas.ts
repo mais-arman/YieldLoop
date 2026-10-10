@@ -5,6 +5,118 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface InventoryInput {
+  job_id: number;
+  source_entry_id: number;
+  request_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export interface InventoryVoidInput {
+  revision: number;
+  request_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export type InventoryEventAction = typeof InventoryEventAction[keyof typeof InventoryEventAction];
+
+
+export const InventoryEventAction = {
+  addition: 'addition',
+  void: 'void',
+} as const;
+
+export interface InventoryEvent {
+  id: number;
+  action: InventoryEventAction;
+  actor: string;
+  reason: string;
+  created_at: string;
+}
+
+export type InventoryLotUnit = typeof InventoryLotUnit[keyof typeof InventoryLotUnit];
+
+
+export const InventoryLotUnit = {
+  kg: 'kg',
+} as const;
+
+export type InventoryLotState = typeof InventoryLotState[keyof typeof InventoryLotState];
+
+
+export const InventoryLotState = {
+  available: 'available',
+  voided: 'voided',
+} as const;
+
+export type InventoryLotCompatibility = typeof InventoryLotCompatibility[keyof typeof InventoryLotCompatibility];
+
+
+export const InventoryLotCompatibility = {
+  unverified: 'unverified',
+} as const;
+
+export type InventoryLotReuseBlockedReason = typeof InventoryLotReuseBlockedReason[keyof typeof InventoryLotReuseBlockedReason];
+
+
+export const InventoryLotReuseBlockedReason = {
+  policy_not_defined: 'policy_not_defined',
+} as const;
+
+export type InventoryLotPermissions = {
+  void: boolean;
+  reserve: boolean;
+  consume: boolean;
+};
+
+export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
+
+
+export const JobStatus = {
+  draft: 'draft',
+  open: 'open',
+  cancelled: 'cancelled',
+} as const;
+
+export interface InventoryLot {
+  id: number;
+  source_job_id: number;
+  source_job_number: string;
+  source_entry_id: number;
+  reconciliation_id: number;
+  material_id: number;
+  material_name: string;
+  specification: string;
+  quantity: string;
+  remaining: string;
+  unit: InventoryLotUnit;
+  state: InventoryLotState;
+  revision: number;
+  source_status: JobStatus;
+  source_voided: boolean;
+  compatibility: InventoryLotCompatibility;
+  reuse_blocked_reason: InventoryLotReuseBlockedReason;
+  created_at: string;
+  permissions: InventoryLotPermissions;
+  history?: InventoryEvent[];
+}
+
+export interface InventoryPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: InventoryLot[];
+}
+
 export type MaterialInputUnit = typeof MaterialInputUnit[keyof typeof MaterialInputUnit];
 
 
@@ -184,15 +296,6 @@ export interface MaterialState {
   entries: MaterialStateEntries;
 }
 
-export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
-
-
-export const JobStatus = {
-  draft: 'draft',
-  open: 'open',
-  cancelled: 'cancelled',
-} as const;
-
 export interface JobInput {
   /**
      * @minLength 1
@@ -292,6 +395,22 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListInventoryParams = {
+page?: number;
+page_size?: number;
+search?: string;
+state?: ListInventoryState;
+job_id?: number;
+};
+
+export type ListInventoryState = typeof ListInventoryState[keyof typeof ListInventoryState];
+
+
+export const ListInventoryState = {
+  available: 'available',
+  voided: 'voided',
+} as const;
 
 export type ListMaterialsParams = {
 /**
