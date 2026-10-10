@@ -1,4 +1,5 @@
 #!/bin/bash
 set -e
 pnpm install --frozen-lockfile
-pnpm --filter db push
+# Phase 1 explicitly prohibits migrations and schema pushes.
+uv sync --frozen

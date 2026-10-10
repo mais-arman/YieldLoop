@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
-    "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs",
+    "dev": "sh ./run.sh",
+    "build": "cd ../.. && uv sync --frozen && uv run --frozen python artifacts/api-server/backend/manage.py check",
+    "start": "sh ./run.sh",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

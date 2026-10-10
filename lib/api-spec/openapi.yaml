@@ -11,6 +11,24 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/health/ready:
+    get:
+      operationId: databaseReadiness
+      tags: [health]
+      summary: Check actual PostgreSQL connectivity
+      responses:
+        "200":
+          description: PostgreSQL query succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+        "503":
+          description: PostgreSQL is unavailable or unconfigured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +44,16 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    ReadinessStatus:
+      type: object
+      required: [status, database]
+      properties:
+        status:
+          type: string
+          enum: [ready, unavailable]
+        database:
+          type: string
+          enum: [connected, unavailable]
     HealthStatus:
       type: object
       properties:

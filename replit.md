@@ -1,44 +1,58 @@
-# [Project name]
+# YieldLoop
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Material Yield & Production Intelligence Platform. Currently Phase 1 only:
+a bilingual foundation status screen and schema-independent Django health API.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — Django/Gunicorn API, workflow supplies PORT
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- Do not run database migrations or Drizzle schema pushes in Phase 1.
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
+- Frontend: React, Vite, Tailwind and shadcn/ui
+- API: Python 3.12, Django 5.2, Django REST Framework, Gunicorn
+- DB: PostgreSQL through Django/psycopg, read-only connectivity checks in Phase 1
 - API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Python dependencies: pyproject.toml and uv.lock
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/yieldloop/` — frontend
+- `artifacts/api-server/backend/` — Django configuration, health views and tests
+- `lib/api-spec/openapi.yaml` — shared API contract
+- `infra/` — statically checked Docker configurations, not a verified deployment
+- `README.md` — setup, verification, environment and limitations
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Keep the supplied pnpm/artifact routing rather than restructuring the workspace.
+- Preserve unused Express/Drizzle scaffold files, but do not build new backend work on them.
+- Django owns future domain rules and persistence. No Node backend substitution.
+- A missing development database must not prevent API liveness; readiness returns 503.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Separate real API liveness and database readiness; manual retry; English/Arabic LTR/RTL.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Stop after Phase 1 for review. No authentication, organizations, jobs, inventory,
+  reconciliation, dashboards, cutting optimization, fabricated factory data, or migrations.
+- Follow the YieldLoop domain, design-system, and engineering-quality skills.
+- Ibn Khaldoun Printing and Publishing is the intended initial operator; keep the product
+  configurable for other organizations rather than hardcoding factory-specific rules.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Root README describes production configuration gates. Do not publish as production-ready.
+- The connection is intentionally read-only in Phase 1.
+- Never commit credentials or log database exception details.
 
 ## Pointers
 

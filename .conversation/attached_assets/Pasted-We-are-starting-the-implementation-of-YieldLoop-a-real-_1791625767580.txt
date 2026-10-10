@@ -1,0 +1,59 @@
+We are starting the implementation of YieldLoop, a real, data-backed Material Yield & Production Intelligence Platform intended for operational use at Ibn Khaldoun Printing and Publishing, with a configurable architecture that can later support other manufacturing organizations.
+
+Before writing or modifying any application code, perform a thorough project audit and produce an implementation plan.
+
+SKILLS
+Follow these project skills:
+
+* yieldloop-engineering-quality
+* yieldloop-domain
+
+PROJECT REQUIREMENTS
+
+* Frontend: React + TypeScript + Vite.
+* UI: Tailwind CSS + shadcn/ui.
+* Backend: Python + Django + Django REST Framework.
+* Database: PostgreSQL.
+* Authentication: JWT.
+* Deployment: environment-based configuration and Docker-compatible setup.
+* Architecture: modular monolith with REST APIs.
+* Product requirements and material-accounting rules must follow the yieldloop-domain skill.
+* UI requirements must follow yieldloop-design-system when frontend work begins.
+* Cutting Studio and optimization must follow yieldloop-cutting-studio when that phase begins.
+
+TASKS
+
+1. Inspect the existing repository, directory structure, files, installed dependencies, scripts, configuration, and any existing implementation.
+2. Identify whether this is an empty project, a partially initialized project, or an existing application.
+3. Check the current Replit environment and identify any practical constraints that affect the proposed stack, database, or deployment. Do not assume a dependency, service, or database is available without checking.
+4. Recommend a clean frontend/backend directory structure appropriate for this project. Explain the responsibility of each major directory.
+5. Propose the initial database and API architecture at a high level. Do not implement models or endpoints yet.
+6. Identify how PostgreSQL will be configured safely through environment variables. Do not create or expose real secrets.
+7. Define an incremental implementation roadmap. The first implementation phase should establish the smallest working foundation, not implement the whole product.
+8. Identify major technical risks and dependencies, including organization data isolation, authentication, material reconciliation, automated testing, and the later cutting optimization engine.
+9. Explain which decisions can be made now and which require clarification or real factory data.
+10. Verify whether the four YieldLoop skills are available to the Agent and identify any missing or inaccessible skill.
+
+STRICT RULES
+
+* Do not create, edit, delete, rename, or overwrite project files in this step.
+* Do not install packages or run migrations.
+* Do not generate application code.
+* Do not replace the existing project structure.
+* Do not implement mock features or invent factory data.
+* Do not claim that a technology, database, integration, or deployment is working unless you verified it.
+* If the agreed stack is incompatible with the current environment, explain the exact limitation and propose the smallest viable adjustment for review. Do not silently change the stack.
+* Keep the report specific to the inspected repository, not a generic architecture essay.
+
+EXPECTED RESPONSE
+Return:
+A. Current repository status.
+B. Available runtime, package manager, database, and relevant environment constraints.
+C. Recommended directory structure and responsibilities.
+D. High-level architecture and key security considerations.
+E. Ordered implementation roadmap with dependencies.
+F. Risks, assumptions, and decisions requiring approval.
+G. Confirmation of which project skills are accessible.
+H. The exact scope of the next implementation prompt.
+
+Stop after presenting the report and wait for my approval before changing any files.

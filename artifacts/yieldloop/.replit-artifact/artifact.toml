@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "YieldLoop"
+description = "YieldLoop Phase 1 foundation: bilingual API connectivity and PostgreSQL readiness status."
+version = "1.0.0"
+id = "artifacts/yieldloop"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22517
+
+[services.development]
+run = "pnpm --filter @workspace/yieldloop run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/yieldloop", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/yieldloop/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22517"
+BASE_PATH = "/"
