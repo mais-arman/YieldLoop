@@ -1,7 +1,7 @@
 # YieldLoop
 
-Material Yield & Production Intelligence Platform. Phase 3 provides persisted
-Production Jobs alongside Django sessions, employee roles, and the original
+Material Yield & Production Intelligence Platform. Phase 4 adds persisted material
+recording and reconciliation to Production Jobs, Django sessions, employee roles, and the original
 bilingual health screen/API, all in verified development.
 
 ## Run & Operate
@@ -43,9 +43,10 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 
 ## User preferences
 
-- Phase 3 Production Jobs and their migrations are approved only for the
-  positively identified development database. Stop at Phase 3; no materials,
-  yield/scrap, dashboards, reports, cutting optimization, AI, or publishing.
+- Phase 4 material recording/reconciliation and migrations are approved only for
+  the positively identified development database. Stop at Phase 4; no inventory
+  transactions, dashboards, reports, cutting optimization, AI, or publishing.
+  See docs/phase-4.md for conservative accounting scope and unresolved policies.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
 - Follow the YieldLoop domain, design-system, and engineering-quality skills.

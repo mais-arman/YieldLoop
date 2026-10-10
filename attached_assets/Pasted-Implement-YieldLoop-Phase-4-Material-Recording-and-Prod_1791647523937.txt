@@ -1,0 +1,62 @@
+Implement YieldLoop Phase 4: Material Recording and Production Reconciliation.
+
+Continue from the existing working application. Before coding, inspect the current Production Jobs implementation, authentication and role permissions, audit logging, database models, and all four YieldLoop skills. Reuse the existing architecture and UI; do not rebuild completed features.
+
+### Objective
+
+Allow authorized factory employees to record actual material issued to a production job and account for its resulting outputs. Persist all records in PostgreSQL and calculate reconciliation results on the backend.
+
+### 1. Domain model
+
+Introduce the minimum models needed for:
+- Material definitions, including material name, type/specification, and supported unit.
+- Material issues linked to a production job, recording the actual issued quantity.
+- Job output records classified into good output, scrap, reusable offcuts, and rework only where the accounting rules have been explicitly defined.
+
+Keep planned quantities separate from actual measurements. Use Decimal fields, documented precision, positive-quantity validation, and explicit compatible units. Do not use floating-point arithmetic for accounting.
+
+Do not assume all materials are interchangeable or that different units can be added together. A reconciliation must reject incompatible units.
+
+### 2. Accounting rules
+
+Implement and test the following general equation for compatible quantities measured in the same unit:
+
+Accounted quantity = Good output + Scrap + Reusable offcuts + Other explicitly approved accounted categories.
+
+Variance = Actual material issued − Accounted quantity.
+
+Display and persist the calculation inputs and result. Define scrap rate and yield only after their denominators and measurement units are clearly documented. Handle zero denominators safely.
+
+Do not silently treat unexplained variance as scrap. Do not mark a job Completed in this phase unless the required reconciliation policy and authorized completion workflow are implemented and tested.
+
+If the existing requirements do not define how rework, multiple material inputs, or measurement units should be reconciled, document the unresolved rule and implement only a safe, clearly scoped model rather than inventing factory policy.
+
+### 3. Permissions and workflow
+
+- Manager: full authorized oversight and correction according to explicit workflow rules.
+- Production Supervisor: record and manage operational material/output records.
+- Cutting Operator: access only the operational records and actions necessary for assigned or permitted open jobs; do not grant manager-only capabilities.
+- Enforce all permissions in the backend. Never trust a client-supplied creator, role, job ownership, or reconciliation result.
+- Prevent silent overwrites of finalized records. Use transactions, audit events, and stale-edit protection where appropriate.
+
+Preserve the existing job lifecycle and Phase 3 behavior unless a required, reviewed integration is necessary.
+
+### 4. Frontend
+
+Add a clean Materials and Reconciliation section to job details. Provide accessible forms, clear units, contextual validation messages, loading/error/empty/success states, and a readable reconciliation summary. Maintain the existing responsive design and Arabic/English RTL/LTR support.
+
+Do not overload the dashboard or add decorative charts before the underlying calculations are validated.
+
+### 5. Tests and safety
+
+Add tests for arithmetic, decimal precision, unit compatibility, zero denominators, invalid quantities, duplicate or conflicting records, permissions for all three roles, cross-job references, transaction rollback, audit events, and stale edits.
+
+Use the verified isolated PostgreSQL test database for integration tests. Apply new migrations only to the verified development database using the established database-target/write guard. Never weaken the guard, use production data, run migrations automatically at startup, or change the authentication architecture.
+
+Run backend tests and lint, migration-drift checks, frontend typecheck/lint/build, and browser verification where supported. Verify existing login, job management, and health checks still work.
+
+### Scope limits
+
+Do not implement offcut inventory transactions, dashboards, reporting exports, cutting optimization, AI, voice features, email invitations, or deployment in this phase.
+
+Finish with a report of implemented functionality, migrations and their target, tested accounting rules, permission coverage, verification results, and unresolved factory-policy decisions. Stop at Phase 4.

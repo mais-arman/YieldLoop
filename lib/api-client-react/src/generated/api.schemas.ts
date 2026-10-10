@@ -5,6 +5,185 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MaterialInputUnit = typeof MaterialInputUnit[keyof typeof MaterialInputUnit];
+
+
+export const MaterialInputUnit = {
+  kg: 'kg',
+} as const;
+
+export interface MaterialInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  specification: string;
+  unit: MaterialInputUnit;
+}
+
+export type MaterialUnit = typeof MaterialUnit[keyof typeof MaterialUnit];
+
+
+export const MaterialUnit = {
+  kg: 'kg',
+} as const;
+
+export interface Material {
+  id: number;
+  name: string;
+  specification: string;
+  unit: MaterialUnit;
+  created_at: string;
+}
+
+export interface MaterialPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: Material[];
+}
+
+export type MaterialEntryInputKind = typeof MaterialEntryInputKind[keyof typeof MaterialEntryInputKind];
+
+
+export const MaterialEntryInputKind = {
+  issue: 'issue',
+  good: 'good',
+  scrap: 'scrap',
+  offcut: 'offcut',
+} as const;
+
+export type MaterialEntryInputUnit = typeof MaterialEntryInputUnit[keyof typeof MaterialEntryInputUnit];
+
+
+export const MaterialEntryInputUnit = {
+  kg: 'kg',
+} as const;
+
+export interface MaterialEntryInput {
+  /** @minimum 0 */
+  revision: number;
+  /** @minimum 1 */
+  job_revision: number;
+  /** @minimum 1 */
+  material_id: number;
+  kind: MaterialEntryInputKind;
+  /** Positive kg decimal with at most 12 integer and 3 fractional digits */
+  quantity: string;
+  unit: MaterialEntryInputUnit;
+  /** @maxLength 1000 */
+  note?: string;
+  request_id: string;
+}
+
+export interface MaterialVoidInput {
+  /** @minimum 0 */
+  revision: number;
+  /** @minimum 1 */
+  job_revision: number;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export type MaterialEntryKind = typeof MaterialEntryKind[keyof typeof MaterialEntryKind];
+
+
+export const MaterialEntryKind = {
+  issue: 'issue',
+  good: 'good',
+  scrap: 'scrap',
+  offcut: 'offcut',
+} as const;
+
+export type MaterialEntryUnit = typeof MaterialEntryUnit[keyof typeof MaterialEntryUnit];
+
+
+export const MaterialEntryUnit = {
+  kg: 'kg',
+} as const;
+
+export type MaterialEntryCreatedBy = {
+  id: number;
+  username: string;
+};
+
+export type MaterialEntryVoidCreatedBy = {
+  id: number;
+  username: string;
+};
+
+/**
+ * @nullable
+ */
+export type MaterialEntryVoid = {
+  reason: string;
+  created_at: string;
+  created_by: MaterialEntryVoidCreatedBy;
+} | null;
+
+export interface MaterialEntry {
+  id: number;
+  material_id: number;
+  kind: MaterialEntryKind;
+  quantity: string;
+  unit: MaterialEntryUnit;
+  note: string;
+  created_at: string;
+  created_by: MaterialEntryCreatedBy;
+  /** @nullable */
+  void: MaterialEntryVoid;
+}
+
+/**
+ * @nullable
+ */
+export type MaterialStateSummary = {
+  issued: string;
+  good: string;
+  scrap: string;
+  offcut: string;
+  accounted: string;
+  variance: string;
+  /** @nullable */
+  yield_rate: string | null;
+  /** @nullable */
+  scrap_rate: string | null;
+  created_at: string;
+} | null;
+
+export type MaterialStatePermissions = {
+  record: boolean;
+  manage_materials: boolean;
+};
+
+export type MaterialStateEntries = {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: MaterialEntry[];
+};
+
+export interface MaterialState {
+  job_id: number;
+  job_revision: number;
+  revision: number;
+  material: Material | null;
+  /** @nullable */
+  summary: MaterialStateSummary;
+  permissions: MaterialStatePermissions;
+  entries: MaterialStateEntries;
+}
+
 export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
 
 
@@ -113,6 +292,34 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListMaterialsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+page_size?: number;
+/**
+ * @maxLength 120
+ */
+search?: string;
+};
+
+export type GetJobMaterialsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+page_size?: number;
+};
 
 export type ListProductionJobsParams = {
 /**

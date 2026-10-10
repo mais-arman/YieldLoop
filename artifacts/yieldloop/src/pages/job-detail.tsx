@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AuthError } from '@/lib/auth';
 import { JOBS_KEY, updateJob, useJob, type JobStatus, type JobUpdate, type ProductionJob } from '@/lib/jobs';
 import { useI18n } from '@/lib/i18n';
+import { MaterialsSection } from '@/components/materials/materials-section';
 import { cn } from '@/lib/utils';
 
 function BackLink() {
@@ -245,6 +246,8 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
           </dl>
         </aside>
       </div>
+
+      <MaterialsSection job={job} />
 
       {confirm !== null && <AlertDialog open onOpenChange={(o) => { if (!o && !transition.isPending) setConfirm(null); }}>
         <AlertDialogContent>

@@ -9,6 +9,287 @@ import * as zod from 'zod';
 
 
 
+export const listMaterialsQueryPageSizeMax = 100;
+
+export const listMaterialsQuerySearchMax = 120;
+
+
+
+export const ListMaterialsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "page_size": zod.coerce.number().int().min(1).max(listMaterialsQueryPageSizeMax).optional(),
+  "search": zod.coerce.string().max(listMaterialsQuerySearchMax).optional()
+})
+
+export const ListMaterialsResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "specification": zod.string(),
+  "unit": zod.enum(['kg']),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Manager only; CSRF required. Immutable definitions preserve historical meaning.
+ */
+export const createMaterialBodyNameMax = 160;
+
+export const createMaterialBodySpecificationMax = 500;
+
+
+
+export const CreateMaterialBody = zod.object({
+  "name": zod.string().min(1).max(createMaterialBodyNameMax),
+  "specification": zod.string().min(1).max(createMaterialBodySpecificationMax),
+  "unit": zod.enum(['kg'])
+})
+
+export const CreateMaterialResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "specification": zod.string(),
+  "unit": zod.enum(['kg']),
+  "created_at": zod.coerce.date()
+})
+
+
+export const GetJobMaterialsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const getJobMaterialsQueryPageSizeMax = 100;
+
+
+
+export const GetJobMaterialsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "page_size": zod.coerce.number().int().min(1).max(getJobMaterialsQueryPageSizeMax).optional()
+})
+
+export const GetJobMaterialsResponse = zod.object({
+  "job_id": zod.number().int(),
+  "job_revision": zod.number().int(),
+  "revision": zod.number().int(),
+  "material": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "specification": zod.string(),
+  "unit": zod.enum(['kg']),
+  "created_at": zod.coerce.date()
+}),zod.null()]),
+  "summary": zod.object({
+  "issued": zod.string(),
+  "good": zod.string(),
+  "scrap": zod.string(),
+  "offcut": zod.string(),
+  "accounted": zod.string(),
+  "variance": zod.string(),
+  "yield_rate": zod.string().nullable(),
+  "scrap_rate": zod.string().nullable(),
+  "created_at": zod.coerce.date()
+}).nullable(),
+  "permissions": zod.object({
+  "record": zod.boolean(),
+  "manage_materials": zod.boolean()
+}),
+  "entries": zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "quantity": zod.string(),
+  "unit": zod.enum(['kg']),
+  "note": zod.string(),
+  "created_at": zod.coerce.date(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "void": zod.object({
+  "reason": zod.string(),
+  "created_at": zod.coerce.date(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+})
+}).nullable()
+}))
+})
+})
+
+
+/**
+ * Manager/Supervisor, Open jobs only, CSRF required. All decimal quantities must be strings.
+ */
+export const RecordMaterialEntryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const recordMaterialEntryBodyRevisionMin = 0;
+
+
+
+export const recordMaterialEntryBodyNoteMax = 1000;
+
+
+
+export const RecordMaterialEntryBody = zod.object({
+  "revision": zod.number().int().min(recordMaterialEntryBodyRevisionMin),
+  "job_revision": zod.number().int().min(1),
+  "material_id": zod.number().int().min(1),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "quantity": zod.string().describe('Positive kg decimal with at most 12 integer and 3 fractional digits'),
+  "unit": zod.enum(['kg']),
+  "note": zod.string().max(recordMaterialEntryBodyNoteMax).optional(),
+  "request_id": zod.string().uuid()
+})
+
+export const RecordMaterialEntryResponse = zod.object({
+  "job_id": zod.number().int(),
+  "job_revision": zod.number().int(),
+  "revision": zod.number().int(),
+  "material": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "specification": zod.string(),
+  "unit": zod.enum(['kg']),
+  "created_at": zod.coerce.date()
+}),zod.null()]),
+  "summary": zod.object({
+  "issued": zod.string(),
+  "good": zod.string(),
+  "scrap": zod.string(),
+  "offcut": zod.string(),
+  "accounted": zod.string(),
+  "variance": zod.string(),
+  "yield_rate": zod.string().nullable(),
+  "scrap_rate": zod.string().nullable(),
+  "created_at": zod.coerce.date()
+}).nullable(),
+  "permissions": zod.object({
+  "record": zod.boolean(),
+  "manage_materials": zod.boolean()
+}),
+  "entries": zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "quantity": zod.string(),
+  "unit": zod.enum(['kg']),
+  "note": zod.string(),
+  "created_at": zod.coerce.date(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "void": zod.object({
+  "reason": zod.string(),
+  "created_at": zod.coerce.date(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+})
+}).nullable()
+}))
+})
+})
+
+
+/**
+ * Manager/Supervisor correction on Open jobs; original record preserved. CSRF required.
+ */
+export const VoidMaterialEntryParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "entryId": zod.coerce.number().int()
+})
+
+export const voidMaterialEntryBodyRevisionMin = 0;
+
+
+export const voidMaterialEntryBodyReasonMax = 1000;
+
+
+
+export const VoidMaterialEntryBody = zod.object({
+  "revision": zod.number().int().min(voidMaterialEntryBodyRevisionMin),
+  "job_revision": zod.number().int().min(1),
+  "reason": zod.string().min(1).max(voidMaterialEntryBodyReasonMax)
+})
+
+export const VoidMaterialEntryResponse = zod.object({
+  "job_id": zod.number().int(),
+  "job_revision": zod.number().int(),
+  "revision": zod.number().int(),
+  "material": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "specification": zod.string(),
+  "unit": zod.enum(['kg']),
+  "created_at": zod.coerce.date()
+}),zod.null()]),
+  "summary": zod.object({
+  "issued": zod.string(),
+  "good": zod.string(),
+  "scrap": zod.string(),
+  "offcut": zod.string(),
+  "accounted": zod.string(),
+  "variance": zod.string(),
+  "yield_rate": zod.string().nullable(),
+  "scrap_rate": zod.string().nullable(),
+  "created_at": zod.coerce.date()
+}).nullable(),
+  "permissions": zod.object({
+  "record": zod.boolean(),
+  "manage_materials": zod.boolean()
+}),
+  "entries": zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "quantity": zod.string(),
+  "unit": zod.enum(['kg']),
+  "note": zod.string(),
+  "created_at": zod.coerce.date(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "void": zod.object({
+  "reason": zod.string(),
+  "created_at": zod.coerce.date(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+})
+}).nullable()
+}))
+})
+})
+
+
+
 export const listProductionJobsQueryPageSizeMax = 100;
 
 export const listProductionJobsQuerySearchMax = 120;

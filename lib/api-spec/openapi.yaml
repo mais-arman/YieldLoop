@@ -11,6 +11,92 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/materials:
+    get:
+      operationId: listMaterials
+      security: [{sessionCookie: []}]
+      parameters:
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+        - {name: page_size, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: search, in: query, schema: {type: string, maxLength: 120}}
+      responses:
+        "200":
+          description: Searchable immutable material definitions
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MaterialPage"}
+    post:
+      operationId: createMaterial
+      security: [{sessionCookie: []}]
+      description: Manager only; CSRF required. Immutable definitions preserve historical meaning.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MaterialInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Material"}
+        "409": {description: Duplicate material identity}
+  /v1/jobs/{id}/materials:
+    get:
+      operationId: getJobMaterials
+      security: [{sessionCookie: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+        - {name: page_size, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+      responses:
+        "200":
+          description: Persisted reconciliation and paginated records at a consistent revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MaterialState"}
+        "404": {description: Hidden job or page out of range}
+  /v1/jobs/{id}/materials/entries:
+    post:
+      operationId: recordMaterialEntry
+      security: [{sessionCookie: []}]
+      description: Manager/Supervisor, Open jobs only, CSRF required. All decimal quantities must be strings.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MaterialEntryInput"}
+      responses:
+        "201":
+          description: Entry and reconciliation committed atomically
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MaterialState"}
+        "400": {description: "Invalid precision, unit, material, category or first entry"}
+        "409": {description: "Stale revision, closed job or duplicate request"}
+  /v1/jobs/{id}/materials/entries/{entryId}/void:
+    post:
+      operationId: voidMaterialEntry
+      security: [{sessionCookie: []}]
+      description: Manager/Supervisor correction on Open jobs; original record preserved. CSRF required.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: entryId, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MaterialVoidInput"}
+      responses:
+        "200":
+          description: Void and reconciliation committed atomically
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MaterialState"}
+        "404": {description: Missing record or cross-job reference}
+        "409": {description: "Stale revision, closed job or already voided"}
   /v1/jobs:
     get:
       operationId: listProductionJobs
@@ -252,6 +338,121 @@ components:
   securitySchemes:
     sessionCookie: {type: apiKey, in: cookie, name: yieldloop_session}
   schemas:
+    MaterialInput:
+      type: object
+      additionalProperties: false
+      required: [name, specification, unit]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 160}
+        specification: {type: string, minLength: 1, maxLength: 500}
+        unit: {type: string, enum: [kg]}
+    Material:
+      type: object
+      required: [id, name, specification, unit, created_at]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        specification: {type: string}
+        unit: {type: string, enum: [kg]}
+        created_at: {type: string, format: date-time}
+    MaterialPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/Material"}}
+    MaterialEntryInput:
+      type: object
+      additionalProperties: false
+      required: [revision, job_revision, material_id, kind, quantity, unit, request_id]
+      properties:
+        revision: {type: integer, minimum: 0}
+        job_revision: {type: integer, minimum: 1}
+        material_id: {type: integer, minimum: 1}
+        kind: {type: string, enum: [issue, good, scrap, offcut]}
+        quantity: {type: string, description: Positive kg decimal with at most 12 integer and 3 fractional digits}
+        unit: {type: string, enum: [kg]}
+        note: {type: string, maxLength: 1000}
+        request_id: {type: string, format: uuid}
+    MaterialVoidInput:
+      type: object
+      additionalProperties: false
+      required: [revision, job_revision, reason]
+      properties:
+        revision: {type: integer, minimum: 0}
+        job_revision: {type: integer, minimum: 1}
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    MaterialEntry:
+      type: object
+      required: [id, material_id, kind, quantity, unit, note, created_at, created_by, void]
+      properties:
+        id: {type: integer}
+        material_id: {type: integer}
+        kind: {type: string, enum: [issue, good, scrap, offcut]}
+        quantity: {type: string}
+        unit: {type: string, enum: [kg]}
+        note: {type: string}
+        created_at: {type: string, format: date-time}
+        created_by:
+          type: object
+          required: [id, username]
+          properties:
+            id: {type: integer}
+            username: {type: string}
+        void:
+          type: [object, "null"]
+          required: [reason, created_at, created_by]
+          properties:
+            reason: {type: string}
+            created_at: {type: string, format: date-time}
+            created_by:
+              type: object
+              required: [id, username]
+              properties:
+                id: {type: integer}
+                username: {type: string}
+    MaterialState:
+      type: object
+      required: [job_id, job_revision, revision, material, summary, permissions, entries]
+      properties:
+        job_id: {type: integer}
+        job_revision: {type: integer}
+        revision: {type: integer}
+        material:
+          anyOf:
+            - {$ref: "#/components/schemas/Material"}
+            - {type: "null"}
+        summary:
+          type: [object, "null"]
+          required: [issued, good, scrap, offcut, accounted, variance, yield_rate, scrap_rate, created_at]
+          properties:
+            issued: {type: string}
+            good: {type: string}
+            scrap: {type: string}
+            offcut: {type: string}
+            accounted: {type: string}
+            variance: {type: string}
+            yield_rate: {type: [string, "null"]}
+            scrap_rate: {type: [string, "null"]}
+            created_at: {type: string, format: date-time}
+        permissions:
+          type: object
+          required: [record, manage_materials]
+          properties:
+            record: {type: boolean}
+            manage_materials: {type: boolean}
+        entries:
+          type: object
+          required: [count, page, page_size, total_pages, results]
+          properties:
+            count: {type: integer}
+            page: {type: integer}
+            page_size: {type: integer}
+            total_pages: {type: integer}
+            results: {type: array, items: {$ref: "#/components/schemas/MaterialEntry"}}
     JobStatus:
       type: string
       enum: [draft, open, cancelled]

@@ -23,11 +23,19 @@ import type {
   AcquireCsrf200,
   AddEmployeeBody,
   Employee,
+  GetJobMaterialsParams,
   HealthStatus,
   JobInput,
   JobPage,
   JobUpdate,
+  ListMaterialsParams,
   ListProductionJobsParams,
+  Material,
+  MaterialEntryInput,
+  MaterialInput,
+  MaterialPage,
+  MaterialState,
+  MaterialVoidInput,
   ModifyEmployeeBody,
   ProductionJob,
   ReadinessStatus,
@@ -63,6 +71,426 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListMaterialsUrl = (params?: ListMaterialsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/materials?${stringifiedParams}` : `/api/v1/materials`
+}
+
+export const listMaterials = async (params?: ListMaterialsParams, options?: Parameters<typeof customFetch>[1]): Promise<MaterialPage> => {
+
+  return customFetch<MaterialPage>(getListMaterialsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMaterialsQueryKey = (params?: ListMaterialsParams,) => {
+    return [
+    `/api/v1/materials`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMaterialsQueryOptions = <TData = Awaited<ReturnType<typeof listMaterials>>, TError = ErrorType<unknown>>(params?: ListMaterialsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterials>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMaterialsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterials>>> = ({ signal }) => listMaterials(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMaterials>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMaterialsQueryResult = NonNullable<Awaited<ReturnType<typeof listMaterials>>>
+export type ListMaterialsQueryError = ErrorType<unknown>
+
+
+
+export function useListMaterials<TData = Awaited<ReturnType<typeof listMaterials>>, TError = ErrorType<unknown>>(
+ params?: ListMaterialsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterials>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMaterialsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMaterialUrl = () => {
+
+
+
+
+  return `/api/v1/materials`
+}
+
+/**
+ * Manager only; CSRF required. Immutable definitions preserve historical meaning.
+ */
+export const createMaterial = async (materialInput: MaterialInput, options?: Parameters<typeof customFetch>[1]): Promise<Material> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Material>(getCreateMaterialUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(materialInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMaterialMutationKey = () => ['createMaterial'] as const;
+
+export const getCreateMaterialMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterial>>, TError,CreateMaterialMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMaterial>>, TError,CreateMaterialMutationVariables, TContext> => {
+
+const mutationKey = getCreateMaterialMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMaterial>>, CreateMaterialMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMaterial(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMaterialMutationResult = NonNullable<Awaited<ReturnType<typeof createMaterial>>>
+    export type CreateMaterialMutationBody = BodyType<MaterialInput>
+    export type CreateMaterialMutationError = ErrorType<void>
+    export type CreateMaterialMutationVariables = {data: BodyType<MaterialInput>}
+
+    export const useCreateMaterial = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterial>>, TError,CreateMaterialMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMaterial>>,
+        TError,
+        CreateMaterialMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMaterialMutationOptions(options));
+    }
+
+export const getGetJobMaterialsUrl = (id: number,
+    params?: GetJobMaterialsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/jobs/${id}/materials?${stringifiedParams}` : `/api/v1/jobs/${id}/materials`
+}
+
+export const getJobMaterials = async (id: number,
+    params?: GetJobMaterialsParams, options?: Parameters<typeof customFetch>[1]): Promise<MaterialState> => {
+
+  return customFetch<MaterialState>(getGetJobMaterialsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJobMaterialsQueryKey = (id: number,
+    params?: GetJobMaterialsParams,) => {
+    return [
+    `/api/v1/jobs/${id}/materials`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetJobMaterialsQueryOptions = <TData = Awaited<ReturnType<typeof getJobMaterials>>, TError = ErrorType<void>>(id: number,
+    params?: GetJobMaterialsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJobMaterials>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJobMaterialsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJobMaterials>>> = ({ signal }) => getJobMaterials(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJobMaterials>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJobMaterialsQueryResult = NonNullable<Awaited<ReturnType<typeof getJobMaterials>>>
+export type GetJobMaterialsQueryError = ErrorType<void>
+
+
+
+export function useGetJobMaterials<TData = Awaited<ReturnType<typeof getJobMaterials>>, TError = ErrorType<void>>(
+ id: number,
+    params?: GetJobMaterialsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJobMaterials>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJobMaterialsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordMaterialEntryUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${id}/materials/entries`
+}
+
+/**
+ * Manager/Supervisor, Open jobs only, CSRF required. All decimal quantities must be strings.
+ */
+export const recordMaterialEntry = async (id: number,
+    materialEntryInput: MaterialEntryInput, options?: Parameters<typeof customFetch>[1]): Promise<MaterialState> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MaterialState>(getRecordMaterialEntryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(materialEntryInput)
+  }
+);}
+
+
+
+
+
+export const getRecordMaterialEntryMutationKey = () => ['recordMaterialEntry'] as const;
+
+export const getRecordMaterialEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordMaterialEntry>>, TError,RecordMaterialEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordMaterialEntry>>, TError,RecordMaterialEntryMutationVariables, TContext> => {
+
+const mutationKey = getRecordMaterialEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordMaterialEntry>>, RecordMaterialEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recordMaterialEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordMaterialEntryMutationResult = NonNullable<Awaited<ReturnType<typeof recordMaterialEntry>>>
+    export type RecordMaterialEntryMutationBody = BodyType<MaterialEntryInput>
+    export type RecordMaterialEntryMutationError = ErrorType<void>
+    export type RecordMaterialEntryMutationVariables = {id: number;data: BodyType<MaterialEntryInput>}
+
+    export const useRecordMaterialEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordMaterialEntry>>, TError,RecordMaterialEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordMaterialEntry>>,
+        TError,
+        RecordMaterialEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordMaterialEntryMutationOptions(options));
+    }
+
+export const getVoidMaterialEntryUrl = (id: number,
+    entryId: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${id}/materials/entries/${entryId}/void`
+}
+
+/**
+ * Manager/Supervisor correction on Open jobs; original record preserved. CSRF required.
+ */
+export const voidMaterialEntry = async (id: number,
+    entryId: number,
+    materialVoidInput: MaterialVoidInput, options?: Parameters<typeof customFetch>[1]): Promise<MaterialState> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MaterialState>(getVoidMaterialEntryUrl(id,entryId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(materialVoidInput)
+  }
+);}
+
+
+
+
+
+export const getVoidMaterialEntryMutationKey = () => ['voidMaterialEntry'] as const;
+
+export const getVoidMaterialEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidMaterialEntry>>, TError,VoidMaterialEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voidMaterialEntry>>, TError,VoidMaterialEntryMutationVariables, TContext> => {
+
+const mutationKey = getVoidMaterialEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voidMaterialEntry>>, VoidMaterialEntryMutationVariables> = (props) => {
+          const {id,entryId,data} = props ?? {};
+
+          return  voidMaterialEntry(id,entryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoidMaterialEntryMutationResult = NonNullable<Awaited<ReturnType<typeof voidMaterialEntry>>>
+    export type VoidMaterialEntryMutationBody = BodyType<MaterialVoidInput>
+    export type VoidMaterialEntryMutationError = ErrorType<void>
+    export type VoidMaterialEntryMutationVariables = {id: number;entryId: number;data: BodyType<MaterialVoidInput>}
+
+    export const useVoidMaterialEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidMaterialEntry>>, TError,VoidMaterialEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voidMaterialEntry>>,
+        TError,
+        VoidMaterialEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVoidMaterialEntryMutationOptions(options));
+    }
 
 export const getListProductionJobsUrl = (params?: ListProductionJobsParams,) => {
   const normalizedParams = new URLSearchParams();

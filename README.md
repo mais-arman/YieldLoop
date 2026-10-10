@@ -1,6 +1,7 @@
 # YieldLoop
 
-**Current status: Phase 3 Production Jobs and session authentication are active in verified development.**
+**Current status: Phase 4 material recording and reconciliation are active in verified development.**
+See [Phase 4 accounting, corrections and policy limits](docs/phase-4.md).
 See [Phase 3 implementation and permissions](docs/phase-3.md) for the job
 lifecycle, API, migration target, and verification commands.
 See [Phase 2B operations and test guide](docs/phase-2b.md), including explicit
