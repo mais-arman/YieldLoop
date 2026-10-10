@@ -1,0 +1,61 @@
+We are planning Phase 2 of YieldLoop, an operational Material Yield & Production Intelligence Platform for Ibn Khaldoun Printing and Publishing.
+
+**This is a READ-ONLY planning and inspection task. Do not modify, create, delete, or overwrite any files. Do not run migrations, alter the database, install packages, or change configuration.**
+
+## Confirmed scope
+
+YieldLoop currently serves one printing business: Ibn Khaldoun Printing and Publishing. Do not introduce multi-tenant organization onboarding or unrelated roles.
+
+The only application roles are:
+
+1. Cutting Operator
+2. Production Supervisor
+3. Manager
+
+The Manager (or designated authorized person under the approved account-management policy) creates employee accounts and assigns their roles. There is no public self-registration.
+
+The current foundation uses React + TypeScript + Vite on the frontend, Django + Django REST Framework on the backend, and PostgreSQL. Preserve this stack and the existing architecture.
+
+## Your tasks
+
+1. Inspect the existing repository, Django settings, installed authentication dependencies, URL routing, API specification/code generation, frontend routing, environment configuration, database setup, and current tests.
+
+2. Report the existing state accurately. Identify any existing user model, authentication implementation, role mechanism, migrations, and security-relevant configuration. Do not assume they are absent without checking.
+
+3. Propose a minimal, secure Phase 2 architecture for:
+
+   * Login and logout.
+   * Authentication/session lifecycle and frontend API integration.
+   * Exactly the three confirmed roles.
+   * Server-enforced role-based permissions.
+   * Manager-only employee account creation, role assignment, activation/deactivation, and safe initial Manager account provisioning.
+   * Appropriate audit events for sensitive account and role changes.
+   * Safe handling of secrets, passwords, errors, and authentication tokens/cookies.
+
+4. Provide a proposed permission matrix for the three roles. Separate confirmed requirements from assumptions that need product approval. Do not implement production, material, reporting, or cutting business features in this phase; describe only how authorization will support them later.
+
+5. List proposed database model changes and migration implications. Explain whether a custom Django user model already exists and the risks of changing it at this stage. Do not apply or generate migrations in this read-only task.
+
+6. Specify automated tests, including:
+
+   * Valid/invalid login and disabled accounts.
+   * Unauthenticated API requests.
+   * Positive and negative permission tests for all three roles.
+   * Prevention of self-promotion and unauthorized account/role management.
+   * Session/token expiry, logout, and revocation behavior appropriate to the proposed design.
+   * Existing health/readiness and regression tests.
+
+7. Identify security risks, deployment assumptions, and decisions that require approval before implementation. Do not claim that email invitations work unless an email delivery provider is already configured and verified.
+
+## Required response format
+
+Return:
+A. Findings from the actual codebase.
+B. Proposed architecture and authentication flow.
+C. Role/permission matrix.
+D. Database and migration plan.
+E. Test plan with measurable acceptance criteria.
+F. Risks and open decisions.
+G. A short, incremental implementation sequence and the exact next implementation prompt for review.
+
+Do not modify files or database state. Clearly distinguish observed facts from recommendations and assumptions.
