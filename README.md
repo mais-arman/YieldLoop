@@ -1,9 +1,15 @@
-# YieldLoop — Phase 1 foundation
+# YieldLoop
 
-**Current status: Phase 2B authentication is active in verified development.**
+**Current status: Phase 3 Production Jobs and session authentication are active in verified development.**
+See [Phase 3 implementation and permissions](docs/phase-3.md) for the job
+lifecycle, API, migration target, and verification commands.
 See [Phase 2B operations and test guide](docs/phase-2b.md), including explicit
 first-Manager provisioning. No default employee credentials exist.
-The sections below retain the earlier foundation verification history.
+
+## Historical foundation notes (Phases 1 and 2A)
+
+The following sections record the earlier foundation state, not the current
+authentication/jobs runtime. The phase guides above describe current behavior.
 
 Phase 2A adds **inactive authentication schema and reviewable migrations**.
 The running service remains the Phase 1 health API; no migrations were applied.

@@ -8,6 +8,149 @@
 import * as zod from 'zod';
 
 
+
+export const listProductionJobsQueryPageSizeMax = 100;
+
+export const listProductionJobsQuerySearchMax = 120;
+
+
+
+export const ListProductionJobsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "page_size": zod.coerce.number().int().min(1).max(listProductionJobsQueryPageSizeMax).optional(),
+  "search": zod.coerce.string().max(listProductionJobsQuerySearchMax).optional(),
+  "status": zod.enum(['draft', 'open', 'cancelled']).optional()
+})
+
+export const ListProductionJobsResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "job_number": zod.string(),
+  "title": zod.string(),
+  "notes": zod.string(),
+  "status": zod.enum(['draft', 'open', 'cancelled']),
+  "revision": zod.number().int(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "edit_title": zod.boolean(),
+  "edit_notes": zod.boolean(),
+  "transitions": zod.array(zod.enum(['draft', 'open', 'cancelled']))
+})
+}))
+})
+
+
+/**
+ * Manager only; CSRF required. Server assigns number, creator and Draft status.
+ */
+export const createProductionJobBodyTitleMax = 200;
+
+export const createProductionJobBodyNotesMax = 5000;
+
+
+
+export const CreateProductionJobBody = zod.object({
+  "title": zod.string().min(1).max(createProductionJobBodyTitleMax),
+  "notes": zod.string().max(createProductionJobBodyNotesMax).optional()
+})
+
+export const CreateProductionJobResponse = zod.object({
+  "id": zod.number().int(),
+  "job_number": zod.string(),
+  "title": zod.string(),
+  "notes": zod.string(),
+  "status": zod.enum(['draft', 'open', 'cancelled']),
+  "revision": zod.number().int(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "edit_title": zod.boolean(),
+  "edit_notes": zod.boolean(),
+  "transitions": zod.array(zod.enum(['draft', 'open', 'cancelled']))
+})
+})
+
+
+export const GetProductionJobParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetProductionJobResponse = zod.object({
+  "id": zod.number().int(),
+  "job_number": zod.string(),
+  "title": zod.string(),
+  "notes": zod.string(),
+  "status": zod.enum(['draft', 'open', 'cancelled']),
+  "revision": zod.number().int(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "edit_title": zod.boolean(),
+  "edit_notes": zod.boolean(),
+  "transitions": zod.array(zod.enum(['draft', 'open', 'cancelled']))
+})
+})
+
+
+/**
+ * CSRF required. Revision required to prevent lost updates. Cancelled jobs are immutable.
+ */
+export const UpdateProductionJobParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const updateProductionJobBodyTitleMax = 200;
+
+export const updateProductionJobBodyNotesMax = 5000;
+
+
+
+export const UpdateProductionJobBody = zod.object({
+  "revision": zod.number().int().min(1),
+  "title": zod.string().min(1).max(updateProductionJobBodyTitleMax).optional(),
+  "notes": zod.string().max(updateProductionJobBodyNotesMax).optional(),
+  "status": zod.enum(['draft', 'open', 'cancelled']).optional()
+})
+
+export const UpdateProductionJobResponse = zod.object({
+  "id": zod.number().int(),
+  "job_number": zod.string(),
+  "title": zod.string(),
+  "notes": zod.string(),
+  "status": zod.enum(['draft', 'open', 'cancelled']),
+  "revision": zod.number().int(),
+  "created_by": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string()
+}),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "edit_title": zod.boolean(),
+  "edit_notes": zod.boolean(),
+  "transitions": zod.array(zod.enum(['draft', 'open', 'cancelled']))
+})
+})
+
+
 export const AcquireCsrfResponse = zod.object({
   "csrfToken": zod.string()
 })

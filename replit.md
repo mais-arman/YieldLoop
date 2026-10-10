@@ -1,8 +1,8 @@
 # YieldLoop
 
-Material Yield & Production Intelligence Platform. Phase 1 remains active:
-a bilingual status screen and schema-independent Django health API.
-Phase 2B enables Django sessions and employee role management in verified development.
+Material Yield & Production Intelligence Platform. Phase 3 provides persisted
+Production Jobs alongside Django sessions, employee roles, and the original
+bilingual health screen/API, all in verified development.
 
 ## Run & Operate
 
@@ -43,8 +43,9 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 
 ## User preferences
 
-- Phase 2B migrations and authentication are approved only for the positively
-  identified development database. Stop before business features or publishing.
+- Phase 3 Production Jobs and their migrations are approved only for the
+  positively identified development database. Stop at Phase 3; no materials,
+  yield/scrap, dashboards, reports, cutting optimization, AI, or publishing.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
 - Follow the YieldLoop domain, design-system, and engineering-quality skills.
@@ -58,6 +59,9 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 - Never commit credentials or log database exception details.
 - Read `docs/phase-2b.md` for development write guards, tests, and first-Manager setup.
   Development selects `config.session_settings`; `config.schema_settings` is offline only.
+- Read `docs/phase-3.md` for the centralized job policy: Managers manage; Supervisors
+  open drafts/edit open-job notes; Operators read Open jobs only. Completion awaits
+  material reconciliation; cancellation is Manager-only and terminal.
 
 ## Pointers
 

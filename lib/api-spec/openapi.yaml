@@ -11,6 +11,74 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/jobs:
+    get:
+      operationId: listProductionJobs
+      security: [{sessionCookie: []}]
+      parameters:
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+        - {name: page_size, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: search, in: query, schema: {type: string, maxLength: 120}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/JobStatus"}}
+      responses:
+        "200":
+          description: Role-scoped, newest-first jobs
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/JobPage"}
+        "400": {description: Invalid query}
+        "401": {description: Session required}
+        "403": {description: Password replacement required}
+        "404": {description: Page out of range}
+    post:
+      operationId: createProductionJob
+      security: [{sessionCookie: []}]
+      description: Manager only; CSRF required. Server assigns number, creator and Draft status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/JobInput"}
+      responses:
+        "201":
+          description: Persisted job
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProductionJob"}
+        "400": {description: Validation error}
+        "403": {description: Forbidden}
+  /v1/jobs/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: getProductionJob
+      security: [{sessionCookie: []}]
+      responses:
+        "200":
+          description: Job with server-calculated permissions
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProductionJob"}
+        "404": {description: Missing or not visible}
+    patch:
+      operationId: updateProductionJob
+      security: [{sessionCookie: []}]
+      description: CSRF required. Revision required to prevent lost updates. Cancelled jobs are immutable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/JobUpdate"}
+      responses:
+        "200":
+          description: Persisted job with incremented revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProductionJob"}
+        "400": {description: Invalid input or transition}
+        "403": {description: Forbidden}
+        "404": {description: Missing or not visible}
+        "409": {description: Stale revision or cancelled job}
   /v1/auth/csrf:
     get:
       operationId: acquireCsrf
@@ -184,6 +252,59 @@ components:
   securitySchemes:
     sessionCookie: {type: apiKey, in: cookie, name: yieldloop_session}
   schemas:
+    JobStatus:
+      type: string
+      enum: [draft, open, cancelled]
+    JobInput:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 200}
+        notes: {type: string, maxLength: 5000}
+    JobUpdate:
+      type: object
+      additionalProperties: false
+      required: [revision]
+      properties:
+        revision: {type: integer, minimum: 1}
+        title: {type: string, minLength: 1, maxLength: 200}
+        notes: {type: string, maxLength: 5000}
+        status: {$ref: "#/components/schemas/JobStatus"}
+    ProductionJob:
+      type: object
+      required: [id, job_number, title, notes, status, revision, created_by, created_at, updated_at, permissions]
+      properties:
+        id: {type: integer}
+        job_number: {type: string}
+        title: {type: string}
+        notes: {type: string}
+        status: {$ref: "#/components/schemas/JobStatus"}
+        revision: {type: integer}
+        created_by:
+          type: object
+          required: [id, username]
+          properties:
+            id: {type: integer}
+            username: {type: string}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        permissions:
+          type: object
+          required: [edit_title, edit_notes, transitions]
+          properties:
+            edit_title: {type: boolean}
+            edit_notes: {type: boolean}
+            transitions: {type: array, items: {$ref: "#/components/schemas/JobStatus"}}
+    JobPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/ProductionJob"}}
     EmployeeRole:
       type: string
       enum: [cutting_operator, production_supervisor, manager]

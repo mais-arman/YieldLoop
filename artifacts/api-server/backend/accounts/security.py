@@ -76,7 +76,9 @@ def exception_handler(exc, context):
             code = codes
     if response.status_code == 400:
         # Deliberately omit submitted values and English framework error strings.
-        response.data = {"code": "validation_error"}
+        response.data = {"code": getattr(exc, "public_code", "validation_error")}
+        if hasattr(exc, "public_fields"):
+            response.data["fields"] = exc.public_fields
     else:
         response.data = {"code": code}
     return response

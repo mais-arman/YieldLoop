@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { Activity, KeyRound, LayoutGrid, Loader2, LogOut, Users } from 'lucide-react';
+import { Activity, ClipboardList, KeyRound, LayoutGrid, Loader2, LogOut, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandMark, LangSwitch } from '@/components/brand';
 import { logout, type Employee } from '@/lib/auth';
@@ -67,6 +67,7 @@ export function AppShell({ user, children, minimal = false }: { user: Employee; 
   const [location] = useLocation();
   const items: { href: string; label: string; icon: typeof Users }[] = [
     { href: '/', label: t('navHome'), icon: LayoutGrid },
+    { href: '/jobs', label: t('navJobs'), icon: ClipboardList },
     ...(user.role === 'manager' ? [{ href: '/employees', label: t('navEmployees'), icon: Users }] : []),
     { href: '/password', label: t('navPassword'), icon: KeyRound },
     { href: '/health', label: t('navHealth'), icon: Activity },
@@ -74,7 +75,7 @@ export function AppShell({ user, children, minimal = false }: { user: Employee; 
   return (
     <div className="min-h-[100dvh] w-full bg-background">
       <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-5 py-3">
           <div className="flex items-center gap-3">
             <BrandMark />
             <div className="leading-tight">
@@ -91,7 +92,7 @@ export function AppShell({ user, children, minimal = false }: { user: Employee; 
         {!minimal && (
           <nav aria-label={t('nav')} className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 sm:px-4">
             {items.map(({ href, label, icon: Icon }) => {
-              const active = location === href;
+              const active = href === '/' ? location === '/' : location === href || location.startsWith(`${href}/`);
               return (
                 <Link
                   key={href}

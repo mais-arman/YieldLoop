@@ -1,0 +1,25 @@
+Implement YieldLoop Phase 3: Production Jobs.
+
+Continue from the existing working React, Django REST Framework, and PostgreSQL application. Preserve the current authentication, session security, CSRF protection, three approved roles, audit logging, Arabic/English support, and existing health endpoints.
+
+Build a complete, usable Production Jobs module with real PostgreSQL persistence.
+
+Requirements:
+
+1. Create a production job model and migrations. Include a unique job number, job name/title, description or notes, status, created-by user, timestamps, and the minimal additional fields genuinely needed for the agreed workflow. Avoid adding material quantities or yield calculations in this phase.
+2. Define and validate a clear job lifecycle. Start with Draft and Open/In Progress, and include Completed and Cancelled only if the transitions are implemented consistently. Reject invalid transitions on the backend.
+3. Implement paginated list, detail, create, update, search, and status filtering APIs with server-side validation and predictable error responses.
+4. Enforce the existing role permissions on the backend:
+
+   * Manager: view and manage production jobs.
+   * Production Supervisor: view jobs and perform appropriate operational updates.
+   * Cutting Operator: view assigned or permitted jobs, with no manager-only actions.
+     Do not trust roles or creator IDs supplied by the client. Keep the permission policy centralized and document the actual enforced rules.
+5. Add a complete responsive frontend for listing, searching, filtering, creating, viewing, and editing jobs according to each role. Include loading, empty, error, success, and confirmation states. Support Arabic and English, RTL/LTR, and preserve the established YieldLoop design system.
+6. Add tests for model constraints, API validation, permissions for every role, invalid status transitions, pagination/filtering, and database persistence. Use the isolated test database for integration tests; do not use production data.
+7. Apply migrations only to the verified development database using the established write guard. Never weaken the guard or run migrations at startup.
+8. Run backend tests and lint, frontend typecheck/lint/build, and browser verification where supported. Fix issues found and verify the existing authentication and health checks still work.
+
+Do not implement material recording, yield/scrap calculations, dashboards, reports, cutting optimization, or AI in this phase. Do not publish or deploy.
+
+Finish with a concise report of the implemented features, migration target, tests actually run, and any blockers. Stop at Phase 3.

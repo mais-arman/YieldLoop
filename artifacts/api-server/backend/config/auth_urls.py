@@ -1,10 +1,13 @@
 from accounts import views
 from django.urls import path
+from jobs.views import JobsView, JobView
 
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
     *health_patterns,
+    path("api/v1/jobs", JobsView.as_view()),
+    path("api/v1/jobs/<int:pk>", JobView.as_view()),
     path("api/v1/auth/csrf", views.CsrfView.as_view()),
     path("api/v1/auth/login", views.LoginView.as_view()),
     path("api/v1/auth/logout", views.LogoutView.as_view()),

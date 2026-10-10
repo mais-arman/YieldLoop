@@ -24,7 +24,12 @@ import type {
   AddEmployeeBody,
   Employee,
   HealthStatus,
+  JobInput,
+  JobPage,
+  JobUpdate,
+  ListProductionJobsParams,
   ModifyEmployeeBody,
+  ProductionJob,
   ReadinessStatus,
   ReplacePasswordBody,
   ResetEmployeePasswordBody,
@@ -58,6 +63,326 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListProductionJobsUrl = (params?: ListProductionJobsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/jobs?${stringifiedParams}` : `/api/v1/jobs`
+}
+
+export const listProductionJobs = async (params?: ListProductionJobsParams, options?: Parameters<typeof customFetch>[1]): Promise<JobPage> => {
+
+  return customFetch<JobPage>(getListProductionJobsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductionJobsQueryKey = (params?: ListProductionJobsParams,) => {
+    return [
+    `/api/v1/jobs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProductionJobsQueryOptions = <TData = Awaited<ReturnType<typeof listProductionJobs>>, TError = ErrorType<void>>(params?: ListProductionJobsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductionJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductionJobsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductionJobs>>> = ({ signal }) => listProductionJobs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductionJobs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductionJobsQueryResult = NonNullable<Awaited<ReturnType<typeof listProductionJobs>>>
+export type ListProductionJobsQueryError = ErrorType<void>
+
+
+
+export function useListProductionJobs<TData = Awaited<ReturnType<typeof listProductionJobs>>, TError = ErrorType<void>>(
+ params?: ListProductionJobsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductionJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductionJobsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateProductionJobUrl = () => {
+
+
+
+
+  return `/api/v1/jobs`
+}
+
+/**
+ * Manager only; CSRF required. Server assigns number, creator and Draft status.
+ */
+export const createProductionJob = async (jobInput: JobInput, options?: Parameters<typeof customFetch>[1]): Promise<ProductionJob> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProductionJob>(getCreateProductionJobUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(jobInput)
+  }
+);}
+
+
+
+
+
+export const getCreateProductionJobMutationKey = () => ['createProductionJob'] as const;
+
+export const getCreateProductionJobMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductionJob>>, TError,CreateProductionJobMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProductionJob>>, TError,CreateProductionJobMutationVariables, TContext> => {
+
+const mutationKey = getCreateProductionJobMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProductionJob>>, CreateProductionJobMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProductionJob(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProductionJobMutationResult = NonNullable<Awaited<ReturnType<typeof createProductionJob>>>
+    export type CreateProductionJobMutationBody = BodyType<JobInput>
+    export type CreateProductionJobMutationError = ErrorType<void>
+    export type CreateProductionJobMutationVariables = {data: BodyType<JobInput>}
+
+    export const useCreateProductionJob = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductionJob>>, TError,CreateProductionJobMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProductionJob>>,
+        TError,
+        CreateProductionJobMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateProductionJobMutationOptions(options));
+    }
+
+export const getGetProductionJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${id}`
+}
+
+export const getProductionJob = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<ProductionJob> => {
+
+  return customFetch<ProductionJob>(getGetProductionJobUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductionJobQueryKey = (id: number,) => {
+    return [
+    `/api/v1/jobs/${id}`
+    ] as const;
+    }
+
+
+export const getGetProductionJobQueryOptions = <TData = Awaited<ReturnType<typeof getProductionJob>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductionJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductionJobQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductionJob>>> = ({ signal }) => getProductionJob(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductionJob>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductionJobQueryResult = NonNullable<Awaited<ReturnType<typeof getProductionJob>>>
+export type GetProductionJobQueryError = ErrorType<void>
+
+
+
+export function useGetProductionJob<TData = Awaited<ReturnType<typeof getProductionJob>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductionJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductionJobQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateProductionJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${id}`
+}
+
+/**
+ * CSRF required. Revision required to prevent lost updates. Cancelled jobs are immutable.
+ */
+export const updateProductionJob = async (id: number,
+    jobUpdate: JobUpdate, options?: Parameters<typeof customFetch>[1]): Promise<ProductionJob> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProductionJob>(getUpdateProductionJobUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(jobUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateProductionJobMutationKey = () => ['updateProductionJob'] as const;
+
+export const getUpdateProductionJobMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductionJob>>, TError,UpdateProductionJobMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProductionJob>>, TError,UpdateProductionJobMutationVariables, TContext> => {
+
+const mutationKey = getUpdateProductionJobMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProductionJob>>, UpdateProductionJobMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProductionJob(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProductionJobMutationResult = NonNullable<Awaited<ReturnType<typeof updateProductionJob>>>
+    export type UpdateProductionJobMutationBody = BodyType<JobUpdate>
+    export type UpdateProductionJobMutationError = ErrorType<void>
+    export type UpdateProductionJobMutationVariables = {id: number;data: BodyType<JobUpdate>}
+
+    export const useUpdateProductionJob = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductionJob>>, TError,UpdateProductionJobMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProductionJob>>,
+        TError,
+        UpdateProductionJobMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateProductionJobMutationOptions(options));
+    }
 
 export const getAcquireCsrfUrl = () => {
 

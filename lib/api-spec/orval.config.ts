@@ -1,5 +1,6 @@
 import { defineConfig, InputTransformerFn } from "orval";
 import path from "path";
+import { writeFileSync } from "node:fs";
 
 const root = path.resolve(__dirname, "..", "..");
 const apiClientReactSrc = path.resolve(root, "lib", "api-client-react", "src");
@@ -41,6 +42,16 @@ export default defineConfig({
     },
   },
   zod: {
+    hooks: {
+      afterAllFilesWrite: () => {
+        // Orval appends a types star export on every generation. Some inline
+        // auth request types collide with schema names; keep a stable barrel.
+        writeFileSync(path.resolve(apiZodSrc, "index.ts"),
+          'export * from "./generated/api";\n' +
+          'export * as ApiTypes from "./generated/types";\n' +
+          'export type { HealthStatus, ReadinessStatus, Employee, EmployeeRole } from "./generated/types";\n');
+      },
+    },
     input: {
       target: "./openapi.yaml",
       override: {

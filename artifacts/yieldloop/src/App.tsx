@@ -15,6 +15,9 @@ import LoginPage from '@/pages/login';
 import HomePage from '@/pages/home';
 import EmployeesPage from '@/pages/employees';
 import PasswordPage from '@/pages/password';
+import JobsPage from '@/pages/jobs';
+import JobNewPage from '@/pages/job-new';
+import JobDetailPage from '@/pages/job-detail';
 import { AuthError, useCurrentUser, type Employee } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { endSession, errorMessage, isSessionLoss, ME_KEY } from '@/lib/session';
@@ -121,6 +124,13 @@ function Authed({ user }: { user: Employee }) {
       <Route path="/"><AppShell user={user}><HomePage user={user} /></AppShell></Route>
       <Route path="/employees">
         <AppShell user={user}>{user.role === 'manager' ? <EmployeesPage user={user} /> : <Forbidden />}</AppShell>
+      </Route>
+      <Route path="/jobs"><AppShell user={user}><JobsPage user={user} /></AppShell></Route>
+      <Route path="/jobs/new">
+        <AppShell user={user}>{user.role === 'manager' ? <JobNewPage /> : <Forbidden />}</AppShell>
+      </Route>
+      <Route path="/jobs/:id">
+        {(params) => <AppShell user={user}><JobDetailPage key={params.id} id={Number(params.id)} /></AppShell>}
       </Route>
       <Route path="/password"><AppShell user={user}><PasswordPage user={user} /></AppShell></Route>
       <Route component={NotFound} />

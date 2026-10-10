@@ -5,6 +5,70 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
+
+
+export const JobStatus = {
+  draft: 'draft',
+  open: 'open',
+  cancelled: 'cancelled',
+} as const;
+
+export interface JobInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @maxLength 5000 */
+  notes?: string;
+}
+
+export interface JobUpdate {
+  /** @minimum 1 */
+  revision: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /** @maxLength 5000 */
+  notes?: string;
+  status?: JobStatus;
+}
+
+export type ProductionJobCreatedBy = {
+  id: number;
+  username: string;
+};
+
+export type ProductionJobPermissions = {
+  edit_title: boolean;
+  edit_notes: boolean;
+  transitions: JobStatus[];
+};
+
+export interface ProductionJob {
+  id: number;
+  job_number: string;
+  title: string;
+  notes: string;
+  status: JobStatus;
+  revision: number;
+  created_by: ProductionJobCreatedBy;
+  created_at: string;
+  updated_at: string;
+  permissions: ProductionJobPermissions;
+}
+
+export interface JobPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: ProductionJob[];
+}
+
 export type EmployeeRole = typeof EmployeeRole[keyof typeof EmployeeRole];
 
 
@@ -49,6 +113,23 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListProductionJobsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+page_size?: number;
+/**
+ * @maxLength 120
+ */
+search?: string;
+status?: JobStatus;
+};
 
 export type AcquireCsrf200 = {
   csrfToken: string;

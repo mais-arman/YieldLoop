@@ -6,6 +6,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "accounts",
     "audit",
+    "jobs",
 ]
 AUTH_USER_MODEL = "accounts.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
