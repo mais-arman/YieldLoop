@@ -1,0 +1,160 @@
+# YieldLoop — Phase 2A Read-Only Architecture Review (Django Sessions)
+
+## Mandatory restrictions
+
+This is a READ-ONLY inspection and planning task.
+
+Do not create, modify, delete, or overwrite files.
+Do not install packages or change dependencies.
+Do not generate, apply, or alter migrations.
+Do not write to, modify, or reset the database.
+Do not change settings, environment variables, configuration, or running services.
+Do not create users or credentials.
+Do not publish or deploy anything.
+
+Inspect the actual codebase and return a concrete implementation plan for approval. Stop after presenting the findings and plan.
+
+## 1. Confirmed project requirements
+
+YieldLoop is an operational Material Yield & Production Intelligence Platform for Ibn Khaldoun Printing and Publishing.
+
+The application currently uses:
+
+* Frontend: React, TypeScript, Vite, Wouter, existing localization and UI components.
+* Backend: Django 5.2, Django REST Framework.
+* Database: PostgreSQL.
+* API integration: OpenAPI specification and generated Orval React Query clients.
+
+Preserve the existing stack and modular monolith. Django must be the sole owner of the application database schema. Do not introduce Drizzle schema changes.
+
+This is a single-business application with exactly three application roles:
+
+1. Cutting Operator
+2. Production Supervisor
+3. Manager
+
+There is no public self-registration. The Manager creates employee accounts and assigns one of the three roles. Do not introduce organization onboarding, multi-tenant membership, or extra application roles.
+
+## 2. Confirmed authentication direction
+
+Prefer Django's built-in session authentication using server-side sessions and secure HttpOnly authentication cookies, integrated with Django REST Framework.
+
+JWT is not a confirmed requirement and must not be introduced unless inspection discovers an explicit, existing project requirement that contradicts this decision. If such a requirement is discovered, report it for approval rather than changing the selected design.
+
+The proposed design must account for:
+
+* Django authentication and session middleware.
+* Database-backed server-side sessions.
+* HttpOnly, host-only authentication cookies.
+* Secure cookies and HTTPS in production.
+* Appropriate SameSite settings.
+* CSRF protection for unsafe requests, including login, logout, password changes, and account administration.
+* Correct CSRF-token acquisition and submission from the React frontend.
+* Session expiry, logout, and revocation.
+* Account deactivation and role changes taking effect promptly, including invalidating affected sessions where required.
+* Consistent 401, 403, and throttling responses.
+* Login throttling and secure password handling.
+
+Do not assume the frontend and API share the same origin. Inspect the existing Replit routing, proxy, and deployment configuration. Explain whether same-origin routing is already present or would require a separately approved configuration change. If origins differ, describe the exact CSRF, CORS, cookie, and credential requirements and risks.
+
+Do not claim the current deployment supports secure cookie authentication until the relevant configuration has been inspected and verified.
+
+## 3. Inspect the current implementation
+
+Read the actual source files and report:
+
+* Installed Django apps and middleware.
+* Authentication backends and DRF authentication/permission defaults.
+* Whether a custom user model or AUTH_USER_MODEL setting exists.
+* Existing database tables, migration history, and database backend.
+* Current read-only database connection safeguards and what would need to change later to support approved writes.
+* Frontend routing, shared API client, generated API contracts, and localization patterns.
+* Current environment and secret-handling configuration, including the development SECRET_KEY fallback.
+* Existing tests and test-database setup.
+* Existing dependency versions relevant to Django session authentication.
+
+Clearly separate observed facts from recommendations. Do not rerun tests if doing so could write to the application database.
+
+## 4. Propose the Phase 2A data model
+
+Evaluate the minimum model and configuration changes needed for:
+
+* A custom Django user model based on AbstractUser, with one authoritative application role limited to the three confirmed values.
+* Account activation and mandatory temporary-password replacement.
+* Database-backed Django sessions.
+* Audit events for sensitive account and role changes.
+
+Explain whether a separate session registry is necessary for reliable user-wide session revocation after deactivation, role change, or password reset. Prefer the simplest approach that reliably meets the approved security requirements; do not add unnecessary token or session infrastructure.
+
+Use Django password hashing and explicit serializer field allowlists. Do not expose is_staff, is_superuser, groups, or technical Django permissions through ordinary application account-management APIs.
+
+For audit events, specify safe fields, transaction behavior, and how to prevent secrets from entering logs. Distinguish application-level append-only behavior from actual database-level tamper resistance.
+
+No production/material/cutting/reporting models are in scope.
+
+## 5. Propose authorization and account lifecycle
+
+Provide a permission matrix for the three roles.
+
+The initial Manager account must be provisioned through a trusted, explicit administrative procedure, not public registration, an automatic startup task, a migration, or a hardcoded default password.
+
+Explain how the implementation would:
+
+* Prevent users from changing their own role.
+* Protect the last active Manager against accidental demotion or deactivation.
+* Prevent unauthorized account creation and role assignment.
+* Enforce authorization in the backend, not only by hiding frontend controls.
+* Apply role changes and account deactivation to existing sessions.
+* Require temporary-password replacement before normal work access.
+
+Do not implement the flows yet. Clearly identify any policy choices that still require approval.
+
+## 6. Migration and configuration plan
+
+No custom user model or application migrations were found in the previous review, and the development database catalog was empty at that time. Verify the current state before relying on those findings.
+
+Explain the implications of introducing AUTH_USER_MODEL before the first authentication migration.
+
+List proposed migration files, dependencies, constraints, indexes, and Django apps that would be enabled.
+
+Identify the exact configuration and database-write changes needed later. Preserve the current database read-only safeguard until a separate explicit approval is given.
+
+Do not generate or apply migrations, remove read-only safeguards, or write to any database in this task.
+
+Do not create default users, passwords, or secrets.
+
+## 7. Tests and acceptance criteria
+
+Propose automated tests for:
+
+* Login success and failure, disabled users, logout, and anonymous access.
+* CSRF validation on unsafe requests.
+* Cookie attributes and environment-specific HTTPS behavior.
+* Session expiry and revocation.
+* Role permissions and denial of unauthorized operations.
+* Manager-only account creation and role assignment.
+* Prevention of self-promotion and protection of the last active Manager, including concurrent operations.
+* Temporary-password restrictions and replacement.
+* Audit events and prevention of secret leakage.
+* Existing health/readiness tests and frontend regression tests.
+* Migration validation on an isolated PostgreSQL test database.
+
+Identify which tests can safely run without writing to the application database. Do not claim tests passed unless actually executed.
+
+## 8. Required output
+
+Return these sections:
+
+A. Verified findings from the current repository.
+B. Compatibility assessment for Django sessions and the current frontend/API deployment.
+C. Proposed authentication and CSRF flow.
+D. Three-role permission matrix.
+E. Minimum model, migration, and configuration plan.
+F. Session revocation and Manager account provisioning design.
+G. Test plan with measurable acceptance criteria.
+H. Risks, assumptions, and decisions requiring approval.
+I. An incremental implementation sequence and the exact proposed implementation prompt for the next step.
+
+The next-step prompt must also require reviewable migration files without applying them, and must preserve the existing database read-only safeguard until explicit approval.
+
+Stop after returning the plan. No implementation or migrations are authorized in this task.
