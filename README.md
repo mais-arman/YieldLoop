@@ -1,7 +1,12 @@
 # YieldLoop — Phase 1 foundation
 
+Phase 2A adds **inactive authentication schema and reviewable migrations**.
+The running service remains the Phase 1 health API; no migrations were applied.
+See [Phase 2A review and activation gates](docs/phase-2a.md) before changing the
+schema or enabling authentication. The Phase 1 record below describes the runtime.
+
 This is a runnable foundation, not an operational manufacturing application.
-No authentication, business models, factory records, or database migrations are included.
+No authentication flows, business models, or factory records are enabled.
 
 ## Structure
 

@@ -1,0 +1,57 @@
+Implement YieldLoop Phase 2A: authentication schema foundation, following the reviewed Django-session architecture.
+
+Skills context: follow the project's yieldloop-engineering-quality and yieldloop-domain guidance.
+
+## Scope and constraints
+
+* Preserve React + TypeScript + Vite, Django + DRF, PostgreSQL, and the existing modular monolith.
+* This is for Ibn Khaldoun Printing and Publishing, with exactly three application roles: Cutting Operator, Production Supervisor, and Manager.
+* Django is the only owner of the application schema.
+* Django database-backed sessions are the approved direction. This supersedes the older JWT statement in workspace guidance. Do not add JWT, refresh tokens, or token infrastructure.
+* No public registration, organization onboarding, email integration, production features, cutting features, or frontend screens in this phase.
+
+## Implement
+
+1. Inspect the current code and verify the planned changes against the actual repository before editing.
+
+2. Add a custom Django user model based on AbstractUser, with one authoritative role field restricted to:
+
+   * cutting_operator
+   * production_supervisor
+   * manager
+
+   Include account activation support, mandatory temporary-password replacement state, temporary-password expiry, and a session-version mechanism for user-wide session invalidation. Use Django's password hashing and validation facilities. Do not expose Django is_staff, is_superuser, groups, or technical permissions as application roles.
+
+3. Add a minimal audit-event model for sensitive account and role changes. Include safe actor/target references, event type, timestamp, outcome, allowlisted change details, and a request correlation identifier where available. Do not store passwords, session identifiers, CSRF tokens, cookies, or arbitrary request bodies.
+
+4. Prepare Django app, settings, middleware, session, CSRF, and cookie configuration changes for the approved architecture. Keep configuration consistent with the current same-origin `/` and `/api` routing. Do not claim HTTPS or secure-cookie behavior is verified in production.
+
+5. Review how the existing Django authentication hash can use the session-version field to invalidate a user's existing sessions after account deactivation, role change, or password reset. Do not implement unnecessary custom session registries.
+
+## Database and migration safety
+
+* Generate reviewable migration files for the custom user and audit models, if the repository's actual migration state supports this safely.
+* Do not apply migrations to any database.
+* Preserve `default_transaction_read_only=on`.
+* Do not enable database writes, create accounts or credentials, provision the initial Manager, or run database write operations.
+* Do not add automatic migrations to startup commands.
+* Do not change production secrets or environment variables.
+* If the model/configuration changes cannot remain runnable before migrations are applied, keep the necessary activation pending and explain the smallest safe activation sequence. Do not break the running Phase 1 health endpoints.
+
+## Validation
+
+Run only checks that are safe without modifying the application database. Inspect test configuration before running tests; do not assume a test command cannot connect to or alter the application database.
+
+Report:
+
+* Files changed and why.
+* The custom user and audit model design.
+* Migration files, dependency graph, constraints, and indexes.
+* Settings prepared versus settings activated.
+* Checks actually run and their results.
+* Any deferred tests requiring an isolated PostgreSQL test database.
+* Exact next steps needed to review and later apply migrations.
+
+Do not claim database-backed authentication works in this phase. Do not implement login/logout endpoints or UI yet.
+
+Stop after this phase and provide a concise implementation report. Do not proceed to Phase 2B, apply migrations, publish, or add business features.

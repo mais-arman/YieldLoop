@@ -1,7 +1,8 @@
 # YieldLoop
 
-Material Yield & Production Intelligence Platform. Currently Phase 1 only:
-a bilingual foundation status screen and schema-independent Django health API.
+Material Yield & Production Intelligence Platform. Phase 1 remains active:
+a bilingual status screen and schema-independent Django health API.
+Phase 2A adds inactive authentication schema and reviewable migrations only.
 
 ## Run & Operate
 
@@ -9,7 +10,7 @@ a bilingual foundation status screen and schema-independent Django health API.
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- Do not run database migrations or Drizzle schema pushes in Phase 1.
+- Do not apply migrations or run Drizzle schema pushes without separate approval.
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
@@ -42,17 +43,21 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 
 ## User preferences
 
-- Stop after Phase 1 for review. No authentication, organizations, jobs, inventory,
-  reconciliation, dashboards, cutting optimization, fabricated factory data, or migrations.
+- Stop after Phase 2A for review. Migration generation is approved; migration
+  application, database writes, authentication endpoints, and frontend screens are not.
+- Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
+  Production Supervisor, and Manager roles; no public registration or tenant onboarding.
 - Follow the YieldLoop domain, design-system, and engineering-quality skills.
-- Ibn Khaldoun Printing and Publishing is the intended initial operator; keep the product
-  configurable for other organizations rather than hardcoding factory-specific rules.
+- Ibn Khaldoun Printing and Publishing is the current single business. Do not hardcode
+  factory-specific rules or introduce multi-tenant memberships.
 
 ## Gotchas
 
 - Root README describes production configuration gates. Do not publish as production-ready.
 - The connection is intentionally read-only in Phase 1.
 - Never commit credentials or log database exception details.
+- Read `docs/phase-2a.md` before activating authentication. The runtime still uses
+  `config.settings`; `config.schema_settings` is offline tooling only.
 
 ## Pointers
 
