@@ -22,3 +22,10 @@ timeoutMs = 20000
 [nix]
 channel = "stable-25_05"
 packages = ["postgresql"]
+
+[userenv]
+
+[userenv.development]
+DJANGO_SETTINGS_MODULE = "config.session_settings"
+YIELDLOOP_DEV_CLUSTER = "7694975907574124564"
+YIELDLOOP_DEV_DATABASE = "heliumdb"

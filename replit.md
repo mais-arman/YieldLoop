@@ -2,7 +2,7 @@
 
 Material Yield & Production Intelligence Platform. Phase 1 remains active:
 a bilingual status screen and schema-independent Django health API.
-Phase 2A adds inactive authentication schema and reviewable migrations only.
+Phase 2B enables Django sessions and employee role management in verified development.
 
 ## Run & Operate
 
@@ -43,8 +43,8 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 
 ## User preferences
 
-- Stop after Phase 2A for review. Migration generation is approved; migration
-  application, database writes, authentication endpoints, and frontend screens are not.
+- Phase 2B migrations and authentication are approved only for the positively
+  identified development database. Stop before business features or publishing.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
 - Follow the YieldLoop domain, design-system, and engineering-quality skills.
@@ -56,8 +56,8 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 - Root README describes production configuration gates. Do not publish as production-ready.
 - The connection is intentionally read-only in Phase 1.
 - Never commit credentials or log database exception details.
-- Read `docs/phase-2a.md` before activating authentication. The runtime still uses
-  `config.settings`; `config.schema_settings` is offline tooling only.
+- Read `docs/phase-2b.md` for development write guards, tests, and first-Manager setup.
+  Development selects `config.session_settings`; `config.schema_settings` is offline only.
 
 ## Pointers
 

@@ -47,3 +47,10 @@ class User(AbstractUser):
             secret=secret,
             algorithm="sha256",
         ).hexdigest()
+
+
+class AuthRateBucket(models.Model):
+    """Shared rate state keyed by HMAC, never raw usernames or client addresses."""
+    key = models.CharField(max_length=64, primary_key=True)
+    window_start = models.DateTimeField()
+    count = models.PositiveIntegerField(default=0)

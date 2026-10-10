@@ -5,34 +5,51 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
-  UseQueryResult,
-} from "@tanstack/react-query";
+  UseQueryResult
+} from '@tanstack/react-query';
 
-import type { HealthStatus, ReadinessStatus } from "./api.schemas";
+import type {
+  AcquireCsrf200,
+  AddEmployeeBody,
+  Employee,
+  HealthStatus,
+  ModifyEmployeeBody,
+  ReadinessStatus,
+  ReplacePasswordBody,
+  ResetEmployeePasswordBody,
+  SessionLogin200,
+  SessionLoginBody
+} from './api.schemas';
 
-import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import { customFetch } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-const withQueryKey = <T extends object, K>(
-  query: T,
-  queryKey: K,
-): T & { queryKey: K } => {
+
+
+const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === "queryKey") continue;
+    if (key === 'queryKey') continue;
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
@@ -42,152 +59,869 @@ const withQueryKey = <T extends object, K>(
   return result;
 };
 
-export const getDatabaseReadinessUrl = () => {
-  return `/api/v1/health/ready`;
-};
-/**
- * @summary Check actual PostgreSQL connectivity
- */
-export const databaseReadiness = async (
-  options?: Parameters<typeof customFetch>[1],
-): Promise<ReadinessStatus> => {
-  return customFetch<ReadinessStatus>(getDatabaseReadinessUrl(), {
+export const getAcquireCsrfUrl = () => {
+
+
+
+
+  return `/api/v1/auth/csrf`
+}
+
+export const acquireCsrf = async ( options?: Parameters<typeof customFetch>[1]): Promise<AcquireCsrf200> => {
+
+  return customFetch<AcquireCsrf200>(getAcquireCsrfUrl(),
+  {
     ...options,
-    method: "GET",
-  });
-};
+    method: 'GET'
 
-export const getDatabaseReadinessQueryKey = () => {
-  return [`/api/v1/health/ready`] as const;
-};
 
-export const getDatabaseReadinessQueryOptions = <
-  TData = Awaited<ReturnType<typeof databaseReadiness>>,
-  TError = ErrorType<ReadinessStatus>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof databaseReadiness>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+  }
+);}
 
-  const queryKey = queryOptions?.queryKey ?? getDatabaseReadinessQueryKey();
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof databaseReadiness>>
-  > = ({ signal }) => databaseReadiness({ signal, ...requestOptions });
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof databaseReadiness>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
 
-export type DatabaseReadinessQueryResult = NonNullable<
-  Awaited<ReturnType<typeof databaseReadiness>>
->;
-export type DatabaseReadinessQueryError = ErrorType<ReadinessStatus>;
 
-/**
- * @summary Check actual PostgreSQL connectivity
- */
+export const getAcquireCsrfQueryKey = () => {
+    return [
+    `/api/v1/auth/csrf`
+    ] as const;
+    }
 
-export function useDatabaseReadiness<
-  TData = Awaited<ReturnType<typeof databaseReadiness>>,
-  TError = ErrorType<ReadinessStatus>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof databaseReadiness>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getDatabaseReadinessQueryOptions(options);
 
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
+export const getAcquireCsrfQueryOptions = <TData = Awaited<ReturnType<typeof acquireCsrf>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof acquireCsrf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAcquireCsrfQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof acquireCsrf>>> = ({ signal }) => acquireCsrf({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof acquireCsrf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AcquireCsrfQueryResult = NonNullable<Awaited<ReturnType<typeof acquireCsrf>>>
+export type AcquireCsrfQueryError = ErrorType<unknown>
+
+
+
+export function useAcquireCsrf<TData = Awaited<ReturnType<typeof acquireCsrf>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof acquireCsrf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAcquireCsrfQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
+
+
+
+
+
+
+export const getSessionLoginUrl = () => {
+
+
+
+
+  return `/api/v1/auth/login`
+}
+
+/**
+ * Requires X-CSRFToken and CSRF cookie; rotates session and CSRF token.
+ */
+export const sessionLogin = async (sessionLoginBody: SessionLoginBody, options?: Parameters<typeof customFetch>[1]): Promise<SessionLogin200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SessionLogin200>(getSessionLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sessionLoginBody)
+  }
+);}
+
+
+
+
+
+export const getSessionLoginMutationKey = () => ['sessionLogin'] as const;
+
+export const getSessionLoginMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sessionLogin>>, TError,SessionLoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sessionLogin>>, TError,SessionLoginMutationVariables, TContext> => {
+
+const mutationKey = getSessionLoginMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sessionLogin>>, SessionLoginMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  sessionLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SessionLoginMutationResult = NonNullable<Awaited<ReturnType<typeof sessionLogin>>>
+    export type SessionLoginMutationBody = BodyType<SessionLoginBody>
+    export type SessionLoginMutationError = ErrorType<void>
+    export type SessionLoginMutationVariables = {data: BodyType<SessionLoginBody>}
+
+    export const useSessionLogin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sessionLogin>>, TError,SessionLoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sessionLogin>>,
+        TError,
+        SessionLoginMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSessionLoginMutationOptions(options));
+    }
+
+export const getCurrentEmployeeUrl = () => {
+
+
+
+
+  return `/api/v1/auth/me`
+}
+
+export const currentEmployee = async ( options?: Parameters<typeof customFetch>[1]): Promise<Employee> => {
+
+  return customFetch<Employee>(getCurrentEmployeeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCurrentEmployeeQueryKey = () => {
+    return [
+    `/api/v1/auth/me`
+    ] as const;
+    }
+
+
+export const getCurrentEmployeeQueryOptions = <TData = Awaited<ReturnType<typeof currentEmployee>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof currentEmployee>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCurrentEmployeeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof currentEmployee>>> = ({ signal }) => currentEmployee({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof currentEmployee>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CurrentEmployeeQueryResult = NonNullable<Awaited<ReturnType<typeof currentEmployee>>>
+export type CurrentEmployeeQueryError = ErrorType<void>
+
+
+
+export function useCurrentEmployee<TData = Awaited<ReturnType<typeof currentEmployee>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof currentEmployee>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCurrentEmployeeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSessionLogoutUrl = () => {
+
+
+
+
+  return `/api/v1/auth/logout`
+}
+
+/**
+ * Requires CSRF; flushes the current session.
+ */
+export const sessionLogout = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getSessionLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSessionLogoutMutationKey = () => ['sessionLogout'] as const;
+
+export const getSessionLogoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sessionLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sessionLogout>>, TError,void, TContext> => {
+
+const mutationKey = getSessionLogoutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sessionLogout>>, void> = () => {
+
+
+          return  sessionLogout(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SessionLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof sessionLogout>>>
+
+    export type SessionLogoutMutationError = ErrorType<unknown>
+
+
+    export const useSessionLogout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sessionLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sessionLogout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSessionLogoutMutationOptions(options));
+    }
+
+export const getReplacePasswordUrl = () => {
+
+
+
+
+  return `/api/v1/auth/password`
+}
+
+/**
+ * Requires CSRF; invalidates all sessions and logs out.
+ */
+export const replacePassword = async (replacePasswordBody: ReplacePasswordBody, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getReplacePasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(replacePasswordBody)
+  }
+);}
+
+
+
+
+
+export const getReplacePasswordMutationKey = () => ['replacePassword'] as const;
+
+export const getReplacePasswordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replacePassword>>, TError,ReplacePasswordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replacePassword>>, TError,ReplacePasswordMutationVariables, TContext> => {
+
+const mutationKey = getReplacePasswordMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replacePassword>>, ReplacePasswordMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  replacePassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplacePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof replacePassword>>>
+    export type ReplacePasswordMutationBody = BodyType<ReplacePasswordBody>
+    export type ReplacePasswordMutationError = ErrorType<void>
+    export type ReplacePasswordMutationVariables = {data: BodyType<ReplacePasswordBody>}
+
+    export const useReplacePassword = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replacePassword>>, TError,ReplacePasswordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof replacePassword>>,
+        TError,
+        ReplacePasswordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReplacePasswordMutationOptions(options));
+    }
+
+export const getListEmployeesUrl = () => {
+
+
+
+
+  return `/api/v1/employees`
+}
+
+export const listEmployees = async ( options?: Parameters<typeof customFetch>[1]): Promise<Employee[]> => {
+
+  return customFetch<Employee[]>(getListEmployeesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEmployeesQueryKey = () => {
+    return [
+    `/api/v1/employees`
+    ] as const;
+    }
+
+
+export const getListEmployeesQueryOptions = <TData = Awaited<ReturnType<typeof listEmployees>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmployees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEmployeesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEmployees>>> = ({ signal }) => listEmployees({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEmployees>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEmployeesQueryResult = NonNullable<Awaited<ReturnType<typeof listEmployees>>>
+export type ListEmployeesQueryError = ErrorType<unknown>
+
+
+
+export function useListEmployees<TData = Awaited<ReturnType<typeof listEmployees>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmployees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEmployeesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddEmployeeUrl = () => {
+
+
+
+
+  return `/api/v1/employees`
+}
+
+/**
+ * Manager-only; CSRF required; temporary password expires in 24 hours.
+ */
+export const addEmployee = async (addEmployeeBody: AddEmployeeBody, options?: Parameters<typeof customFetch>[1]): Promise<Employee> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Employee>(getAddEmployeeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(addEmployeeBody)
+  }
+);}
+
+
+
+
+
+export const getAddEmployeeMutationKey = () => ['addEmployee'] as const;
+
+export const getAddEmployeeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addEmployee>>, TError,AddEmployeeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addEmployee>>, TError,AddEmployeeMutationVariables, TContext> => {
+
+const mutationKey = getAddEmployeeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addEmployee>>, AddEmployeeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  addEmployee(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddEmployeeMutationResult = NonNullable<Awaited<ReturnType<typeof addEmployee>>>
+    export type AddEmployeeMutationBody = BodyType<AddEmployeeBody>
+    export type AddEmployeeMutationError = ErrorType<unknown>
+    export type AddEmployeeMutationVariables = {data: BodyType<AddEmployeeBody>}
+
+    export const useAddEmployee = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addEmployee>>, TError,AddEmployeeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addEmployee>>,
+        TError,
+        AddEmployeeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddEmployeeMutationOptions(options));
+    }
+
+export const getModifyEmployeeUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/employees/${id}`
+}
+
+/**
+ * Manager-only; CSRF required; revokes affected sessions.
+ */
+export const modifyEmployee = async (id: number,
+    modifyEmployeeBody: ModifyEmployeeBody, options?: Parameters<typeof customFetch>[1]): Promise<Employee> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Employee>(getModifyEmployeeUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(modifyEmployeeBody)
+  }
+);}
+
+
+
+
+
+export const getModifyEmployeeMutationKey = () => ['modifyEmployee'] as const;
+
+export const getModifyEmployeeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof modifyEmployee>>, TError,ModifyEmployeeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof modifyEmployee>>, TError,ModifyEmployeeMutationVariables, TContext> => {
+
+const mutationKey = getModifyEmployeeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof modifyEmployee>>, ModifyEmployeeMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  modifyEmployee(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ModifyEmployeeMutationResult = NonNullable<Awaited<ReturnType<typeof modifyEmployee>>>
+    export type ModifyEmployeeMutationBody = BodyType<ModifyEmployeeBody>
+    export type ModifyEmployeeMutationError = ErrorType<unknown>
+    export type ModifyEmployeeMutationVariables = {id: number;data: BodyType<ModifyEmployeeBody>}
+
+    export const useModifyEmployee = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof modifyEmployee>>, TError,ModifyEmployeeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof modifyEmployee>>,
+        TError,
+        ModifyEmployeeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getModifyEmployeeMutationOptions(options));
+    }
+
+export const getResetEmployeePasswordUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/employees/${id}/password`
+}
+
+/**
+ * Manager-only; CSRF required; reissues temporary password and revokes sessions.
+ */
+export const resetEmployeePassword = async (id: number,
+    resetEmployeePasswordBody: ResetEmployeePasswordBody, options?: Parameters<typeof customFetch>[1]): Promise<Employee> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Employee>(getResetEmployeePasswordUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resetEmployeePasswordBody)
+  }
+);}
+
+
+
+
+
+export const getResetEmployeePasswordMutationKey = () => ['resetEmployeePassword'] as const;
+
+export const getResetEmployeePasswordMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetEmployeePassword>>, TError,ResetEmployeePasswordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetEmployeePassword>>, TError,ResetEmployeePasswordMutationVariables, TContext> => {
+
+const mutationKey = getResetEmployeePasswordMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetEmployeePassword>>, ResetEmployeePasswordMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resetEmployeePassword(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetEmployeePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof resetEmployeePassword>>>
+    export type ResetEmployeePasswordMutationBody = BodyType<ResetEmployeePasswordBody>
+    export type ResetEmployeePasswordMutationError = ErrorType<unknown>
+    export type ResetEmployeePasswordMutationVariables = {id: number;data: BodyType<ResetEmployeePasswordBody>}
+
+    export const useResetEmployeePassword = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetEmployeePassword>>, TError,ResetEmployeePasswordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resetEmployeePassword>>,
+        TError,
+        ResetEmployeePasswordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResetEmployeePasswordMutationOptions(options));
+    }
+
+export const getDatabaseReadinessUrl = () => {
+
+
+
+
+  return `/api/v1/health/ready`
+}
+
+/**
+ * @summary Check actual PostgreSQL connectivity
+ */
+export const databaseReadiness = async ( options?: Parameters<typeof customFetch>[1]): Promise<ReadinessStatus> => {
+
+  return customFetch<ReadinessStatus>(getDatabaseReadinessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDatabaseReadinessQueryKey = () => {
+    return [
+    `/api/v1/health/ready`
+    ] as const;
+    }
+
+
+export const getDatabaseReadinessQueryOptions = <TData = Awaited<ReturnType<typeof databaseReadiness>>, TError = ErrorType<ReadinessStatus>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof databaseReadiness>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDatabaseReadinessQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof databaseReadiness>>> = ({ signal }) => databaseReadiness({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof databaseReadiness>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DatabaseReadinessQueryResult = NonNullable<Awaited<ReturnType<typeof databaseReadiness>>>
+export type DatabaseReadinessQueryError = ErrorType<ReadinessStatus>
+
+
+/**
+ * @summary Check actual PostgreSQL connectivity
+ */
+
+export function useDatabaseReadiness<TData = Awaited<ReturnType<typeof databaseReadiness>>, TError = ErrorType<ReadinessStatus>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof databaseReadiness>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDatabaseReadinessQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getHealthCheckUrl = () => {
-  return `/api/healthz`;
-};
+
+
+
+
+  return `/api/healthz`
+}
 
 /**
  * Returns server health status
  * @summary Health check
  */
-export const healthCheck = async (
-  options?: Parameters<typeof customFetch>[1],
-): Promise<HealthStatus> => {
-  return customFetch<HealthStatus>(getHealthCheckUrl(), {
+export const healthCheck = async ( options?: Parameters<typeof customFetch>[1]): Promise<HealthStatus> => {
+
+  return customFetch<HealthStatus>(getHealthCheckUrl(),
+  {
     ...options,
-    method: "GET",
-  });
-};
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
 
 export const getHealthCheckQueryKey = () => {
-  return [`/api/healthz`] as const;
-};
+    return [
+    `/api/healthz`
+    ] as const;
+    }
 
-export const getHealthCheckQueryOptions = <
-  TData = Awaited<ReturnType<typeof healthCheck>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof healthCheck>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getHealthCheckQueryKey();
+export const getHealthCheckQueryOptions = <TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({
-    signal,
-  }) => healthCheck({ signal, ...requestOptions });
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof healthCheck>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
+  const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
 
-export type HealthCheckQueryResult = NonNullable<
-  Awaited<ReturnType<typeof healthCheck>>
->;
-export type HealthCheckQueryError = ErrorType<unknown>;
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({ signal }) => healthCheck({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type HealthCheckQueryResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>
+export type HealthCheckQueryError = ErrorType<unknown>
+
 
 /**
  * @summary Health check
  */
 
-export function useHealthCheck<
-  TData = Awaited<ReturnType<typeof healthCheck>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof healthCheck>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getHealthCheckQueryOptions(options);
+export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
+
+

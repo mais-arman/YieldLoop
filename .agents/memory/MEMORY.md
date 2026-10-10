@@ -1,0 +1,1 @@
+- [Authentication regression checks](auth-regression-checks.md) — verify the first successful login after rejection, not just repeat login in an established browser.

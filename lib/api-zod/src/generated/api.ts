@@ -5,20 +5,164 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from "zod";
+import * as zod from 'zod';
+
+
+export const AcquireCsrfResponse = zod.object({
+  "csrfToken": zod.string()
+})
+
+
+/**
+ * Requires X-CSRFToken and CSRF cookie; rotates session and CSRF token.
+ */
+export const SessionLoginBody = zod.object({
+  "username": zod.string(),
+  "password": zod.string()
+})
+
+export const SessionLoginResponse = zod.object({
+  "user": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "is_active": zod.boolean(),
+  "must_change_password": zod.boolean(),
+  "temporary_password_expired": zod.boolean()
+}),
+  "csrfToken": zod.string()
+})
+
+
+export const CurrentEmployeeResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "is_active": zod.boolean(),
+  "must_change_password": zod.boolean(),
+  "temporary_password_expired": zod.boolean()
+})
+
+
+/**
+ * Requires CSRF; flushes the current session.
+ */
+export const SessionLogoutResponse = zod.unknown()
+
+
+/**
+ * Requires CSRF; invalidates all sessions and logs out.
+ */
+export const ReplacePasswordBody = zod.object({
+  "current_password": zod.string(),
+  "new_password": zod.string()
+})
+
+export const ReplacePasswordResponse = zod.unknown()
+
+
+export const ListEmployeesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "is_active": zod.boolean(),
+  "must_change_password": zod.boolean(),
+  "temporary_password_expired": zod.boolean()
+})
+export const ListEmployeesResponse = zod.array(ListEmployeesResponseItem)
+
+
+/**
+ * Manager-only; CSRF required; temporary password expires in 24 hours.
+ */
+export const AddEmployeeBody = zod.object({
+  "username": zod.string(),
+  "first_name": zod.string().optional(),
+  "last_name": zod.string().optional(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "temporary_password": zod.string()
+})
+
+export const AddEmployeeResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "is_active": zod.boolean(),
+  "must_change_password": zod.boolean(),
+  "temporary_password_expired": zod.boolean()
+})
+
+
+/**
+ * Manager-only; CSRF required; revokes affected sessions.
+ */
+export const ModifyEmployeeParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ModifyEmployeeBody = zod.object({
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']).optional(),
+  "is_active": zod.boolean().optional()
+})
+
+export const ModifyEmployeeResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "is_active": zod.boolean(),
+  "must_change_password": zod.boolean(),
+  "temporary_password_expired": zod.boolean()
+})
+
+
+/**
+ * Manager-only; CSRF required; reissues temporary password and revokes sessions.
+ */
+export const ResetEmployeePasswordParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ResetEmployeePasswordBody = zod.object({
+  "temporary_password": zod.string()
+})
+
+export const ResetEmployeePasswordResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "role": zod.enum(['cutting_operator', 'production_supervisor', 'manager']),
+  "is_active": zod.boolean(),
+  "must_change_password": zod.boolean(),
+  "temporary_password_expired": zod.boolean()
+})
+
 
 /**
  * @summary Check actual PostgreSQL connectivity
  */
 export const DatabaseReadinessResponse = zod.object({
-  status: zod.enum(["ready", "unavailable"]),
-  database: zod.enum(["connected", "unavailable"]),
-});
+  "status": zod.enum(['ready', 'unavailable']),
+  "database": zod.enum(['connected', 'unavailable'])
+})
+
 
 /**
  * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  status: zod.string(),
-});
+  "status": zod.string()
+})
+
+

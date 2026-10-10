@@ -11,6 +11,144 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/auth/csrf:
+    get:
+      operationId: acquireCsrf
+      responses:
+        "200":
+          description: Masked CSRF token; cookie is HttpOnly
+          content:
+            application/json:
+              schema: {type: object, required: [csrfToken], properties: {csrfToken: {type: string}}}
+  /v1/auth/login:
+    post:
+      operationId: sessionLogin
+      description: Requires X-CSRFToken and CSRF cookie; rotates session and CSRF token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [username, password], properties: {username: {type: string}, password: {type: string, writeOnly: true}}}
+      responses:
+        "200":
+          description: Authenticated; session cookie set
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user, csrfToken]
+                properties:
+                  user: {$ref: "#/components/schemas/Employee"}
+                  csrfToken: {type: string}
+        "401": {description: Invalid credentials or expired temporary password}
+        "403": {description: Invalid CSRF}
+        "429": {description: Shared rate limit exceeded}
+  /v1/auth/me:
+    get:
+      operationId: currentEmployee
+      security: [{sessionCookie: []}]
+      responses:
+        "200":
+          description: Safe current identity, including restricted password state
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Employee"}
+        "401": {description: No valid session}
+  /v1/auth/logout:
+    post:
+      operationId: sessionLogout
+      security: [{sessionCookie: []}]
+      description: Requires CSRF; flushes the current session.
+      responses:
+        "200": {description: Logged out}
+  /v1/auth/password:
+    post:
+      operationId: replacePassword
+      security: [{sessionCookie: []}]
+      description: Requires CSRF; invalidates all sessions and logs out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [current_password, new_password], properties: {current_password: {type: string, writeOnly: true}, new_password: {type: string, writeOnly: true}}}
+      responses:
+        "200": {description: Password changed}
+        "403": {description: Expired temporary password or invalid CSRF}
+  /v1/employees:
+    get:
+      operationId: listEmployees
+      security: [{sessionCookie: []}]
+      responses:
+        "200":
+          description: Manager-only employee list
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Employee"}}
+    post:
+      operationId: addEmployee
+      security: [{sessionCookie: []}]
+      description: Manager-only; CSRF required; temporary password expires in 24 hours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, role, temporary_password]
+              properties:
+                username: {type: string}
+                first_name: {type: string}
+                last_name: {type: string}
+                role: {$ref: "#/components/schemas/EmployeeRole"}
+                temporary_password: {type: string, writeOnly: true}
+      responses:
+        "201":
+          description: Employee created; no password returned
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Employee"}
+  /v1/employees/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    patch:
+      operationId: modifyEmployee
+      security: [{sessionCookie: []}]
+      description: Manager-only; CSRF required; revokes affected sessions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                role: {$ref: "#/components/schemas/EmployeeRole"}
+                is_active: {type: boolean}
+      responses:
+        "200":
+          description: Employee updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Employee"}
+  /v1/employees/{id}/password:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: resetEmployeePassword
+      security: [{sessionCookie: []}]
+      description: Manager-only; CSRF required; reissues temporary password and revokes sessions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [temporary_password], properties: {temporary_password: {type: string, writeOnly: true}}}
+      responses:
+        "200":
+          description: Password reset; no password returned
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Employee"}
   /v1/health/ready:
     get:
       operationId: databaseReadiness
@@ -43,7 +181,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 components:
+  securitySchemes:
+    sessionCookie: {type: apiKey, in: cookie, name: yieldloop_session}
   schemas:
+    EmployeeRole:
+      type: string
+      enum: [cutting_operator, production_supervisor, manager]
+    Employee:
+      type: object
+      required: [id, username, first_name, last_name, role, is_active, must_change_password, temporary_password_expired]
+      properties:
+        id: {type: integer}
+        username: {type: string}
+        first_name: {type: string}
+        last_name: {type: string}
+        role: {$ref: "#/components/schemas/EmployeeRole"}
+        is_active: {type: boolean}
+        must_change_password: {type: boolean}
+        temporary_password_expired: {type: boolean}
     ReadinessStatus:
       type: object
       required: [status, database]

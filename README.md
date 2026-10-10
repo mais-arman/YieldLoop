@@ -1,5 +1,10 @@
 # YieldLoop — Phase 1 foundation
 
+**Current status: Phase 2B authentication is active in verified development.**
+See [Phase 2B operations and test guide](docs/phase-2b.md), including explicit
+first-Manager provisioning. No default employee credentials exist.
+The sections below retain the earlier foundation verification history.
+
 Phase 2A adds **inactive authentication schema and reviewable migrations**.
 The running service remains the Phase 1 health API; no migrations were applied.
 See [Phase 2A review and activation gates](docs/phase-2a.md) before changing the

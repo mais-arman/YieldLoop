@@ -1,0 +1,32 @@
+Implement YieldLoop Phase 2B now: working authentication and role-based access control.
+
+Continue from the existing Phase 1 foundation and Phase 2A schema. Do not restart the project or replace the existing React/Django/PostgreSQL architecture.
+
+Use the existing custom Django user model and Django database sessions. Do not use JWT.
+
+Implement:
+
+1. Apply the reviewed authentication schema migrations only to the configured development database after verifying its target and confirming it is not a production database. Preserve the existing read-only safeguard for any database that cannot be positively identified as the development database. Do not silently bypass this safeguard.
+2. Implement CSRF acquisition, login, logout, and current-user endpoints under `/api/v1/auth/`.
+3. Enforce CSRF protection on login and all unsafe session-authenticated requests. Configure session cookies as HttpOnly, host-only, SameSite=Lax, and Secure when HTTPS is used. Keep the frontend and API same-origin.
+4. Implement server-side role authorization for exactly three roles: `cutting_operator`, `production_supervisor`, and `manager`. Never trust a role supplied by the client.
+5. Implement manager-only employee account creation, activation/deactivation, and role assignment. No public registration. Never return password hashes or temporary passwords from API responses.
+6. Implement secure temporary-password replacement and expiry. Accounts with expired or unreplaced temporary passwords must be restricted to the password-change flow and logout.
+7. Prevent self-demotion and protect the last active Manager, including concurrent requests, using a consistent PostgreSQL transaction-scoped lock and rechecking state inside the transaction.
+8. Add audit events for sensitive account and role changes without logging credentials, tokens, cookies, or request bodies.
+9. Add shared throttling for authentication endpoints that works across multiple Gunicorn workers. Do not use per-process-only throttling.
+10. Build the login page and authenticated application shell in React. Support Arabic and English, RTL/LTR, loading states, clear errors, and logout. Display the authenticated user's role. Do not build production jobs, material records, dashboards, or cutting optimization in this phase.
+
+Testing and safety:
+
+* Inspect database configuration and identify the exact development database before migration.
+* Do not use the production database or invent credentials.
+* If the database target is ambiguous, stop before applying migrations and report the blocker while continuing safe code implementation and tests.
+* Do not run migrations automatically on application startup.
+* Add tests for CSRF including anonymous login, valid/invalid login, disabled users, session fixation, logout, session invalidation after password/role/activation changes, expired temporary passwords, role restrictions, privilege injection, concurrent last-Manager protection, audit safety, and shared throttling.
+* Run backend tests, lint, frontend typecheck/lint/build, and browser checks where supported.
+* Preserve the existing health endpoints and verify them after implementation.
+* Fix implementation issues discovered during testing rather than stopping for another planning-only review.
+* Do not publish or deploy the application.
+
+At the end, report the implemented files and features, whether migrations were actually applied and to which database, tests actually run and their results, and any remaining blockers. Do not claim any feature works unless verified.

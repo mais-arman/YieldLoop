@@ -5,6 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type EmployeeRole = typeof EmployeeRole[keyof typeof EmployeeRole];
+
+
+export const EmployeeRole = {
+  cutting_operator: 'cutting_operator',
+  production_supervisor: 'production_supervisor',
+  manager: 'manager',
+} as const;
+
+export interface Employee {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  role: EmployeeRole;
+  is_active: boolean;
+  must_change_password: boolean;
+  temporary_password_expired: boolean;
+}
+
 export type ReadinessStatusStatus = typeof ReadinessStatusStatus[keyof typeof ReadinessStatusStatus];
 
 
@@ -29,3 +49,40 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type AcquireCsrf200 = {
+  csrfToken: string;
+};
+
+export type SessionLoginBody = {
+  username: string;
+  password: string;
+};
+
+export type SessionLogin200 = {
+  user: Employee;
+  csrfToken: string;
+};
+
+export type ReplacePasswordBody = {
+  current_password: string;
+  new_password: string;
+};
+
+export type AddEmployeeBody = {
+  username: string;
+  first_name?: string;
+  last_name?: string;
+  role: EmployeeRole;
+  temporary_password: string;
+};
+
+export type ModifyEmployeeBody = {
+  role?: EmployeeRole;
+  is_active?: boolean;
+};
+
+export type ResetEmployeePasswordBody = {
+  temporary_password: string;
+};
+

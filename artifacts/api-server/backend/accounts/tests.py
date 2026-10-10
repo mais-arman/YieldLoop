@@ -1,9 +1,12 @@
+from unittest.mock import MagicMock, patch
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.test import SimpleTestCase, override_settings
 
+from .database_guard import approve_development_connection
 from .models import User
 
 
@@ -61,3 +64,27 @@ class UserSchemaTests(SimpleTestCase):
         self.assertEqual(settings.SESSION_COOKIE_SAMESITE, "Lax")
         self.assertFalse(settings.SESSION_SAVE_EVERY_REQUEST)
         self.assertEqual(settings.CSRF_TRUSTED_ORIGINS, [])
+
+    @override_settings(ENVIRONMENT="development", TESTING=False)
+    def test_write_guard_requires_exact_cluster_and_database(self):
+        with patch.dict("os.environ", {
+            "YIELDLOOP_DEV_DATABASE": "approved_dev", "YIELDLOOP_DEV_CLUSTER": "123",
+            "REPLIT_DEPLOYMENT": "0",
+        }):
+            for target, expected in [
+                (("approved_dev", "123"), True),
+                (("other_database", "123"), False),
+                (("approved_dev", "456"), False),
+            ]:
+                connection = MagicMock(vendor="postgresql")
+                cursor = connection.cursor.return_value.__enter__.return_value
+                cursor.fetchone.return_value = target
+                approve_development_connection(None, connection)
+                writes = [call for call in cursor.execute.call_args_list if " = off" in call.args[0]]
+                self.assertEqual(bool(writes), expected)
+
+    @override_settings(ENVIRONMENT="production")
+    def test_write_guard_never_enables_production(self):
+        connection = MagicMock(vendor="postgresql")
+        approve_development_connection(None, connection)
+        connection.cursor.assert_not_called()
