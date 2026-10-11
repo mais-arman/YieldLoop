@@ -1,0 +1,448 @@
+# YieldLoop — Complete UI, Workflow, Actor, and Original Requirements Audit
+
+## Objective
+
+Produce a detailed, evidence-based inventory of the CURRENTLY IMPLEMENTED YieldLoop application so its owner can understand exactly what exists, how every page works, which role uses it, what text and controls it contains, and how well it satisfies the original Ibn Khaldoun Printing and Publishing challenge.
+
+This is a read-only application audit.
+
+**Do not redesign, implement, refactor, delete, rename, or change application functionality during this task.**
+
+Inspect the actual codebase, routes, frontend components, backend APIs, permission rules, existing documentation, and current UI wherever access is available.
+
+Create one detailed report at:
+
+`docs/yieldloop-current-application-inventory.md`
+
+You may create or update this report file only. Do not modify application source, configuration, dependencies, migrations, or database records.
+
+## Skills
+
+Follow:
+- `yieldloop-domain`
+- `yieldloop-engineering-quality`
+- `yieldloop-design-system`
+- `yieldloop-cutting-studio`
+
+Use these skills to understand the intended rules, but do not assume the implementation follows them. Verify the current implementation directly.
+
+---
+
+# PART 1 — APPLICATION STRUCTURE AND ROUTES
+
+Inspect the actual frontend routing configuration and produce a complete list of all routes currently registered in the application.
+
+Include:
+- Login and authentication pages.
+- Main application pages.
+- Dashboard and overview.
+- Production Jobs list.
+- Production Job detail and associated sections.
+- Material recording and reconciliation.
+- Inventory and offcut details/history.
+- Reports and job comparison.
+- Cutting Studio and saved-plan/history views.
+- AI or Production Assistant.
+- Employee management.
+- Password-change/account pages.
+- Not-found, access-denied, and other relevant error pages.
+- Any 3D packaging designer, prototype, or experimental route if one actually exists.
+
+Do not invent pages that only appear in documentation or previous plans.
+
+For each page or route, record:
+
+1. Exact URL/path.
+2. Page/component name.
+3. Whether it is actually registered and reachable.
+4. Whether authentication is required.
+5. Which roles may access it according to the actual backend authorization rules.
+6. Whether the route is protected only in the frontend or also by the backend.
+7. The file paths implementing it.
+8. Whether it is functional, partially implemented, unavailable, or merely a placeholder.
+
+Also identify routes that redirect, duplicate another page, have no navigation link, or appear obsolete.
+
+---
+
+# PART 2 — ACTOR-BY-ACTOR PAGE INVENTORY
+
+The application has exactly three approved application roles:
+
+1. Cutting Operator
+2. Production Supervisor
+3. Manager
+
+For EACH role, document every page that the user can access and the order in which the navigation presents those pages.
+
+Create a separate page inventory for each actor.
+
+Do not assume the three actors should see the same pages. Report the actual implementation, then identify differences between what is implemented and what appears appropriate for the original factory workflow.
+
+For every page available to a role, provide the following details.
+
+## A. Page identity and purpose
+
+- Page name as shown to the user.
+- Exact route.
+- What problem the page solves.
+- Why this actor needs the page.
+- What action the user is expected to take there.
+
+## B. All visible text
+
+Transcribe the actual visible interface wording as completely as possible.
+
+Include:
+- Page titles.
+- Subtitles and descriptions.
+- Cards and metric labels.
+- Filter labels and default values.
+- Table column headers.
+- Buttons and action labels.
+- Form field labels and placeholders.
+- Help text, tooltips, and explanatory notes.
+- Empty-state messages.
+- Validation and error messages available in the implementation.
+- Success messages and confirmation dialogs.
+- Pagination wording.
+- Status labels and badges.
+- Technical notices.
+- All visible AI availability/unavailable messages.
+
+Record Arabic and English wording separately where both translations exist.
+
+Do not replace exact existing wording with a summary. The owner needs to understand what the application currently says.
+
+If a label is dynamically generated, show its template and one actual example when safely observable. For example, if a generated timestamp or a selected-filter summary is displayed, record its format and purpose.
+
+Never include passwords, tokens, API keys, private credentials, or other secrets in the report.
+
+## C. Page layout and hierarchy
+
+Describe the actual layout:
+
+- Header and sidebar/navigation.
+- Main content width and organization.
+- Number and order of content sections.
+- Cards, charts, tables, forms, panels, dialogs, and tabs.
+- Which information appears above the fold.
+- What requires vertical or horizontal scrolling.
+- Mobile/tablet layout changes.
+- Arabic RTL versus English LTR behavior.
+- Loading, empty, error, and success layouts where implemented.
+
+Identify redundant content, duplicated information, excessive text, unnecessary status panels, unused whitespace, clutter, or unclear visual hierarchy. Explain the user impact of each problem rather than saying only that the page looks bad.
+
+## D. Controls and interactions
+
+For every visible interactive element, explain:
+
+- What happens when it is clicked, selected, submitted, opened, or changed.
+- Which API request or frontend operation it triggers, if any.
+- Whether the action actually works in the current implementation.
+- Whether the control is disabled under certain conditions.
+- Whether permissions affect its visibility or execution.
+- Whether the result is saved to PostgreSQL or is only temporary frontend state.
+- Whether an audit event or revision is created for important changes.
+- Whether the action has a confirmation, validation, loading state, or error recovery.
+
+Explicitly identify dead buttons, placeholder interactions, controls that only look functional, and UI actions that have no actual backend implementation.
+
+Do not claim a control works simply because a handler exists. Verify the implementation path, and use safe browser observation where possible.
+
+## E. Data displayed
+
+For each metric, table, chart, and record summary, explain:
+
+- Exact field or backend endpoint supplying the data.
+- Whether the data is live, persisted, derived, hardcoded, mocked, or unavailable.
+- The calculation formula for derived values.
+- Units and number formatting.
+- Filter and date semantics.
+- How corrected, voided, or superseded records are handled.
+- How zero denominators or missing values appear.
+- Whether the same information is duplicated on other pages.
+
+For charts, document the actual datasets, series, axes, legends, and underlying calculations where available.
+
+For cutting metrics, clearly distinguish geometric utilization, unused board area, material weight, good yield, scrap rate, and reusable offcuts.
+
+---
+
+# PART 3 — NAVIGATION AND ROLE PERMISSIONS
+
+Create a role/navigation matrix showing whether each actor can see and access each page.
+
+Then create a separate action-permission matrix covering key operations such as:
+
+- Create, edit, open, cancel, and close production jobs.
+- Select material and cutting machine.
+- Record material issues and output measurements.
+- Record scrap by reason and reusable offcuts.
+- Void records and create replacements.
+- View and compare jobs.
+- View source records and reports.
+- Register or void inventory lots.
+- Reserve, release, or consume offcuts.
+- Create and edit cutting plans.
+- Save or revise scenarios.
+- Create employee accounts and change roles.
+- Use AI assistance.
+- Change account settings and sign out.
+
+For each operation, distinguish:
+- Visible in the UI.
+- Permitted by the frontend.
+- Actually permitted by the backend.
+- Implemented and usable.
+- Blocked or not implemented.
+
+Do not infer backend authorization from hidden buttons alone.
+
+Pay special attention to whether the current application shows management-only Dashboard/Reports/Employees pages to the Operator, and whether direct URL/API access is correctly restricted.
+
+---
+
+# PART 4 — FULL PAGE-BY-PAGE INVENTORY
+
+Provide a dedicated section for each page, not just a general summary.
+
+Use this format:
+
+## Page: [Exact page name]
+
+- Route:
+- Purpose:
+- Actors allowed:
+- Implementation status:
+- Source files:
+- Backend endpoints/data sources:
+
+### Visible English text
+Transcribe the actual text, headings, labels, table columns, actions, messages, and visible technical notices.
+
+### Visible Arabic text
+Transcribe the corresponding current Arabic copy, including any missing or untranslated strings.
+
+### Layout and elements
+Describe the actual composition and order of content.
+
+### Interactions
+List the important controls and explain their actual behavior.
+
+### Data and calculations
+Document fields, endpoint sources, formulas, units, and formatting.
+
+### Current UX issues
+Identify specific, observed problems with clutter, wording, navigation, spacing, hierarchy, scrolling, responsiveness, or ambiguity.
+
+### Original requirement mapping
+Identify which requirements this page supports and any gaps.
+
+Repeat this for every actual page and significant subpage.
+
+---
+
+# PART 5 — ORIGINAL IBN KHALDOUN CHALLENGE COMPLIANCE
+
+Use the exact original challenge brief as the baseline:
+
+- Digital job card.
+- Material and cutting machine selection.
+- Issued board weight.
+- Good product output.
+- Scrap by reason.
+- Reusable offcuts separated from scrap.
+- Rework recorded separately when applicable.
+- Automatic material-balance validation.
+- Yield and scrap calculations with explicit definitions.
+- Same-machine job comparison.
+- Access to supporting records behind the difference.
+- IK-202 and IK-203 demonstration data.
+- Correct setup/layout versus damaged scrap breakdown for IK-202.
+- Correctly unspecified scrap reasons for IK-203 when source data does not provide a breakdown.
+- Optional evidence-based AI assistance that suggests investigation without asserting an unverified root cause.
+- Factory demonstration that reproduces the calculations.
+
+For every requirement, assign exactly one status:
+
+- **PASS — Verified:** implementation and evidence confirm the requirement works.
+- **PARTIAL:** some functionality exists but the entire requirement is not satisfied.
+- **MISSING:** no working implementation was found.
+- **UNVERIFIED:** evidence is insufficient to establish the actual behavior.
+
+For every status, cite the specific page, component, API endpoint, test, or persisted demonstration record supporting the conclusion.
+
+Do not mark a feature PASS merely because its name appears in documentation, a button exists, or a mock response is displayed.
+
+Explicitly verify the expected case results:
+
+IK-202:
+- Issued: 1,200 kg.
+- Good output: 900 kg.
+- Setup/layout scrap: 180 kg.
+- Damaged scrap: 60 kg.
+- Total scrap: 240 kg.
+- Reusable offcuts: 60 kg.
+- Variance: 0 kg.
+- Scrap rate: 20%.
+- Good yield: 75%.
+
+IK-203:
+- Issued: 1,000 kg.
+- Good output: 820 kg.
+- Scrap: 100 kg.
+- Reusable offcuts: 80 kg.
+- Variance: 0 kg.
+- Scrap rate: 10%.
+- Good yield: 82%.
+
+Comparison:
+- Both use CT-2.
+- Scrap-rate difference: 10 percentage points.
+- Good-yield difference: 7 percentage points.
+- The 180 kg setup/layout entry is the largest recorded scrap category in IK-202, not proof of an established root cause.
+
+If the records have been changed since the previous reports, report the actual current values and do not modify the data to force it to match.
+
+---
+
+# PART 6 — WHAT WAS BUILT BEYOND THE ORIGINAL CHALLENGE?
+
+Identify additional functionality found in the current codebase, including where relevant:
+
+- Authentication and account administration.
+- Role-specific dashboards.
+- Advanced job workflow protections.
+- Inventory provenance and correction history.
+- Cutting Studio interaction, saved plans, revisions, and scenario comparison.
+- Production reports and analytics.
+- AI Assistant integration or provider-unavailable UI.
+- 3D packaging design or preview.
+- Other experimental or optional functionality.
+
+For each additional feature, state whether it is:
+- Implemented and verified.
+- Partially implemented.
+- Only documented or planned.
+- Unavailable.
+
+Explain whether it supports the core challenge or introduces complexity not needed to demonstrate the original business opportunity.
+
+Do not remove or change anything during this audit.
+
+---
+
+# PART 7 — UI/UX ISSUES AND RECOMMENDED DESIGN CHANGES
+
+Produce a prioritized list of actual interface problems to address in the future design phase.
+
+Consider:
+
+- Navigation clutter and redundant routes.
+- Pages that should not be shown to particular actors.
+- The login screen and first-time user experience.
+- Dashboard content that is irrelevant to Operators.
+- Reports versus Dashboard duplication.
+- Redundant text such as repeated filter summaries or technical timestamps.
+- Pagination wording and controls.
+- Language selection and account-menu organization.
+- Empty states, validation, errors, and confirmation dialogs.
+- Cutting Studio information hierarchy and workspace proportions.
+- AI Assistant entry point and unavailable-provider behavior.
+- Arabic RTL, English LTR, number formatting, mobile behavior, and accessibility.
+
+For each issue, identify:
+1. The exact page.
+2. The actual problematic text or element.
+3. Why it is unnecessary or confusing.
+4. What should replace it or whether it should simply be removed.
+5. Whether removal could affect a required workflow.
+
+Separate cosmetic changes from required functional fixes.
+
+Do not redesign anything in this task.
+
+---
+
+# PART 8 — USER WORKFLOWS
+
+Write clear, numbered, actor-specific instructions explaining how the current application is actually used.
+
+At minimum, document:
+
+### Cutting Operator
+How the Operator enters the application, finds an available job, opens job details, records or views production data under existing permissions, uses the Cutting Studio if permitted, and sees validation/reconciliation results.
+
+### Production Supervisor
+How the Supervisor monitors jobs, reviews reconciliation discrepancies, checks inventory, compares jobs, and accesses permitted reports.
+
+### Manager
+How the Manager accesses the dashboard, creates employee accounts, manages jobs and materials within current permissions, opens reports, compares IK-202 and IK-203, and inspects source records.
+
+### Factory demonstration
+Provide a numbered demonstration script for IK-202 and IK-203, with expected values at each step. Preserve both records and do not perform destructive demonstration operations.
+
+Only describe workflows supported by the current implementation. If an action is unavailable, identify the gap and explain what is needed.
+
+---
+
+# PART 9 — EVIDENCE AND SAFETY
+
+Inspect:
+- Actual frontend routes and components.
+- Current translation files.
+- Relevant backend models, serializers, views, services, and permissions.
+- Relevant API specifications and generated clients.
+- Existing project documentation and tests.
+- Current application behavior in the browser when accessible.
+
+Use safe read-only browser navigation where possible. Do not create, edit, void, close, delete, or seed records during inspection. Do not run mutating tests against the application's database.
+
+Do not expose secrets or private credentials.
+
+Clearly distinguish:
+- **Observed in code**
+- **Verified through a safe browser workflow**
+- **Verified by an existing automated test**
+- **Documented but not independently verified**
+- **Inferred or recommended**
+
+Do not run expensive full test suites merely to prepare the inventory. Reuse existing test reports as supporting evidence, while making clear when they were not re-executed.
+
+---
+
+# PART 10 — FINAL REPORT STRUCTURE
+
+Write `docs/yieldloop-current-application-inventory.md` with these sections:
+
+1. Executive summary.
+2. Complete route inventory.
+3. Cutting Operator page inventory.
+4. Production Supervisor page inventory.
+5. Manager page inventory.
+6. Exact visible UI copy in English and Arabic for every page.
+7. Page layouts, elements, and interaction behavior.
+8. Backend data sources, calculations, and persistence.
+9. Role/navigation matrix.
+10. Role/action permission matrix.
+11. Original challenge requirement compliance matrix.
+12. Additional features beyond the original requirement.
+13. UI/UX issues prioritized for the redesign.
+14. Actor-specific usage instructions.
+15. Factory demonstration script for IK-202 and IK-203.
+16. Unverified behavior, missing evidence, and open questions.
+17. Recommended order for the upcoming page-by-page redesign.
+
+The report must describe the CURRENT application, not the intended future design.
+
+In the final Agent response, summarize:
+- Total pages/routes inspected.
+- Pages accessible to each role.
+- The biggest verified implementation gaps.
+- The highest-priority UI problems.
+- Any features that could not be verified.
+- Confirmation that no application files, configurations, database records, migrations, or credentials were changed.
+
+Stop after completing the inventory. Do not begin the UI redesign in this task.
