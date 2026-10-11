@@ -4,14 +4,16 @@ import { Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BrandMark, FormAlert, LangSwitch } from '@/components/brand';
+import { BrandLockup, FormAlert, LangSwitch } from '@/components/brand';
 import { PasswordInput } from '@/components/password-input';
 import { login } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { errorMessage, fieldErrors, startSession } from '@/lib/session';
+import { useUt } from '@/lib/ui-i18n';
 
 export default function LoginPage() {
   const { t } = useI18n();
+  const ut = useUt();
   const qc = useQueryClient();
   const notice = new URLSearchParams(window.location.search).get('notice');
   const [username, setUsername] = useState('');
@@ -44,44 +46,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-[100dvh] w-full bg-background lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative hidden overflow-hidden bg-[hsl(222_47%_11%)] text-[hsl(210_40%_96%)] lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.07]" aria-hidden>
-          <defs>
-            <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
-              <path d="M28 0H0V28" fill="none" stroke="currentColor" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
-        <svg viewBox="0 0 400 400" className="pointer-events-none absolute -bottom-24 -end-24 h-[460px] w-[460px] text-[hsl(160_84%_39%)] opacity-30" aria-hidden>
-          <circle cx="200" cy="200" r="150" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 10" />
-          <circle cx="200" cy="200" r="100" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <circle cx="200" cy="200" r="50" fill="none" stroke="currentColor" strokeWidth="1" />
-        </svg>
-        <div className="relative flex items-center gap-3">
-          <BrandMark className="h-9 w-9" />
-          <span className="text-base font-semibold" dir="ltr">{t('brand')}</span>
+    <div className="grid min-h-[100dvh] w-full bg-background lg:grid-cols-[1.1fr_1fr]">
+      <aside className="relative hidden overflow-hidden border-e bg-[hsl(216_45%_95%)] lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <BrandLockup size="lg" />
+        <div className="relative">
+          <SheetIllustration />
+          <h2 className="mt-10 text-3xl font-semibold leading-tight tracking-tight text-foreground">{ut('loginTagline')}</h2>
+          <p className="mt-3 max-w-md text-base leading-relaxed text-muted-foreground">{ut('loginLead')}</p>
         </div>
-        <div className="relative max-w-md">
-          <div className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(160_84%_55%)]">{t('phase')}</div>
-          <p className="mt-4 text-3xl font-semibold leading-snug">{t('signInSubtitle')}</p>
-        </div>
-        <div aria-hidden />
+        <p className="text-sm text-muted-foreground">{ut('orgName')}</p>
       </aside>
 
       <div className="flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 lg:justify-end">
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <BrandMark />
-            <span className="text-sm font-semibold" dir="ltr">{t('brand')}</span>
-          </div>
+          <span className="lg:hidden"><BrandLockup /></span>
           <LangSwitch />
         </div>
         <div className="flex flex-1 items-center justify-center px-5 pb-16">
           <form onSubmit={submit} noValidate className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-500" data-testid="form-login">
-            <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{t('signInTitle')}</h1>
-            <p className="mt-2 text-sm text-muted-foreground lg:hidden">{t('signInSubtitle')}</p>
+            <p className="text-sm font-medium text-primary lg:hidden">{ut('loginTagline')}</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight" data-testid="text-page-title">{t('signIn')}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground lg:hidden">{ut('loginLead')}</p>
 
             <div className="mt-6 flex flex-col gap-3">
               {notice === 'changed' && !m.error && <FormAlert tone="info" message={t('passwordChangedNotice')} testId="notice-login" />}
@@ -125,9 +110,26 @@ export default function LoginPage() {
               </Button>
             </div>
             <p className="mt-6 text-xs leading-relaxed text-muted-foreground">{t('noAccount')}</p>
+            <p className="mt-8 border-t pt-4 text-xs text-muted-foreground lg:hidden">{ut('orgName')}</p>
           </form>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Abstract cutting layout: one sheet, placed parts, reusable offcut and the recovery loop. Decorative only. */
+function SheetIllustration() {
+  return (
+    <svg viewBox="0 0 360 220" className="w-full max-w-md" aria-hidden>
+      <rect x="10" y="14" width="250" height="190" rx="10" fill="hsl(0 0% 100%)" stroke="hsl(218 26% 84%)" />
+      {[[26, 30, 100, 70], [134, 30, 110, 70], [26, 108, 70, 80], [104, 108, 70, 80]].map(([x, y, w, h], i) => (
+        <rect key={i} x={x} y={y} width={w} height={h} rx="4" fill="hsl(217 71% 33% / 0.1)" stroke="hsl(217 71% 33% / 0.55)" />
+      ))}
+      <rect x="182" y="108" width="62" height="80" rx="4" fill="hsl(172 62% 38% / 0.14)" stroke="hsl(172 62% 38%)" strokeDasharray="4 3" />
+      <path d="M10 104h250M130 14v90" stroke="hsl(217 71% 33% / 0.25)" strokeDasharray="3 4" />
+      <path d="M262 150c62 0 84-36 70-74s-58-52-92-36" fill="none" stroke="hsl(172 62% 38%)" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M248 32l-10 9 13 4" fill="none" stroke="hsl(172 62% 38%)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

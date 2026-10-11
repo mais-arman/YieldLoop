@@ -1,0 +1,381 @@
+# YieldLoop — Design Improvement Pass 1: Login, Dashboard, Branding, and AI Assistant
+
+## Objective
+
+Improve the existing YieldLoop application's visual design and usability based on the supplied dashboard reference image and the requirements below.
+
+This is a targeted redesign of the existing application, not a rebuild.
+
+**Implement the changes directly in the existing codebase. Do not stop after producing an audit or a plan.**
+
+Preserve all working backend functionality, database records, APIs, authentication, authorization, business calculations, audit trails, and existing production workflows.
+
+The application is for Ibn Khaldoun Printing and Publishing. It must feel like a polished, modern, professional factory operations product—not a generic admin template and not an ERP interface filled with unnecessary information.
+
+Use the supplied dashboard screenshot as a visual reference for layout, spacing, cards, charts, tables, and overall liveliness. Do not copy its manufacturing-specific terminology or data.
+
+## 1. Inspect the existing implementation first
+
+Inspect the actual current frontend, shared layout, login page, dashboard, routing, localization, and AI Assistant implementation.
+
+Identify the existing components that can be reused. Modify the current components rather than introducing duplicate pages, parallel design systems, or a second application shell.
+
+Keep the existing stack, routing, API contracts, React Query integration, authentication, and generated API clients.
+
+Do not modify the database schema or generate/apply migrations for this design pass.
+
+## 2. Establish a consistent visual direction
+
+Create a cohesive visual style for YieldLoop:
+
+- Modern, clean, professional, and approachable.
+- Inspired by the supplied reference: a light background, white content cards, clear hierarchy, restrained shadows, rounded corners, and generous but efficient spacing.
+- Use a restrained deep-blue primary color with a complementary teal or green for positive production metrics.
+- Use orange or red only when appropriate for warnings, scrap, variance, or errors.
+- Use consistent typography, iconography, button styles, input styles, card spacing, border radii, and status indicators.
+- Avoid excessive gradients, oversized headings, unnecessary decoration, and too many competing accent colors.
+- Use real application data rather than hardcoded example metrics.
+- Make the interface responsive for desktop, tablet, and mobile.
+
+Create or reuse shared design tokens and components where this genuinely reduces duplication. Do not refactor unrelated backend code.
+
+## 3. Branding and application logo
+
+Create a suitable YieldLoop logo and apply it consistently to the login page, sidebar, and application header.
+
+The brand should communicate material flow, cutting, yield, and reduced waste. Prefer a simple, distinctive geometric mark suggesting a sheet, material path, or circular material loop.
+
+Requirements:
+
+- A clean, recognizable icon with the wordmark "YieldLoop".
+- Professional appearance suitable for a printing and packaging factory.
+- Readable at small sizes.
+- Works on light backgrounds and in compact sidebar layouts.
+- Use the existing asset/component conventions.
+- Avoid emoji as the logo and avoid generic cartoon branding.
+- Do not use the reference screenshot's unrelated company branding.
+- Do not invent an official Ibn Khaldoun corporate logo.
+
+If a new image asset is genuinely needed, create a simple, original vector-style logo that can be used at different sizes. Otherwise, prefer an existing icon library or a lightweight SVG component.
+
+## 4. Login page
+
+Redesign the existing login page so its content reflects YieldLoop and the actual factory workflow.
+
+Use concise, meaningful English and Arabic text.
+
+Suggested English copy:
+
+**YieldLoop**
+
+"Production & Material Yield"
+
+"Track material, understand scrap, and recover reusable offcuts."
+
+Form labels:
+- Username
+- Password
+
+Primary button:
+- "Sign in"
+
+Supporting text:
+- "Ibn Khaldoun Printing and Publishing"
+
+Suggested Arabic copy:
+
+**YieldLoop**
+
+"الإنتاج وكفاءة استخدام المواد"
+
+"تابع استهلاك المواد، وافهم أسباب الهدر، وحافظ على القصاصات القابلة لإعادة الاستخدام."
+
+Form labels:
+- اسم المستخدم
+- كلمة المرور
+
+Primary button:
+- "تسجيل الدخول"
+
+Supporting text:
+- "مطبعة ابن خلدون للنشر والطباعة"
+
+Design requirements:
+
+- Clear visual hierarchy and balanced spacing.
+- A polished, professional composition, optionally using a restrained abstract material-sheet or cutting-layout illustration.
+- No public sign-up button.
+- No fabricated testimonials, customer logos, factory statistics, or claims.
+- Keep validation messages clear and localized.
+- Keep keyboard navigation, focus states, password visibility controls if already supported, and accessible labels.
+- Preserve the existing secure session and CSRF login flow.
+- Do not display credentials, temporary passwords, or security secrets.
+- Keep Arabic RTL and English LTR correct.
+
+## 5. Application header and language switch
+
+Improve the existing shared application header without breaking current navigation or authentication.
+
+### Language control
+
+Replace the current text-based language switch with a compact, recognizable language/globe icon button.
+
+Requirements:
+
+- Use a real icon from the existing icon library.
+- Give the control an accessible localized label and tooltip, such as "Change language" / "تغيير اللغة".
+- Clicking it switches between English and Arabic using the existing localization mechanism.
+- Preserve the current language preference behavior.
+- Update the document language and direction correctly.
+- Do not introduce a large language menu or extra text in the header.
+
+### Header cleanup
+
+- Preserve the YieldLoop brand.
+- Keep the current authenticated user's identity and role where useful.
+- Avoid duplicated page titles, redundant descriptions, and excessive header controls.
+- Keep logout accessible and functional.
+- Retain existing notification or navigation functionality only if it is genuinely implemented and useful. Do not display nonfunctional notification icons.
+
+## 6. Dashboard redesign
+
+Redesign the current dashboard to follow the visual structure of the supplied reference while using only actual YieldLoop metrics.
+
+### Layout
+
+1. A concise welcome heading.
+2. A compact date/filter control if it provides meaningful filtering.
+3. A row or responsive grid of key metric cards.
+4. A section of clear charts or visual summaries.
+5. A compact, useful recent-jobs or production-records table with links to the source jobs.
+6. Responsive behavior that avoids horizontal overflow on mobile.
+
+### Recommended metric cards
+
+Use existing backend dashboard data where available:
+
+- Open Jobs
+- Material Issued
+- Good Output
+- Total Scrap
+- Reusable Offcuts
+- Good Yield
+
+Do not force all six into the same row on every screen. Use a responsive grid and prioritize the most useful metrics for the current user.
+
+Show units explicitly for quantities.
+
+Show comparisons, percentage changes, or trends only when the backend provides valid comparison data. Do not invent previous-period values or display fabricated arrows and percentages.
+
+### Charts
+
+Use existing report/dashboard APIs and calculation rules.
+
+Choose a small number of meaningful visualizations, such as:
+
+- Scrap by recorded reason.
+- Good output versus scrap versus reusable offcuts.
+- Job status distribution.
+- Yield comparison between jobs using the same machine, where appropriate data exists.
+
+Use actual authorized records and consistent metric definitions.
+
+Charts must have useful labels, legends, tooltips, accessible summaries, and clear empty states. Do not add decorative charts that communicate no real information.
+
+Do not combine different materials into misleading weight totals. Respect the existing single-material filtering rules wherever applicable.
+
+### Remove unnecessary dashboard elements
+
+Remove the standalone metric-definition section, standalone system-status section, and manual refresh control from the normal dashboard interface.
+
+Specifically:
+- Do not display a large block explaining every metric definition on the main dashboard.
+- Do not show technical health/readiness or system-status information to ordinary employees.
+- Do not display a refresh button that adds clutter without meaningful value.
+
+Keep essential metric explanations in compact tooltips, accessible help text, or the Reports page when needed.
+
+Do not remove backend health endpoints or operational monitoring. This is a UI cleanup only.
+
+Preserve loading, error, empty, and retry behavior. If the existing query layer already refreshes data appropriately, use that behavior instead of adding redundant controls.
+
+### Role-aware dashboard
+
+The dashboard must show relevant information without creating three unrelated visual designs.
+
+- **Cutting Operator:** prioritize assigned or permitted Open jobs, recording activity where allowed, and clear material/scrap/offcut information. Do not show management-only data.
+- **Production Supervisor:** prioritize Open/In Progress work, material reconciliation, scrap reasons, exceptions, and job comparisons.
+- **Manager:** prioritize overall production indicators, scrap and yield trends, inventory summaries, job comparisons, and links to employee/job management.
+
+Reuse the same design system and components across roles. Render only information authorized for the current role.
+
+Do not invent assigned-job functionality if the backend does not support job assignments. Use the actual permitted jobs instead.
+
+## 7. AI Assistant — floating assistant, not a dedicated chatbot page
+
+The preferred experience is a compact AI Assistant entry point, not a full standalone chatbot page.
+
+If the current application has a dedicated AI Assistant route, convert the normal interaction into a floating assistant button that opens a compact panel or popover. Preserve any valuable existing functionality and authorized evidence views.
+
+### Button appearance
+
+- Use a professional AI/sparkles icon or a small, original, friendly assistant illustration.
+- Do not use an unrelated cartoon mascot or oversized animated character.
+- Keep the button compact and unobtrusive.
+- On desktop, position it near the bottom-right in English and bottom-left in Arabic RTL, unless the existing application layout requires a different collision-free position.
+- Ensure it does not cover critical controls or mobile navigation.
+- Provide an accessible label and keyboard support.
+
+### Opening behavior
+
+When clicked, open a compact assistant panel with:
+
+- "YieldLoop Assistant" / "مساعد YieldLoop"
+- A concise greeting.
+- A small input for the user's question.
+- A send button.
+- A close button.
+- A few useful suggested questions based on real available features.
+
+Examples:
+
+English:
+- "Why is scrap high in IK-202?"
+- "Compare IK-202 with IK-203."
+- "Where did the issued material go?"
+
+Arabic:
+- "ليش نسبة الهدر مرتفعة في IK-202؟"
+- "قارن IK-202 مع IK-203."
+- "وين راحت المواد المصروفة؟"
+
+Only show suggestions when the relevant underlying data is available and accessible to the current user.
+
+### AI evidence and safety
+
+The assistant must remain evidence-based.
+
+For IK-202, it may identify the recorded 180 kg setup/layout scrap as the largest recorded scrap category and suggest reviewing setup records, layout, cutting instructions, and operator observations.
+
+It must not claim that a particular issue caused the scrap without supporting evidence.
+
+Preserve:
+- Backend authorization.
+- Actual record-based answers.
+- English and Arabic responses.
+- Honest provider-unavailable behavior.
+- Existing AI API contracts and safeguards.
+- No invented measurements, causes, or operator statements.
+
+### Provider not configured
+
+The current application may show:
+
+"AI provider not configured. Evidence stays readable. Asking questions is disabled until an administrator configures the provider."
+
+Do not leave this long technical message permanently visible on the dashboard or in a dedicated full-size assistant page.
+
+If a real AI provider is not configured:
+- Remove the active AI question-input experience and disable sending questions.
+- Hide the floating assistant entry point if it would only open a nonfunctional interface.
+- Do not display a broken chatbot, fake responses, or a persistent technical warning.
+- Do not remove the underlying evidence-based Production Assistant or recorded investigation information if that information works without an AI provider.
+- Keep a small, truthful unavailable status in an appropriate administrative/configuration location only if such a location already exists and is authorized.
+- Do not invent a configuration screen or pretend that provider setup has succeeded.
+
+If the provider is configured, retain the floating assistant and test actual provider responses, error handling, authorization, and uncertainty language.
+
+Never expose the AI provider API key to the frontend.
+
+## 8. Reduce unnecessary content across the existing pages
+
+Perform a focused cleanup of obvious clutter while preserving the business functionality.
+
+Across the current application:
+
+- Remove repeated explanations that duplicate field labels or nearby content.
+- Remove redundant subtitles, decorative metadata, unnecessary status blocks, and duplicate action buttons.
+- Prefer concise headings and clear field labels.
+- Use contextual help only when it prevents a meaningful user error.
+- Keep important validation errors, units, reconciliation results, audit information, and safety warnings.
+- Preserve source links and traceability.
+- Preserve confirmation dialogs for destructive or irreversible actions.
+- Keep pagination, search, filters, loading states, error recovery, and empty states where they support real functionality.
+- Do not remove a control just because it looks complex if it is required for correct production accounting.
+
+Avoid a broad rewrite of all pages. Apply a consistent visual style and remove only clearly redundant content in this pass. More detailed page-by-page redesign will be handled separately.
+
+## 9. Localization, accessibility, and responsive behavior
+
+Maintain complete English and Arabic support.
+
+Verify:
+- Correct RTL/LTR direction and numeric presentation.
+- No clipped or overflowing labels.
+- Responsive metric cards and charts.
+- Usable tables on small screens.
+- Keyboard navigation and visible focus.
+- Accessible icon buttons, tooltips, dialogs, and input errors.
+- Sufficient text/background contrast.
+- Reduced-motion preferences if animations are introduced.
+
+Do not hardcode new visible strings in only one language.
+
+## 10. Strict preservation requirements
+
+Do not:
+- Change the database schema.
+- Apply or generate migrations.
+- Modify the database write guard.
+- Seed, delete, or alter database records.
+- Change production configuration or deploy the application.
+- Modify authentication or CSRF security behavior.
+- Weaken role-based authorization.
+- Change accounting formulas or reconciliation rules.
+- Change cutting-placement algorithms or geometry validation.
+- Add new business features unrelated to this design pass.
+- Add new dependencies unless strictly necessary and explicitly justified.
+- Replace the existing app architecture.
+- Remove working functionality simply to make the UI look simpler.
+
+Keep the current application and development data intact.
+
+## 11. Verification
+
+Run the relevant frontend tests, backend regression tests where applicable, type checks, lint, and production build.
+
+Verify the redesigned login flow and authenticated application using existing test accounts or approved test fixtures. Do not create default credentials or expose secrets.
+
+Verify all three roles:
+- Cutting Operator
+- Production Supervisor
+- Manager
+
+Check:
+- Login and logout.
+- Language switching.
+- Dashboard data and role visibility.
+- Dashboard loading, empty, and error states.
+- Floating assistant behavior when the provider is configured and when it is not.
+- Existing production jobs, reconciliation, comparison, inventory, reports, and Cutting Studio navigation.
+- Arabic desktop and mobile layouts.
+- English desktop and mobile layouts.
+
+If a provider is not configured, report live AI as blocked rather than claiming it was tested successfully.
+
+Fix regressions introduced by this pass. Do not disable tests or weaken assertions to obtain passing results.
+
+## 12. Final report
+
+Implement the changes, then report:
+
+1. Files and components changed.
+2. Branding and login improvements.
+3. Dashboard layout and metrics.
+4. Elements removed or simplified.
+5. AI Assistant behavior and provider status.
+6. Role-specific dashboard differences.
+7. Tests and checks actually executed, with results.
+8. Any remaining defects or limitations.
+
+**Stop after this focused design pass. Do not proceed to another redesign phase or add new features without approval.**

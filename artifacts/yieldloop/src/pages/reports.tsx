@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
-import { AlertTriangle, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, GitCompare, Info, RotateCw, Scissors, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CircleHelp, Users, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, GitCompare, Info, RotateCw, Scissors, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,11 @@ import { useReportOverview, type GetReportOverviewParams, type ReportMeasures, t
 import { errorMessage } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { jobLabel, useKt } from '@/lib/core';
+import { Cell, Pie, PieChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Employee } from '@/lib/auth';
+import { useUt, type UiKey } from '@/lib/ui-i18n';
+import { dashboardFocus, jobStatusSlices, orderJobs, outputSlices, type OutputKey } from '@/lib/dashboard-data';
 
 const S = {
   en: {
@@ -628,20 +633,126 @@ function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
   );
 }
 
-function Kpi({ label, value, sub, testId, tone }: { label: string; value: ReactNode; sub?: ReactNode; testId?: string; tone?: 'warn' }) {
+const STATUS_COLOR: Record<string, string> = {
+  open: 'hsl(var(--chart-1))', draft: 'hsl(var(--chart-5))', completed: 'hsl(var(--chart-2))', cancelled: 'hsl(var(--chart-4) / 0.7)',
+};
+const OUTPUT_COLOR: Record<OutputKey, string> = {
+  good: 'hsl(var(--chart-2))', scrap: 'hsl(var(--chart-4))', offcut: 'hsl(var(--chart-1))', variance: 'hsl(var(--chart-3))',
+};
+
+function Help({ text }: { text: string }) {
   return (
-    <div className={cn('flex flex-col gap-1 rounded-lg border bg-card px-4 py-3', tone === 'warn' && 'border-[hsl(38_92%_50%/0.4)] bg-[hsl(38_92%_50%/0.06)]')} data-testid={testId}>
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
-      <span className="text-2xl font-semibold leading-tight">{value}</span>
-      {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className="rounded-full text-muted-foreground/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={text}>
+          <CircleHelp className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs leading-relaxed">{text}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Metric({ label, help, value, sub, testId, tone }: { label: string; help?: string; value: ReactNode; sub?: ReactNode; testId?: string; tone?: 'good' | 'warn' }) {
+  return (
+    <div className="yl-card flex min-w-0 flex-col gap-2 px-4 py-4" data-testid={testId}>
+      <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">{label}{help && <Help text={help} />}</span>
+      <span className={cn('text-[26px] font-semibold leading-none tracking-tight', tone === 'good' && 'text-[hsl(var(--success))]', tone === 'warn' && 'text-[hsl(var(--warning))]')}>{value}</span>
+      {sub && <span className="truncate text-xs text-muted-foreground">{sub}</span>}
     </div>
   );
 }
 
-function DashboardView() {
-  const s = useS();
+function KgValue({ v }: { v: string }) {
+  return <span dir="ltr" className="inline-flex max-w-full flex-wrap items-baseline gap-1"><span className="min-w-0 break-all font-mono tabular-nums">{v}</span><span className="text-sm font-normal text-muted-foreground">kg</span></span>;
+}
+
+function StatusChart({ data }: { data: ReportOverview }) {
+  const ut = useUt();
   const { t } = useI18n();
+  const { slices, total } = jobStatusSlices(data.job_counts);
+  const summary = ut('chStatusSummary', { total, parts: slices.map((x) => `${t(`status_${x.status}`)} ${x.count}`).join(', ') });
+  return (
+    <section className="yl-card min-w-0 p-5" aria-labelledby="h-status" data-testid="chart-job-status">
+      <h2 id="h-status" className="text-sm font-semibold">{ut('chStatus')}</h2>
+      {total === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{ut('chStatusEmpty')}</p> : (
+        <div className="mt-3 flex flex-col items-center gap-5 sm:flex-row">
+          <div className="relative h-44 w-44 shrink-0" role="img" aria-label={summary}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={slices} dataKey="count" nameKey="status" innerRadius={52} outerRadius={80} paddingAngle={slices.length > 1 ? 2 : 0} stroke="none" isAnimationActive={false}>
+                  {slices.map((x) => <Cell key={x.status} fill={STATUS_COLOR[x.status]} />)}
+                </Pie>
+                <ChartTooltip formatter={(v: number, n: string) => [v, t(`status_${n as 'open'}`)]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="font-mono text-2xl font-semibold tabular-nums" dir="ltr">{total}</span>
+            </div>
+          </div>
+          <ul className="w-full space-y-2 text-sm">
+            {slices.map((x) => (
+              <li key={x.status} className="flex items-center gap-2.5">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_COLOR[x.status] }} aria-hidden />
+                <span className="flex-1">{t(`status_${x.status}`)}</span>
+                <span className="font-mono tabular-nums" dir="ltr">{x.count}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function OutputChart({ data, onChoose }: { data: ReportOverview; onChoose: () => void }) {
+  const ut = useUt();
+  const s = useS();
+  const { dir } = useI18n();
+  const rows = outputSlices(data.production);
+  const name: Record<OutputKey, string> = { good: ut('mGood'), scrap: ut('mScrap'), offcut: ut('mOffcut'), variance: ut('unaccounted') };
+  const p = data.production;
+  return (
+    <section className="yl-card min-w-0 p-5" aria-labelledby="h-output" data-testid="chart-material-output">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="h-output" className="text-sm font-semibold">{ut('chOutput')}</h2>
+        {data.material && <span className="truncate text-xs text-muted-foreground">{data.material.name} · kg</span>}
+      </div>
+      {p && Number(p.variance) !== 0 && (
+        <p role="status" className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
+          {s('kVariance')}: <Signed v={p.variance} /> kg
+        </p>
+      )}
+      {rows === null || !p ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+          <p className="max-w-xs text-sm text-muted-foreground">{ut('chOutputNeed')}</p>
+          <Button size="sm" variant="outline" onClick={onChoose} data-testid="button-choose-material-chart">{ut('mChoose')}</Button>
+        </div>
+      ) : rows.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{ut('chOutputEmpty')}</p> : (
+        <div className="mt-3 h-48" role="img" aria-label={ut('chOutputSummary', { g: p.good, s: p.scrap, o: p.offcut, v: p.variance })}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows.map((r) => ({ ...r, label: name[r.key] }))} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+              <CartesianGrid horizontal={false} stroke="hsl(var(--border))" />
+              <XAxis type="number" reversed={dir === 'rtl'} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="label" orientation={dir === 'rtl' ? 'right' : 'left'} width={120} tick={{ fontSize: 12, fill: 'hsl(var(--foreground))' }} axisLine={false} tickLine={false} />
+              <ChartTooltip cursor={{ fill: 'hsl(var(--muted))' }} formatter={(_v: number, _n: string, item: { payload?: { raw: string } }) => [`${item.payload?.raw ?? ''} kg`, '']} separator="" />
+              <Bar dataKey="value" radius={dir === 'rtl' ? [6, 0, 0, 6] : [0, 6, 6, 0]} barSize={22} isAnimationActive={false}>
+                {rows.map((r) => <Cell key={r.key} fill={OUTPUT_COLOR[r.key]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DashboardView({ user }: { user: Employee }) {
+  const s = useS();
+  const ut = useUt();
   const path = '/dashboard';
+  const focus = dashboardFocus(user.role);
+  const fmt = useFormatDate();
   const { applied, go } = useReportState(path);
   const params = useMemo(() => ({ ...toParams({ ...applied, job_page: 1, lot_page: 1 }), page_size: 10 }), [applied]);
   const q = useReportOverview(params);
@@ -651,6 +762,8 @@ function DashboardView() {
   useEffect(() => { if (Object.keys(fields).length) setOpen(true); }, [q.error]);
   const data = q.data;
   const qs = toQuery(applied, false);
+  const name = user.first_name?.trim() || user.username;
+  const chooseMaterial = () => { setOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const attention = useMemo(() => (data?.jobs.results ?? []).flatMap((j): { job: ReportOverview['jobs']['results'][number]; kind: 'unmeasured' | 'var' | 'neg'; v: string }[] => {
     const r = j.reconciliation;
@@ -658,117 +771,144 @@ function DashboardView() {
     if (Number(r.variance) !== 0) return [{ job: j, kind: r.variance.startsWith('-') ? 'neg' : 'var', v: r.variance.replace(/^-/, '') }];
     return [];
   }), [data]);
+  const tableJobs = useMemo(() => orderJobs(data?.jobs.results ?? [], focus.openFirst).slice(0, 8), [data, focus.openFirst]);
+  const linkCls = 'inline-flex h-8 items-center gap-1.5 rounded-md border bg-card px-3 text-sm font-medium hover:border-primary/40';
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{s('dashTitle2')}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{s('dashSub2')}</p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{ut('welcome', { name })}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{ut(`dashLead_${user.role}` as UiKey)}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="button-toggle-filters">
-            <Filter className="h-3.5 w-3.5" aria-hidden />{open ? s('hideFilters') : s('showFilters')}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="bg-card" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="button-toggle-filters">
+            <Filter className="h-3.5 w-3.5" aria-hidden />{ut('filterLabel')}
             {active > 0 && <span className="rounded bg-primary/10 px-1.5 text-[11px] text-primary">{s('activeFilters', { n: active })}</span>}
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} aria-hidden />
           </Button>
-          <Link href={`/reports?${qs}`} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm font-medium hover:border-primary/40" data-testid="link-to-report">
-            <FileText className="h-4 w-4 text-primary" aria-hidden />{s('openReport')}<ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
-          </Link>
+          <Link href={`/reports?${qs}`} className={linkCls} data-testid="link-to-report"><FileText className="h-3.5 w-3.5 text-primary" aria-hidden />{ut('quickReports')}</Link>
+          {focus.comparison && <Link href="/comparison" className={linkCls} data-testid="link-dash-compare"><GitCompare className="h-3.5 w-3.5 text-primary" aria-hidden />{ut('quickCompare')}</Link>}
+          {focus.employees && <Link href="/employees" className={linkCls} data-testid="link-dash-employees"><Users className="h-3.5 w-3.5 text-primary" aria-hidden />{ut('quickEmployees')}</Link>}
         </div>
       </header>
       {open && <FilterBar applied={applied} go={go} serverFields={fields} />}
       {q.isPending ? (
-        <div className="space-y-4" aria-busy><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24" />)}</div><div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-64" /><Skeleton className="h-64" /></div></div>
+        <div className="space-y-4" aria-busy><div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[104px] rounded-[0.875rem]" />)}</div><div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-64 rounded-[0.875rem]" /><Skeleton className="h-64 rounded-[0.875rem]" /></div><Skeleton className="h-72 rounded-[0.875rem]" /></div>
       ) : q.isError || !data ? (
         <ReportError error={q.error} retry={() => q.refetch()} clear={() => go(EMPTY)} />
+      ) : data.job_count === 0 ? (
+        <div className="yl-card px-6 py-12 text-center" data-testid="panel-report-empty">
+          <h2 className="font-semibold">{s('emptyTitle')}</h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{s('emptyDesc')}</p>
+          <div className="mt-4 flex justify-center gap-2">
+            {active > 0 && <Button size="sm" variant="outline" onClick={() => go(EMPTY)}>{s('clearFilters')}</Button>}
+            <Link href="/jobs" className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted">{ut('viewAllJobs')}</Link>
+          </div>
+        </div>
       ) : (
         <>
-          <Freshness data={data} refetch={() => q.refetch()} fetching={q.isFetching} />
-          {data.job_count === 0 ? (
-            <div className="rounded-lg border border-dashed bg-card px-6 py-10 text-center" data-testid="panel-report-empty">
-              <h2 className="font-semibold">{s('emptyTitle')}</h2>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{s('emptyDesc')}</p>
-              <div className="mt-4 flex justify-center gap-2">
-                {active > 0 && <Button size="sm" variant="outline" onClick={() => go(EMPTY)}>{s('clearFilters')}</Button>}
-                <Link href="/jobs" className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted">{s('viewAll')}</Link>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Kpi label={s('kJobs')} testId="text-job-count" value={<span dir="ltr" className="font-mono tabular-nums">{data.job_count}</span>} sub={s('kOpen', { n: data.job_counts.open, d: data.job_counts.draft })} />
-                <Kpi label={s('kMeasured')} tone={data.unmeasured_jobs > 0 ? 'warn' : undefined}
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" data-testid="grid-metrics">
+            <Metric label={ut('mOpen')} testId="text-job-count" value={<span dir="ltr" className="font-mono tabular-nums">{data.job_counts.open}</span>} sub={ut('mOpenSub', { d: data.job_counts.draft, c: data.job_counts.completed })} />
+            {data.production ? (
+              <>
+                <Metric label={ut('mIssued')} help={ut('hIssued')} value={<KgValue v={data.production.issued} />} sub={data.material?.name} />
+                <Metric label={ut('mGood')} help={ut('hGood')} value={<KgValue v={data.production.good} />} />
+                <Metric label={ut('mScrap')} help={ut('hScrap')} value={<KgValue v={data.production.scrap} />} sub={data.production.scrap_rate != null ? <span dir="ltr">{data.production.scrap_rate}%</span> : undefined} />
+                <Metric label={ut('mOffcut')} help={ut('hOffcut')} value={<KgValue v={data.production.offcut} />} />
+                <Metric label={ut('mYield')} help={ut('hYield')} tone="good" value={<Pct v={data.production.yield_rate} />} />
+              </>
+            ) : (
+              <>
+                <Metric label={ut('mReconciled')} tone={data.unmeasured_jobs > 0 ? 'warn' : undefined}
                   value={<span dir="ltr" className="font-mono tabular-nums"><span data-testid="text-measured">{data.measured_jobs}</span><span className="text-base text-muted-foreground"> / {data.job_count}</span></span>}
-                  sub={<span data-testid="text-unmeasured">{s('kMeasuredSub', { n: data.unmeasured_jobs })}</span>} />
-                {data.production ? (
-                  <>
-                    <Kpi label={s('kYield')} value={<Pct v={data.production.yield_rate} />} sub={data.material ? `${data.material.name} · ${s('colIssued')} ${data.production.issued} kg` : undefined} />
-                    <Kpi label={s('kVariance')} tone={Number(data.production.variance) !== 0 ? 'warn' : undefined} value={<Signed v={data.production.variance} />} sub={s('defsHint')} />
-                  </>
-                ) : (
-                  <button type="button" onClick={() => setOpen(true)} className="flex flex-col items-start gap-1 rounded-lg border border-dashed bg-card px-4 py-3 text-start hover:border-primary/40 lg:col-span-1" data-testid="text-select-material">
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s('kYield')} · {s('kVariance')}</span>
-                    <span className="text-base font-semibold text-primary">{s('needMaterial')}</span>
-                    <span className="text-xs text-muted-foreground">{s('needMaterialSub')}</span>
-                  </button>
-                )}
-                <Kpi label={s('kLots')} value={<Link href="/inventory" className="font-mono tabular-nums hover:text-primary" dir="ltr">{data.inventory.available.count}</Link>} sub={s('kLotsSub')} />
-              </div>
+                  sub={<span data-testid="text-unmeasured">{ut('mReconciledSub', { n: data.unmeasured_jobs })}</span>} />
+                <Metric label={ut('mLots')} help={ut('hLots')} value={<Link href="/inventory" className="font-mono tabular-nums hover:text-primary" dir="ltr">{data.inventory.available.count}</Link>} />
+                <button type="button" onClick={chooseMaterial} className="flex min-w-0 flex-col items-start justify-center gap-1 rounded-[0.875rem] border border-dashed border-primary/30 bg-accent/40 px-4 py-4 text-start transition-colors hover:border-primary/60 min-[420px]:col-span-2 lg:col-span-3 xl:col-span-3" data-testid="text-select-material">
+                  <span className="text-sm font-semibold text-primary">{ut('mNeedMaterial')}</span>
+                  <span className="text-xs text-muted-foreground">{ut('mNeedMaterialSub')}</span>
+                </button>
+              </>
+            )}
+          </div>
 
-              <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-                <section className="min-w-0 rounded-lg border bg-card" aria-labelledby="h-att" data-testid="panel-attention">
-                  <header className="border-b px-4 py-3">
-                    <h2 id="h-att" className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-[hsl(32_81%_40%)]" aria-hidden />{s('attention')}<span className="font-mono text-xs text-muted-foreground">{attention.length}</span></h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{s('attentionScope', { n: data.jobs.results.length })}</p>
-                  </header>
-                  {attention.length === 0 ? (
-                    <div className="px-4 py-8 text-center"><p className="text-sm font-medium">{s('allClear')}</p><p className="mt-1 text-xs text-muted-foreground">{s('allClearSub')}</p></div>
-                  ) : (
-                    <ul className="divide-y">
-                      {attention.map(({ job, kind, v }) => (
-                        <li key={job.id}>
-                          <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40" data-testid={`link-attention-${job.id}`}>
-                            <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(38_92%_50%)]')} aria-hidden />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} className="me-2" />{job.title}</span>
-                              <span className="block text-xs text-muted-foreground">{kind === 'unmeasured' ? s('attUnmeasured') : kind === 'neg' ? s('attNegVariance', { v }) : s('attVariance', { v })}{job.reconciliation && ` · ${job.reconciliation.material_name}`}</span>
-                            </span>
-                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-                <section className="min-w-0 rounded-lg border bg-card" aria-labelledby="h-recent" data-testid="panel-recent-jobs">
-                  <header className="flex items-center justify-between border-b px-4 py-3">
-                    <h2 id="h-recent" className="text-sm font-semibold">{s('recent')}</h2>
-                    <Link href="/jobs" className="text-xs font-medium text-primary hover:underline" data-testid="link-all-jobs">{s('viewAll')}</Link>
-                  </header>
-                  <ul className="divide-y">
-                    {data.jobs.results.slice(0, 8).map((job) => (
-                      <li key={job.id} className="flex items-center gap-3 px-4 py-2.5">
-                        <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1 hover:text-primary" data-testid={`link-recent-${job.id}`}>
-                          <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} className="me-2" />{job.title}</span>
-                          <span className="block text-xs text-muted-foreground">{t(`status_${job.status}`)}</span>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <StatusChart data={data} />
+            <OutputChart data={data} onChoose={chooseMaterial} />
+          </div>
+
+          <div className={cn('grid gap-4', focus.exceptions && 'xl:grid-cols-[minmax(0,1fr)_340px]')}>
+            <section className="yl-card min-w-0 overflow-hidden" aria-labelledby="h-recent" data-testid="panel-recent-jobs">
+              <header className="flex items-center justify-between px-5 py-4">
+                <h2 id="h-recent" className="text-sm font-semibold">{focus.openFirst ? ut('tblOpen') : ut('tblRecent')}</h2>
+                <Link href="/jobs" className="text-xs font-medium text-primary hover:underline" data-testid="link-all-jobs">{ut('viewAllJobs')}</Link>
+              </header>
+              <table className="w-full table-fixed text-sm sm:table-auto">
+                <thead className="border-y bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-5 py-2.5 text-start font-medium">{ut('tblJob')}</th>
+                    <th scope="col" className="hidden px-3 py-2.5 text-start font-medium md:table-cell">{ut('tblMachine')}</th>
+                    <th scope="col" className="w-28 px-3 py-2.5 text-start font-medium sm:w-auto">{ut('tblStatus')}</th>
+                    <th scope="col" className="hidden px-3 py-2.5 text-end font-medium sm:table-cell">{ut('tblYield')}</th>
+                    <th scope="col" className="hidden px-3 py-2.5 text-start font-medium lg:table-cell">{ut('tblCreated')}</th>
+                    <th scope="col" className="w-14 px-3 py-2.5 sm:w-auto"><span className="sr-only">{s('openCutting')}</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {tableJobs.map((job) => (
+                    <tr key={job.id} className="hover:bg-muted/30">
+                      <td className="px-5 py-3">
+                        <Link href={`/jobs/${job.id}`} className="block min-w-0 hover:text-primary" data-testid={`link-recent-${job.id}`}>
+                          <JobNumber value={jobLabel(job)} className="text-foreground" />
+                          <span className="block truncate text-xs text-muted-foreground">{job.title}</span>
                         </Link>
-                        <StatusBadge status={job.status} />
-                        <Link href={`/jobs/${job.id}/cutting`} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted" aria-label={`${s('openCutting')} ${job.job_number}`} data-testid={`link-recent-cutting-${job.id}`}>
-                          <Scissors className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">{s('openCutting')}</span>
+                      </td>
+                      <td className="hidden px-3 py-3 text-muted-foreground md:table-cell">{job.machine || '—'}</td>
+                      <td className="px-3 py-3"><StatusBadge status={job.status} /></td>
+                      <td className="hidden px-3 py-3 text-end sm:table-cell">{job.reconciliation ? <Pct v={job.reconciliation.yield_rate} /> : <span className="text-xs text-muted-foreground">—</span>}</td>
+                      <td className="hidden whitespace-nowrap px-3 py-3 text-xs text-muted-foreground lg:table-cell">{fmt(job.created_at)}</td>
+                      <td className="px-3 py-3 text-end">
+                        <Link href={`/jobs/${job.id}/cutting`} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted" aria-label={`${s('openCutting')} ${jobLabel(job)}`} data-testid={`link-recent-cutting-${job.id}`}>
+                          <Scissors className="h-3.5 w-3.5" aria-hidden /><span className="hidden xl:inline">{s('openCutting')}</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+
+            {focus.exceptions && (
+              <section className="yl-card min-w-0 overflow-hidden" aria-labelledby="h-att" data-testid="panel-attention">
+                <header className="px-5 py-4">
+                  <h2 id="h-att" className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" aria-hidden />{s('attention')}<span className="font-mono text-xs text-muted-foreground">{attention.length}</span><Help text={s('attentionScope', { n: data.jobs.results.length })} /></h2>
+                </header>
+                {attention.length === 0 ? (
+                  <div className="border-t px-5 py-8 text-center"><p className="text-sm font-medium">{s('allClear')}</p><p className="mt-1 text-xs text-muted-foreground">{s('allClearSub')}</p></div>
+                ) : (
+                  <ul className="divide-y border-t">
+                    {attention.map(({ job, kind, v }) => (
+                      <li key={job.id}>
+                        <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/40" data-testid={`link-attention-${job.id}`}>
+                          <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(var(--chart-3))]')} aria-hidden />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} /></span>
+                            <span className="block text-xs text-muted-foreground">{kind === 'unmeasured' ? s('attUnmeasured') : kind === 'neg' ? s('attNegVariance', { v }) : s('attVariance', { v })}</span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
                         </Link>
                       </li>
                     ))}
                   </ul>
-                </section>
-              </div>
-            </>
-          )}
+                )}
+              </section>
+            )}
+          </div>
         </>
       )}
-      <Definitions />
     </div>
   );
 }
 
-export function DashboardPage() { return <DashboardView />; }
+export function DashboardPage({ user }: { user: Employee }) { return <DashboardView user={user} />; }
 export function ReportsPage() { return <ReportView path="/reports" detailed />; }

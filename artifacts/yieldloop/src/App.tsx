@@ -147,7 +147,7 @@ function Authed({ user }: { user: Employee }) {
       <Route path="/inventory/:id">
         {(params) => <AppShell user={user}><InventoryDetailPage key={params.id} id={Number(params.id)} /></AppShell>}
       </Route>
-      <Route path="/dashboard"><AppShell user={user}><DashboardPage /></AppShell></Route>
+      <Route path="/dashboard"><AppShell user={user}><DashboardPage user={user} /></AppShell></Route>
       <Route path="/comparison"><AppShell user={user}><ComparisonPage user={user} /></AppShell></Route>
       <Route path="/reports"><AppShell user={user}><ReportsPage /></AppShell></Route>
       <Route path="/assistant"><AppShell user={user}><AssistantPage /></AppShell></Route>

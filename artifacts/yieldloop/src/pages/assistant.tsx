@@ -1,20 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
-import { Bot, Database, FileSearch, Loader2, RotateCw, Ruler, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { Database, FileSearch, RotateCw, Ruler, Search, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { FormAlert } from '@/components/brand';
 import { JobNumber, StatusBadge, useFormatDate } from '@/components/job-ui';
 import { AuthError } from '@/lib/auth';
-import { askAssistant, evidenceSignature, useAssistanceStatus, useEvidence, type AssistanceAnswer, type CuttingEvidence, type Evidence } from '@/lib/assistance';
+import { useEvidence, type CuttingEvidence, type Evidence } from '@/lib/assistance';
+import { useAssistantPanel } from '@/components/assistant-panel';
+import { useUt } from '@/lib/ui-i18n';
 import { Metrics } from '@/components/cutting/result-panel';
-import { hasFKey, localizeLimitation, useFt, type FKey } from '@/lib/feature-i18n';
+import { localizeLimitation, useFt, type FKey } from '@/lib/feature-i18n';
 import { useI18n } from '@/lib/i18n';
 import { useJobs, type JobStatus } from '@/lib/jobs';
 import { errorMessage } from '@/lib/session';
@@ -88,19 +85,8 @@ function JobAssistant({ jobId }: { jobId: number }) {
   const ft = useFt();
   const { t } = useI18n();
   const evidence = useEvidence(jobId);
-  const status = useAssistanceStatus();
-  const [answer, setAnswer] = useState<AssistanceAnswer | null>(null);
-  const [outdated, setOutdated] = useState(false);
-  const currentSig = evidence.data ? evidenceSignature(evidence.data) : null;
-  useEffect(() => {
-    if (answer && currentSig && evidenceSignature(answer.evidence) !== currentSig) { setAnswer(null); setOutdated(true); }
-  }, [answer, currentSig]);
-  const accept = (a: AssistanceAnswer) => {
-    if (a.evidence.job.id !== jobId) return; // never show another job's answer
-    setOutdated(false); setAnswer(a);
-    if (currentSig !== evidenceSignature(a.evidence)) void evidence.refetch();
-  };
-
+  const panel = useAssistantPanel();
+  const ut = useUt();
   if (evidence.isPending) return <div className="space-y-3"><Skeleton className="h-24 w-full" /><Skeleton className="h-48 w-full" /><Skeleton className="h-32 w-full" /></div>;
   if (evidence.isError) return (
     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm" role="alert">
@@ -112,19 +98,11 @@ function JobAssistant({ jobId }: { jobId: number }) {
   return (
     <div className="space-y-6">
       <EvidencePanel ev={ev} />
-      {status.isPending ? <Skeleton className="h-40 w-full" /> : status.isError ? (
-        <div className="flex items-center justify-between rounded-lg border p-4 text-sm"><span>{ft('asStatusError')}</span>
-          <Button size="sm" variant="outline" onClick={() => status.refetch()}><RotateCw className="h-4 w-4" aria-hidden />{t('retry')}</Button></div>
-      ) : !status.data.available ? (
-        <div className="flex gap-3 rounded-lg border border-dashed bg-muted/40 p-4" data-testid="panel-ai-unavailable">
-          <Bot className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-          <div><p className="text-sm font-medium">{ft('asUnavailable')}</p><p className="mt-0.5 text-xs text-muted-foreground">{ft('asUnavailableDesc')}</p></div>
+      {panel.available && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => panel.openFor(jobId)} data-testid="button-ask-assistant"><Sparkles className="h-4 w-4" aria-hidden />{ut('asstAskThis')}</Button>
         </div>
-      ) : (
-        <AskForm jobId={jobId} provider={status.data.provider} model={status.data.model} onAnswer={accept} onStale={() => { setAnswer(null); void evidence.refetch(); }} />
       )}
-      {outdated && !answer && <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900" role="status" data-testid="text-answer-outdated">{ft('asOutdated')}</p>}
-      {answer && <AnswerPanel answer={answer} />}
     </div>
   );
 }
@@ -234,95 +212,5 @@ function CuttingCard({ plan }: { plan: CuttingEvidence }) {
         ))}
       </div>
     </div>
-  );
-}
-
-function AskForm({ jobId, provider, model, onAnswer, onStale }: { jobId: number; provider: string; model: string | null; onAnswer: (a: AssistanceAnswer) => void; onStale: () => void }) {
-  const ft = useFt();
-  const { t, lang } = useI18n();
-  const [question, setQuestion] = useState('');
-  const [language, setLanguage] = useState<'en' | 'ar'>(lang);
-  const [notes, setNotes] = useState(false);
-  const [consent, setConsent] = useState(false);
-  const ask = useMutation({ mutationFn: (q: string) => askAssistant(jobId, { language, question: q, include_notes: notes }), onSuccess: onAnswer,
-    onError: (e) => { if (e instanceof AuthError && e.code === 'stale_revision') onStale(); } });
-  const err = ask.error instanceof AuthError && hasFKey(ask.error.code) ? ft(ask.error.code as FKey) : ask.error ? errorMessage(ask.error, t) : null;
-  const submit = (e: FormEvent) => { e.preventDefault(); if (consent && question.trim()) ask.mutate(question.trim()); };
-  return (
-    <form onSubmit={submit} className="space-y-4 rounded-lg border bg-card p-5" data-testid="form-ask">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-primary" aria-hidden />{ft('asAsk')}</h2>
-        <span className="text-[11px] text-muted-foreground" dir="ltr">{ft('asProvider', { p: provider, m: model ?? '—' })}</span>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="as-q">{ft('asQuestion')}</Label>
-        <Textarea id="as-q" rows={3} maxLength={2000} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={ft('asQuestionPh')} data-testid="input-question" />
-        <p className="text-end text-[11px] tabular-nums text-muted-foreground">{question.length}/2000</p>
-      </div>
-      <div className="flex flex-wrap items-start gap-6">
-        <div className="space-y-1.5">
-          <Label className="text-xs">{ft('asLanguage')}</Label>
-          <div className="inline-flex rounded-md border p-0.5" role="radiogroup" aria-label={ft('asLanguage')}>
-            {(['en', 'ar'] as const).map((l) => (
-              <button key={l} type="button" role="radio" aria-checked={language === l} onClick={() => setLanguage(l)}
-                className={cn('rounded px-3 py-1 text-sm', language === l ? 'bg-accent font-medium text-accent-foreground' : 'text-muted-foreground')}>{l === 'en' ? 'English' : 'العربية'}</button>
-            ))}
-          </div>
-        </div>
-        <div className="flex max-w-xs items-start gap-2">
-          <Switch id="as-notes" checked={notes} onCheckedChange={(v) => { setNotes(v); setConsent(false); }} data-testid="switch-notes" />
-          <div><Label htmlFor="as-notes" className="text-sm">{ft('asNotes')}</Label><p className="text-xs text-muted-foreground">{ft('asNotesHint')}</p></div>
-        </div>
-      </div>
-      <div className="flex items-start gap-2.5 rounded-md border border-primary/20 bg-primary/5 p-3">
-        <Checkbox id="as-consent" checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" data-testid="checkbox-consent" />
-        <Label htmlFor="as-consent" className="text-sm font-normal leading-relaxed">{ft('asConsent', { notes: notes ? ft('asConsentNotes') : '' })}</Label>
-      </div>
-      {err && <FormAlert message={err} />}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">{ft('asNoSave')}</p>
-        <Button type="submit" disabled={!consent || !question.trim() || ask.isPending} data-testid="button-ask">
-          {ask.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
-          {ask.isPending ? ft('asSending') : ft('asSend')}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function AnswerPanel({ answer }: { answer: AssistanceAnswer }) {
-  const ft = useFt();
-  const fmt = useFormatDate();
-  return (
-    <section className="rounded-lg border border-amber-500/30 bg-amber-50/40 p-5" dir={answer.language === 'ar' ? 'rtl' : 'ltr'} data-testid="panel-answer">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-sm font-semibold">{ft('asAnswer')}</h2>
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-900"><Bot className="h-3 w-3" aria-hidden />{ft('asAiBadge')}</span>
-        <span className="ms-auto text-[11px] text-muted-foreground" data-testid="text-answer-basis">{ft('asAnswerBasis', { t: fmt(answer.evidence.generated_at) })}</span>
-      </div>
-      <div className="mt-3 space-y-2 text-sm leading-relaxed">{answer.answer.map((p, i) => <p key={i}>{p}</p>)}</div>
-      {answer.possible_leads.length > 0 && (
-        <div className="mt-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{ft('asLeads')}</h3>
-          <ol className="mt-2 space-y-2">
-            {answer.possible_leads.map((l, i) => (
-              <li key={`${l.code}-${i}`} className="rounded-md border bg-card p-3 text-sm" data-testid={`lead-${l.code}`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]" dir="ltr">{l.code}</span>
-                  <span>{l.text}</span>
-                </div>
-                <dl className="mt-2 grid gap-1 text-xs sm:grid-cols-[auto_1fr] sm:gap-x-3">
-                  <dt className="text-muted-foreground">{ft('asEvidenceNeeded')}</dt><dd>{l.evidence_needed}</dd>
-                  <dt className="text-muted-foreground">{ft('asNextStep')}</dt><dd>{l.next_step}</dd>
-                  {l.record_ids.length > 0 && <><dt className="text-muted-foreground">{ft('asRecords')}</dt>
-                    <dd className="flex flex-wrap gap-1">{l.record_ids.map((r) => <span key={r} className="rounded border px-1 font-mono text-[11px]" dir="ltr">{r}</span>)}</dd></>}
-                </dl>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-      <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">{answer.notice}</p>
-    </section>
   );
 }

@@ -14,6 +14,16 @@ changes to production data.
 **How to apply:** Apply this standard to every future summary, alert, recommendation
 and AI action. Advisory output does not become an authoritative production record.
 
+The normal AI experience should be a compact floating assistant, not a standalone
+chat page. When no provider is configured, hide the inactive assistant entry and
+question form, but preserve useful authorized investigation evidence.
+
+**Why:** The user asked for a factory interface without a broken chatbot or a
+persistent technical provider warning.
+
+**How to apply:** Server-reported availability governs the AI entry point. Never
+simulate configuration success or remove recorded evidence because AI is offline.
+
 A 3D packaging concept is not a validated dieline or manufacturing instruction.
 Do not infer cutting pieces from arbitrary 3D shapes or weight measurements.
 
