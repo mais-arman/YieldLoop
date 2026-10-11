@@ -1,4 +1,5 @@
 from accounts import views
+from cutting.views import EvaluateView, HistoryView, PlansView, PlanView
 from django.urls import path
 from inventory.views import BlockedReuse, InventoryDetail, InventoryView, InventoryVoid
 from jobs.views import JobsView, JobView
@@ -8,6 +9,10 @@ from reports.views import OverviewView
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
+    path("api/v1/jobs/<int:job_id>/cutting", PlansView.as_view()),
+    path("api/v1/jobs/<int:job_id>/cutting/evaluate", EvaluateView.as_view()),
+    path("api/v1/jobs/<int:job_id>/cutting/<int:pk>", PlanView.as_view()),
+    path("api/v1/jobs/<int:job_id>/cutting/<int:pk>/history", HistoryView.as_view()),
     path("api/v1/reports/overview", OverviewView.as_view()),
     path("api/v1/inventory", InventoryView.as_view()),
     path("api/v1/inventory/<int:pk>", InventoryDetail.as_view()),

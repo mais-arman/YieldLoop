@@ -5,6 +5,229 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.
+ * @pattern ^(0|[1-9]\d{0,5})(\.\d{1,3})?$
+ */
+export type CuttingMillimetres = string;
+
+export interface CuttingBoard {
+  width: CuttingMillimetres;
+  height: CuttingMillimetres;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  quantity: number;
+  left: CuttingMillimetres;
+  right: CuttingMillimetres;
+  top: CuttingMillimetres;
+  bottom: CuttingMillimetres;
+}
+
+export interface CuttingPiece {
+  /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
+  key: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  label: string;
+  width: CuttingMillimetres;
+  height: CuttingMillimetres;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  quantity: number;
+  rotation_allowed: boolean;
+}
+
+export type CuttingGeometryInputUnit = typeof CuttingGeometryInputUnit[keyof typeof CuttingGeometryInputUnit];
+
+
+export const CuttingGeometryInputUnit = {
+  mm: 'mm',
+} as const;
+
+export type CuttingGeometryInputCuttingMode = typeof CuttingGeometryInputCuttingMode[keyof typeof CuttingGeometryInputCuttingMode];
+
+
+export const CuttingGeometryInputCuttingMode = {
+  rectangular_spacing_only: 'rectangular_spacing_only',
+} as const;
+
+export interface CuttingGeometryInput {
+  unit: CuttingGeometryInputUnit;
+  /** @minimum 1 */
+  material_id: number;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  stock_label: string;
+  cutting_mode: CuttingGeometryInputCuttingMode;
+  board: CuttingBoard;
+  kerf: CuttingMillimetres;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  pieces: CuttingPiece[];
+}
+
+export interface CuttingPlacement {
+  /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
+  piece_key: string;
+  /**
+     * @minimum 0
+     * @maximum 99
+     */
+  copy: number;
+  /**
+     * @minimum 0
+     * @maximum 9
+     */
+  board: number;
+  x: CuttingMillimetres;
+  y: CuttingMillimetres;
+  rotated: boolean;
+}
+
+export type CuttingScenarioInputOrigin = typeof CuttingScenarioInputOrigin[keyof typeof CuttingScenarioInputOrigin];
+
+
+export const CuttingScenarioInputOrigin = {
+  manual: 'manual',
+  shelf_v1: 'shelf_v1',
+} as const;
+
+export interface CuttingScenarioInput {
+  /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
+  key: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  input: CuttingGeometryInput;
+  /** @maxItems 100 */
+  placements: CuttingPlacement[];
+  origin: CuttingScenarioInputOrigin;
+}
+
+export type CuttingResultUnplacedItemReason = typeof CuttingResultUnplacedItemReason[keyof typeof CuttingResultUnplacedItemReason];
+
+
+export const CuttingResultUnplacedItemReason = {
+  not_placed: 'not_placed',
+  cannot_fit: 'cannot_fit',
+} as const;
+
+export type CuttingResultUnplacedItem = {
+  piece_key: string;
+  quantity: number;
+  reason: CuttingResultUnplacedItemReason;
+};
+
+export interface CuttingResult {
+  board_count: number;
+  available_boards: number;
+  placed_count: number;
+  unplaced_count: number;
+  required_area: string;
+  placed_area: string;
+  board_area: string;
+  used_board_area: string;
+  unused_area: string;
+  available_area: string;
+  /** @nullable */
+  utilization: string | null;
+  valid: boolean;
+  unplaced: CuttingResultUnplacedItem[];
+}
+
+export type CuttingScenarioOrigin = typeof CuttingScenarioOrigin[keyof typeof CuttingScenarioOrigin];
+
+
+export const CuttingScenarioOrigin = {
+  manual: 'manual',
+  shelf_v1: 'shelf_v1',
+} as const;
+
+export interface CuttingScenario {
+  key: string;
+  name: string;
+  input: CuttingGeometryInput;
+  placements: CuttingPlacement[];
+  origin: CuttingScenarioOrigin;
+  result: CuttingResult;
+}
+
+export interface CuttingSaveInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /** @minimum 0 */
+  revision: number;
+  request_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+  /**
+     * @minItems 1
+     * @maxItems 4
+     */
+  scenarios: CuttingScenarioInput[];
+}
+
+export interface CuttingPlan {
+  id: number;
+  job_id: number;
+  name: string;
+  revision: number;
+  scenarios: CuttingScenario[];
+  created_at: string;
+  updated_at: string;
+  can_edit: boolean;
+}
+
+export interface CuttingPlanSummary {
+  id: number;
+  name: string;
+  revision: number;
+  updated_at: string;
+}
+
+export interface CuttingPlanPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: CuttingPlanSummary[];
+}
+
+export interface CuttingHistory {
+  revision: number;
+  name: string;
+  scenarios: CuttingScenario[];
+  reason: string;
+  actor: string;
+  created_at: string;
+}
+
+export interface CuttingHistoryPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: CuttingHistory[];
+}
+
 export interface ReportMeasures {
   issued: string;
   good: string;
@@ -520,6 +743,35 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListCuttingPlansParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+page_size?: number;
+};
+
+export type EvaluateCuttingScenarioBody = {
+  scenario: CuttingScenarioInput;
+  generate: boolean;
+};
+
+export type GetCuttingHistoryParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+page_size?: number;
+};
 
 export type GetReportOverviewParams = {
 start_date?: string;

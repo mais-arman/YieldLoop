@@ -8,6 +8,813 @@
 import * as zod from 'zod';
 
 
+export const ListCuttingPlansParams = zod.object({
+  "job_id": zod.coerce.number().int()
+})
+
+
+export const listCuttingPlansQueryPageSizeMax = 100;
+
+
+
+export const ListCuttingPlansQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "page_size": zod.coerce.number().int().min(1).max(listCuttingPlansQueryPageSizeMax).optional()
+})
+
+export const ListCuttingPlansResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "revision": zod.number().int(),
+  "updated_at": zod.coerce.date()
+}))
+})
+
+
+export const CreateCuttingPlanParams = zod.object({
+  "job_id": zod.coerce.number().int()
+})
+
+export const createCuttingPlanBodyNameMax = 160;
+
+export const createCuttingPlanBodyRevisionMin = 0;
+
+export const createCuttingPlanBodyReasonMax = 1000;
+
+export const createCuttingPlanBodyScenariosItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const createCuttingPlanBodyScenariosItemNameMax = 80;
+
+
+export const createCuttingPlanBodyScenariosItemInputStockLabelMax = 120;
+
+export const createCuttingPlanBodyScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputBoardQuantityMax = 10;
+
+export const createCuttingPlanBodyScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const createCuttingPlanBodyScenariosItemInputPiecesItemLabelMax = 80;
+
+export const createCuttingPlanBodyScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const createCuttingPlanBodyScenariosItemInputPiecesMax = 20;
+
+export const createCuttingPlanBodyScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const createCuttingPlanBodyScenariosItemPlacementsItemCopyMin = 0;
+export const createCuttingPlanBodyScenariosItemPlacementsItemCopyMax = 99;
+
+export const createCuttingPlanBodyScenariosItemPlacementsItemBoardMin = 0;
+export const createCuttingPlanBodyScenariosItemPlacementsItemBoardMax = 9;
+
+export const createCuttingPlanBodyScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanBodyScenariosItemPlacementsMax = 100;
+
+export const createCuttingPlanBodyScenariosMax = 4;
+
+
+
+export const CreateCuttingPlanBody = zod.object({
+  "name": zod.string().min(1).max(createCuttingPlanBodyNameMax),
+  "revision": zod.number().int().min(createCuttingPlanBodyRevisionMin),
+  "request_id": zod.string().uuid(),
+  "reason": zod.string().min(1).max(createCuttingPlanBodyReasonMax),
+  "scenarios": zod.array(zod.object({
+  "key": zod.string().regex(createCuttingPlanBodyScenariosItemKeyRegExp),
+  "name": zod.string().min(1).max(createCuttingPlanBodyScenariosItemNameMax),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(createCuttingPlanBodyScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(createCuttingPlanBodyScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(createCuttingPlanBodyScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(createCuttingPlanBodyScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(createCuttingPlanBodyScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(createCuttingPlanBodyScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(createCuttingPlanBodyScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(createCuttingPlanBodyScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(createCuttingPlanBodyScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(createCuttingPlanBodyScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(createCuttingPlanBodyScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(createCuttingPlanBodyScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(createCuttingPlanBodyScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(createCuttingPlanBodyScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(createCuttingPlanBodyScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(createCuttingPlanBodyScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(createCuttingPlanBodyScenariosItemPlacementsItemCopyMin).max(createCuttingPlanBodyScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(createCuttingPlanBodyScenariosItemPlacementsItemBoardMin).max(createCuttingPlanBodyScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(createCuttingPlanBodyScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(createCuttingPlanBodyScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})).max(createCuttingPlanBodyScenariosItemPlacementsMax),
+  "origin": zod.enum(['manual', 'shelf_v1'])
+})).min(1).max(createCuttingPlanBodyScenariosMax)
+})
+
+
+export const createCuttingPlanResponseScenariosItemInputStockLabelMax = 120;
+
+export const createCuttingPlanResponseScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputBoardQuantityMax = 10;
+
+export const createCuttingPlanResponseScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const createCuttingPlanResponseScenariosItemInputPiecesItemLabelMax = 80;
+
+export const createCuttingPlanResponseScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const createCuttingPlanResponseScenariosItemInputPiecesMax = 20;
+
+export const createCuttingPlanResponseScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const createCuttingPlanResponseScenariosItemPlacementsItemCopyMin = 0;
+export const createCuttingPlanResponseScenariosItemPlacementsItemCopyMax = 99;
+
+export const createCuttingPlanResponseScenariosItemPlacementsItemBoardMin = 0;
+export const createCuttingPlanResponseScenariosItemPlacementsItemBoardMax = 9;
+
+export const createCuttingPlanResponseScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const createCuttingPlanResponseScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+
+
+export const CreateCuttingPlanResponse = zod.object({
+  "id": zod.number().int(),
+  "job_id": zod.number().int(),
+  "name": zod.string(),
+  "revision": zod.number().int(),
+  "scenarios": zod.array(zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(createCuttingPlanResponseScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(createCuttingPlanResponseScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(createCuttingPlanResponseScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(createCuttingPlanResponseScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(createCuttingPlanResponseScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(createCuttingPlanResponseScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(createCuttingPlanResponseScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(createCuttingPlanResponseScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(createCuttingPlanResponseScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(createCuttingPlanResponseScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(createCuttingPlanResponseScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(createCuttingPlanResponseScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(createCuttingPlanResponseScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(createCuttingPlanResponseScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(createCuttingPlanResponseScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(createCuttingPlanResponseScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(createCuttingPlanResponseScenariosItemPlacementsItemCopyMin).max(createCuttingPlanResponseScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(createCuttingPlanResponseScenariosItemPlacementsItemBoardMin).max(createCuttingPlanResponseScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(createCuttingPlanResponseScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(createCuttingPlanResponseScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})),
+  "origin": zod.enum(['manual', 'shelf_v1']),
+  "result": zod.object({
+  "board_count": zod.number().int(),
+  "available_boards": zod.number().int(),
+  "placed_count": zod.number().int(),
+  "unplaced_count": zod.number().int(),
+  "required_area": zod.string(),
+  "placed_area": zod.string(),
+  "board_area": zod.string(),
+  "used_board_area": zod.string(),
+  "unused_area": zod.string(),
+  "available_area": zod.string(),
+  "utilization": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "unplaced": zod.array(zod.object({
+  "piece_key": zod.string(),
+  "quantity": zod.number().int(),
+  "reason": zod.enum(['not_placed', 'cannot_fit'])
+}))
+})
+})),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "can_edit": zod.boolean()
+})
+
+
+export const EvaluateCuttingScenarioParams = zod.object({
+  "job_id": zod.coerce.number().int()
+})
+
+export const evaluateCuttingScenarioBodyScenarioKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const evaluateCuttingScenarioBodyScenarioNameMax = 80;
+
+
+export const evaluateCuttingScenarioBodyScenarioInputStockLabelMax = 120;
+
+export const evaluateCuttingScenarioBodyScenarioInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputBoardQuantityMax = 10;
+
+export const evaluateCuttingScenarioBodyScenarioInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const evaluateCuttingScenarioBodyScenarioInputPiecesItemLabelMax = 80;
+
+export const evaluateCuttingScenarioBodyScenarioInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioInputPiecesItemQuantityMax = 100;
+
+export const evaluateCuttingScenarioBodyScenarioInputPiecesMax = 20;
+
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemCopyMin = 0;
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemCopyMax = 99;
+
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemBoardMin = 0;
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemBoardMax = 9;
+
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioBodyScenarioPlacementsMax = 100;
+
+
+
+export const EvaluateCuttingScenarioBody = zod.object({
+  "scenario": zod.object({
+  "key": zod.string().regex(evaluateCuttingScenarioBodyScenarioKeyRegExp),
+  "name": zod.string().min(1).max(evaluateCuttingScenarioBodyScenarioNameMax),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(evaluateCuttingScenarioBodyScenarioInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(evaluateCuttingScenarioBodyScenarioInputBoardQuantityMax),
+  "left": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(evaluateCuttingScenarioBodyScenarioInputPiecesItemLabelMax),
+  "width": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(evaluateCuttingScenarioBodyScenarioInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(evaluateCuttingScenarioBodyScenarioInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(evaluateCuttingScenarioBodyScenarioInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(evaluateCuttingScenarioBodyScenarioPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(evaluateCuttingScenarioBodyScenarioPlacementsItemCopyMin).max(evaluateCuttingScenarioBodyScenarioPlacementsItemCopyMax),
+  "board": zod.number().int().min(evaluateCuttingScenarioBodyScenarioPlacementsItemBoardMin).max(evaluateCuttingScenarioBodyScenarioPlacementsItemBoardMax),
+  "x": zod.string().regex(evaluateCuttingScenarioBodyScenarioPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(evaluateCuttingScenarioBodyScenarioPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})).max(evaluateCuttingScenarioBodyScenarioPlacementsMax),
+  "origin": zod.enum(['manual', 'shelf_v1'])
+}),
+  "generate": zod.boolean()
+})
+
+
+export const evaluateCuttingScenarioResponseInputStockLabelMax = 120;
+
+export const evaluateCuttingScenarioResponseInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputBoardQuantityMax = 10;
+
+export const evaluateCuttingScenarioResponseInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const evaluateCuttingScenarioResponseInputPiecesItemLabelMax = 80;
+
+export const evaluateCuttingScenarioResponseInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponseInputPiecesItemQuantityMax = 100;
+
+export const evaluateCuttingScenarioResponseInputPiecesMax = 20;
+
+export const evaluateCuttingScenarioResponsePlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const evaluateCuttingScenarioResponsePlacementsItemCopyMin = 0;
+export const evaluateCuttingScenarioResponsePlacementsItemCopyMax = 99;
+
+export const evaluateCuttingScenarioResponsePlacementsItemBoardMin = 0;
+export const evaluateCuttingScenarioResponsePlacementsItemBoardMax = 9;
+
+export const evaluateCuttingScenarioResponsePlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const evaluateCuttingScenarioResponsePlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+
+
+export const EvaluateCuttingScenarioResponse = zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(evaluateCuttingScenarioResponseInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(evaluateCuttingScenarioResponseInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(evaluateCuttingScenarioResponseInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(evaluateCuttingScenarioResponseInputBoardQuantityMax),
+  "left": zod.string().regex(evaluateCuttingScenarioResponseInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(evaluateCuttingScenarioResponseInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(evaluateCuttingScenarioResponseInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(evaluateCuttingScenarioResponseInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(evaluateCuttingScenarioResponseInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(evaluateCuttingScenarioResponseInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(evaluateCuttingScenarioResponseInputPiecesItemLabelMax),
+  "width": zod.string().regex(evaluateCuttingScenarioResponseInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(evaluateCuttingScenarioResponseInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(evaluateCuttingScenarioResponseInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(evaluateCuttingScenarioResponseInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(evaluateCuttingScenarioResponsePlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(evaluateCuttingScenarioResponsePlacementsItemCopyMin).max(evaluateCuttingScenarioResponsePlacementsItemCopyMax),
+  "board": zod.number().int().min(evaluateCuttingScenarioResponsePlacementsItemBoardMin).max(evaluateCuttingScenarioResponsePlacementsItemBoardMax),
+  "x": zod.string().regex(evaluateCuttingScenarioResponsePlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(evaluateCuttingScenarioResponsePlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})),
+  "origin": zod.enum(['manual', 'shelf_v1']),
+  "result": zod.object({
+  "board_count": zod.number().int(),
+  "available_boards": zod.number().int(),
+  "placed_count": zod.number().int(),
+  "unplaced_count": zod.number().int(),
+  "required_area": zod.string(),
+  "placed_area": zod.string(),
+  "board_area": zod.string(),
+  "used_board_area": zod.string(),
+  "unused_area": zod.string(),
+  "available_area": zod.string(),
+  "utilization": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "unplaced": zod.array(zod.object({
+  "piece_key": zod.string(),
+  "quantity": zod.number().int(),
+  "reason": zod.enum(['not_placed', 'cannot_fit'])
+}))
+})
+})
+
+
+export const GetCuttingPlanParams = zod.object({
+  "job_id": zod.coerce.number().int(),
+  "id": zod.coerce.number().int()
+})
+
+
+export const getCuttingPlanResponseScenariosItemInputStockLabelMax = 120;
+
+export const getCuttingPlanResponseScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputBoardQuantityMax = 10;
+
+export const getCuttingPlanResponseScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const getCuttingPlanResponseScenariosItemInputPiecesItemLabelMax = 80;
+
+export const getCuttingPlanResponseScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const getCuttingPlanResponseScenariosItemInputPiecesMax = 20;
+
+export const getCuttingPlanResponseScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const getCuttingPlanResponseScenariosItemPlacementsItemCopyMin = 0;
+export const getCuttingPlanResponseScenariosItemPlacementsItemCopyMax = 99;
+
+export const getCuttingPlanResponseScenariosItemPlacementsItemBoardMin = 0;
+export const getCuttingPlanResponseScenariosItemPlacementsItemBoardMax = 9;
+
+export const getCuttingPlanResponseScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingPlanResponseScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+
+
+export const GetCuttingPlanResponse = zod.object({
+  "id": zod.number().int(),
+  "job_id": zod.number().int(),
+  "name": zod.string(),
+  "revision": zod.number().int(),
+  "scenarios": zod.array(zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(getCuttingPlanResponseScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(getCuttingPlanResponseScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(getCuttingPlanResponseScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(getCuttingPlanResponseScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(getCuttingPlanResponseScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(getCuttingPlanResponseScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(getCuttingPlanResponseScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(getCuttingPlanResponseScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(getCuttingPlanResponseScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(getCuttingPlanResponseScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(getCuttingPlanResponseScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(getCuttingPlanResponseScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(getCuttingPlanResponseScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(getCuttingPlanResponseScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(getCuttingPlanResponseScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(getCuttingPlanResponseScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(getCuttingPlanResponseScenariosItemPlacementsItemCopyMin).max(getCuttingPlanResponseScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(getCuttingPlanResponseScenariosItemPlacementsItemBoardMin).max(getCuttingPlanResponseScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(getCuttingPlanResponseScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(getCuttingPlanResponseScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})),
+  "origin": zod.enum(['manual', 'shelf_v1']),
+  "result": zod.object({
+  "board_count": zod.number().int(),
+  "available_boards": zod.number().int(),
+  "placed_count": zod.number().int(),
+  "unplaced_count": zod.number().int(),
+  "required_area": zod.string(),
+  "placed_area": zod.string(),
+  "board_area": zod.string(),
+  "used_board_area": zod.string(),
+  "unused_area": zod.string(),
+  "available_area": zod.string(),
+  "utilization": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "unplaced": zod.array(zod.object({
+  "piece_key": zod.string(),
+  "quantity": zod.number().int(),
+  "reason": zod.enum(['not_placed', 'cannot_fit'])
+}))
+})
+})),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "can_edit": zod.boolean()
+})
+
+
+export const UpdateCuttingPlanParams = zod.object({
+  "job_id": zod.coerce.number().int(),
+  "id": zod.coerce.number().int()
+})
+
+export const updateCuttingPlanBodyNameMax = 160;
+
+export const updateCuttingPlanBodyRevisionMin = 0;
+
+export const updateCuttingPlanBodyReasonMax = 1000;
+
+export const updateCuttingPlanBodyScenariosItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const updateCuttingPlanBodyScenariosItemNameMax = 80;
+
+
+export const updateCuttingPlanBodyScenariosItemInputStockLabelMax = 120;
+
+export const updateCuttingPlanBodyScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputBoardQuantityMax = 10;
+
+export const updateCuttingPlanBodyScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const updateCuttingPlanBodyScenariosItemInputPiecesItemLabelMax = 80;
+
+export const updateCuttingPlanBodyScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const updateCuttingPlanBodyScenariosItemInputPiecesMax = 20;
+
+export const updateCuttingPlanBodyScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const updateCuttingPlanBodyScenariosItemPlacementsItemCopyMin = 0;
+export const updateCuttingPlanBodyScenariosItemPlacementsItemCopyMax = 99;
+
+export const updateCuttingPlanBodyScenariosItemPlacementsItemBoardMin = 0;
+export const updateCuttingPlanBodyScenariosItemPlacementsItemBoardMax = 9;
+
+export const updateCuttingPlanBodyScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanBodyScenariosItemPlacementsMax = 100;
+
+export const updateCuttingPlanBodyScenariosMax = 4;
+
+
+
+export const UpdateCuttingPlanBody = zod.object({
+  "name": zod.string().min(1).max(updateCuttingPlanBodyNameMax),
+  "revision": zod.number().int().min(updateCuttingPlanBodyRevisionMin),
+  "request_id": zod.string().uuid(),
+  "reason": zod.string().min(1).max(updateCuttingPlanBodyReasonMax),
+  "scenarios": zod.array(zod.object({
+  "key": zod.string().regex(updateCuttingPlanBodyScenariosItemKeyRegExp),
+  "name": zod.string().min(1).max(updateCuttingPlanBodyScenariosItemNameMax),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(updateCuttingPlanBodyScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(updateCuttingPlanBodyScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(updateCuttingPlanBodyScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(updateCuttingPlanBodyScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(updateCuttingPlanBodyScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(updateCuttingPlanBodyScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(updateCuttingPlanBodyScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(updateCuttingPlanBodyScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(updateCuttingPlanBodyScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(updateCuttingPlanBodyScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(updateCuttingPlanBodyScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(updateCuttingPlanBodyScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(updateCuttingPlanBodyScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(updateCuttingPlanBodyScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(updateCuttingPlanBodyScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(updateCuttingPlanBodyScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(updateCuttingPlanBodyScenariosItemPlacementsItemCopyMin).max(updateCuttingPlanBodyScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(updateCuttingPlanBodyScenariosItemPlacementsItemBoardMin).max(updateCuttingPlanBodyScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(updateCuttingPlanBodyScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(updateCuttingPlanBodyScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})).max(updateCuttingPlanBodyScenariosItemPlacementsMax),
+  "origin": zod.enum(['manual', 'shelf_v1'])
+})).min(1).max(updateCuttingPlanBodyScenariosMax)
+})
+
+
+export const updateCuttingPlanResponseScenariosItemInputStockLabelMax = 120;
+
+export const updateCuttingPlanResponseScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputBoardQuantityMax = 10;
+
+export const updateCuttingPlanResponseScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const updateCuttingPlanResponseScenariosItemInputPiecesItemLabelMax = 80;
+
+export const updateCuttingPlanResponseScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const updateCuttingPlanResponseScenariosItemInputPiecesMax = 20;
+
+export const updateCuttingPlanResponseScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const updateCuttingPlanResponseScenariosItemPlacementsItemCopyMin = 0;
+export const updateCuttingPlanResponseScenariosItemPlacementsItemCopyMax = 99;
+
+export const updateCuttingPlanResponseScenariosItemPlacementsItemBoardMin = 0;
+export const updateCuttingPlanResponseScenariosItemPlacementsItemBoardMax = 9;
+
+export const updateCuttingPlanResponseScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const updateCuttingPlanResponseScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+
+
+export const UpdateCuttingPlanResponse = zod.object({
+  "id": zod.number().int(),
+  "job_id": zod.number().int(),
+  "name": zod.string(),
+  "revision": zod.number().int(),
+  "scenarios": zod.array(zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(updateCuttingPlanResponseScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(updateCuttingPlanResponseScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(updateCuttingPlanResponseScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(updateCuttingPlanResponseScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(updateCuttingPlanResponseScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(updateCuttingPlanResponseScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(updateCuttingPlanResponseScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(updateCuttingPlanResponseScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(updateCuttingPlanResponseScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(updateCuttingPlanResponseScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(updateCuttingPlanResponseScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(updateCuttingPlanResponseScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(updateCuttingPlanResponseScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(updateCuttingPlanResponseScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(updateCuttingPlanResponseScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(updateCuttingPlanResponseScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(updateCuttingPlanResponseScenariosItemPlacementsItemCopyMin).max(updateCuttingPlanResponseScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(updateCuttingPlanResponseScenariosItemPlacementsItemBoardMin).max(updateCuttingPlanResponseScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(updateCuttingPlanResponseScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(updateCuttingPlanResponseScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})),
+  "origin": zod.enum(['manual', 'shelf_v1']),
+  "result": zod.object({
+  "board_count": zod.number().int(),
+  "available_boards": zod.number().int(),
+  "placed_count": zod.number().int(),
+  "unplaced_count": zod.number().int(),
+  "required_area": zod.string(),
+  "placed_area": zod.string(),
+  "board_area": zod.string(),
+  "used_board_area": zod.string(),
+  "unused_area": zod.string(),
+  "available_area": zod.string(),
+  "utilization": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "unplaced": zod.array(zod.object({
+  "piece_key": zod.string(),
+  "quantity": zod.number().int(),
+  "reason": zod.enum(['not_placed', 'cannot_fit'])
+}))
+})
+})),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "can_edit": zod.boolean()
+})
+
+
+export const GetCuttingHistoryParams = zod.object({
+  "job_id": zod.coerce.number().int(),
+  "id": zod.coerce.number().int()
+})
+
+
+export const getCuttingHistoryQueryPageSizeMax = 100;
+
+
+
+export const GetCuttingHistoryQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "page_size": zod.coerce.number().int().min(1).max(getCuttingHistoryQueryPageSizeMax).optional()
+})
+
+
+export const getCuttingHistoryResponseResultsItemScenariosItemInputStockLabelMax = 120;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardQuantityMax = 10;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemLabelMax = 80;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemInputPiecesMax = 20;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemCopyMin = 0;
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemCopyMax = 99;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemBoardMin = 0;
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemBoardMax = 9;
+
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+
+
+export const GetCuttingHistoryResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "revision": zod.number().int(),
+  "name": zod.string(),
+  "scenarios": zod.array(zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(getCuttingHistoryResponseResultsItemScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(getCuttingHistoryResponseResultsItemScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(getCuttingHistoryResponseResultsItemScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(getCuttingHistoryResponseResultsItemScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemCopyMin).max(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemBoardMin).max(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(getCuttingHistoryResponseResultsItemScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})),
+  "origin": zod.enum(['manual', 'shelf_v1']),
+  "result": zod.object({
+  "board_count": zod.number().int(),
+  "available_boards": zod.number().int(),
+  "placed_count": zod.number().int(),
+  "unplaced_count": zod.number().int(),
+  "required_area": zod.string(),
+  "placed_area": zod.string(),
+  "board_area": zod.string(),
+  "used_board_area": zod.string(),
+  "unused_area": zod.string(),
+  "available_area": zod.string(),
+  "utilization": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "unplaced": zod.array(zod.object({
+  "piece_key": zod.string(),
+  "quantity": zod.number().int(),
+  "reason": zod.enum(['not_placed', 'cannot_fit'])
+}))
+})
+})),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
 export const GetReportOverviewQueryParams = zod.object({
   "start_date": zod.date().optional(),
   "end_date": zod.date().optional(),

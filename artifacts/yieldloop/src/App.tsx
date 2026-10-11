@@ -18,6 +18,8 @@ import PasswordPage from '@/pages/password';
 import JobsPage from '@/pages/jobs';
 import JobNewPage from '@/pages/job-new';
 import JobDetailPage from '@/pages/job-detail';
+import CuttingStudioPage from '@/pages/cutting-studio';
+import CuttingEntryPage from '@/pages/cutting-entry';
 import InventoryPage from '@/pages/inventory';
 import InventoryDetailPage from '@/pages/inventory-detail';
 import { DashboardPage, ReportsPage } from '@/pages/reports';
@@ -132,6 +134,10 @@ function Authed({ user }: { user: Employee }) {
       <Route path="/jobs/new">
         <AppShell user={user}>{user.role === 'manager' ? <JobNewPage /> : <Forbidden />}</AppShell>
       </Route>
+      <Route path="/jobs/:id/cutting">
+        {(params) => <AppShell user={user}><CuttingStudioPage key={params.id} id={Number(params.id)} user={user} /></AppShell>}
+      </Route>
+      <Route path="/cutting"><AppShell user={user}><CuttingEntryPage /></AppShell></Route>
       <Route path="/jobs/:id">
         {(params) => <AppShell user={user}><JobDetailPage key={params.id} id={Number(params.id)} /></AppShell>}
       </Route>

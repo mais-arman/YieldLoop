@@ -22,7 +22,14 @@ import type {
 import type {
   AcquireCsrf200,
   AddEmployeeBody,
+  CuttingHistoryPage,
+  CuttingPlan,
+  CuttingPlanPage,
+  CuttingSaveInput,
+  CuttingScenario,
   Employee,
+  EvaluateCuttingScenarioBody,
+  GetCuttingHistoryParams,
   GetJobMaterialsParams,
   GetReportOverviewParams,
   HealthStatus,
@@ -33,6 +40,7 @@ import type {
   JobInput,
   JobPage,
   JobUpdate,
+  ListCuttingPlansParams,
   ListInventoryParams,
   ListMaterialsParams,
   ListProductionJobsParams,
@@ -78,6 +86,504 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListCuttingPlansUrl = (jobId: number,
+    params?: ListCuttingPlansParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/jobs/${jobId}/cutting?${stringifiedParams}` : `/api/v1/jobs/${jobId}/cutting`
+}
+
+export const listCuttingPlans = async (jobId: number,
+    params?: ListCuttingPlansParams, options?: Parameters<typeof customFetch>[1]): Promise<CuttingPlanPage> => {
+
+  return customFetch<CuttingPlanPage>(getListCuttingPlansUrl(jobId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCuttingPlansQueryKey = (jobId: number,
+    params?: ListCuttingPlansParams,) => {
+    return [
+    `/api/v1/jobs/${jobId}/cutting`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCuttingPlansQueryOptions = <TData = Awaited<ReturnType<typeof listCuttingPlans>>, TError = ErrorType<unknown>>(jobId: number,
+    params?: ListCuttingPlansParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCuttingPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCuttingPlansQueryKey(jobId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCuttingPlans>>> = ({ signal }) => listCuttingPlans(jobId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: jobId !== null && jobId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCuttingPlans>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCuttingPlansQueryResult = NonNullable<Awaited<ReturnType<typeof listCuttingPlans>>>
+export type ListCuttingPlansQueryError = ErrorType<unknown>
+
+
+
+export function useListCuttingPlans<TData = Awaited<ReturnType<typeof listCuttingPlans>>, TError = ErrorType<unknown>>(
+ jobId: number,
+    params?: ListCuttingPlansParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCuttingPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCuttingPlansQueryOptions(jobId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCuttingPlanUrl = (jobId: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${jobId}/cutting`
+}
+
+export const createCuttingPlan = async (jobId: number,
+    cuttingSaveInput: CuttingSaveInput, options?: Parameters<typeof customFetch>[1]): Promise<CuttingPlan> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CuttingPlan>(getCreateCuttingPlanUrl(jobId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(cuttingSaveInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCuttingPlanMutationKey = () => ['createCuttingPlan'] as const;
+
+export const getCreateCuttingPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCuttingPlan>>, TError,CreateCuttingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCuttingPlan>>, TError,CreateCuttingPlanMutationVariables, TContext> => {
+
+const mutationKey = getCreateCuttingPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCuttingPlan>>, CreateCuttingPlanMutationVariables> = (props) => {
+          const {jobId,data} = props ?? {};
+
+          return  createCuttingPlan(jobId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCuttingPlanMutationResult = NonNullable<Awaited<ReturnType<typeof createCuttingPlan>>>
+    export type CreateCuttingPlanMutationBody = BodyType<CuttingSaveInput>
+    export type CreateCuttingPlanMutationError = ErrorType<void>
+    export type CreateCuttingPlanMutationVariables = {jobId: number;data: BodyType<CuttingSaveInput>}
+
+    export const useCreateCuttingPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCuttingPlan>>, TError,CreateCuttingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCuttingPlan>>,
+        TError,
+        CreateCuttingPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCuttingPlanMutationOptions(options));
+    }
+
+export const getEvaluateCuttingScenarioUrl = (jobId: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${jobId}/cutting/evaluate`
+}
+
+export const evaluateCuttingScenario = async (jobId: number,
+    evaluateCuttingScenarioBody: EvaluateCuttingScenarioBody, options?: Parameters<typeof customFetch>[1]): Promise<CuttingScenario> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CuttingScenario>(getEvaluateCuttingScenarioUrl(jobId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluateCuttingScenarioBody)
+  }
+);}
+
+
+
+
+
+export const getEvaluateCuttingScenarioMutationKey = () => ['evaluateCuttingScenario'] as const;
+
+export const getEvaluateCuttingScenarioMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateCuttingScenario>>, TError,EvaluateCuttingScenarioMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof evaluateCuttingScenario>>, TError,EvaluateCuttingScenarioMutationVariables, TContext> => {
+
+const mutationKey = getEvaluateCuttingScenarioMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof evaluateCuttingScenario>>, EvaluateCuttingScenarioMutationVariables> = (props) => {
+          const {jobId,data} = props ?? {};
+
+          return  evaluateCuttingScenario(jobId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EvaluateCuttingScenarioMutationResult = NonNullable<Awaited<ReturnType<typeof evaluateCuttingScenario>>>
+    export type EvaluateCuttingScenarioMutationBody = BodyType<EvaluateCuttingScenarioBody>
+    export type EvaluateCuttingScenarioMutationError = ErrorType<void>
+    export type EvaluateCuttingScenarioMutationVariables = {jobId: number;data: BodyType<EvaluateCuttingScenarioBody>}
+
+    export const useEvaluateCuttingScenario = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateCuttingScenario>>, TError,EvaluateCuttingScenarioMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof evaluateCuttingScenario>>,
+        TError,
+        EvaluateCuttingScenarioMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEvaluateCuttingScenarioMutationOptions(options));
+    }
+
+export const getGetCuttingPlanUrl = (jobId: number,
+    id: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${jobId}/cutting/${id}`
+}
+
+export const getCuttingPlan = async (jobId: number,
+    id: number, options?: Parameters<typeof customFetch>[1]): Promise<CuttingPlan> => {
+
+  return customFetch<CuttingPlan>(getGetCuttingPlanUrl(jobId,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCuttingPlanQueryKey = (jobId: number,
+    id: number,) => {
+    return [
+    `/api/v1/jobs/${jobId}/cutting/${id}`
+    ] as const;
+    }
+
+
+export const getGetCuttingPlanQueryOptions = <TData = Awaited<ReturnType<typeof getCuttingPlan>>, TError = ErrorType<void>>(jobId: number,
+    id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCuttingPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCuttingPlanQueryKey(jobId,id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCuttingPlan>>> = ({ signal }) => getCuttingPlan(jobId,id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: jobId !== null && jobId !== undefined && id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCuttingPlan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCuttingPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getCuttingPlan>>>
+export type GetCuttingPlanQueryError = ErrorType<void>
+
+
+
+export function useGetCuttingPlan<TData = Awaited<ReturnType<typeof getCuttingPlan>>, TError = ErrorType<void>>(
+ jobId: number,
+    id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCuttingPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCuttingPlanQueryOptions(jobId,id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCuttingPlanUrl = (jobId: number,
+    id: number,) => {
+
+
+
+
+  return `/api/v1/jobs/${jobId}/cutting/${id}`
+}
+
+export const updateCuttingPlan = async (jobId: number,
+    id: number,
+    cuttingSaveInput: CuttingSaveInput, options?: Parameters<typeof customFetch>[1]): Promise<CuttingPlan> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CuttingPlan>(getUpdateCuttingPlanUrl(jobId,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(cuttingSaveInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateCuttingPlanMutationKey = () => ['updateCuttingPlan'] as const;
+
+export const getUpdateCuttingPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCuttingPlan>>, TError,UpdateCuttingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCuttingPlan>>, TError,UpdateCuttingPlanMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCuttingPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCuttingPlan>>, UpdateCuttingPlanMutationVariables> = (props) => {
+          const {jobId,id,data} = props ?? {};
+
+          return  updateCuttingPlan(jobId,id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCuttingPlanMutationResult = NonNullable<Awaited<ReturnType<typeof updateCuttingPlan>>>
+    export type UpdateCuttingPlanMutationBody = BodyType<CuttingSaveInput>
+    export type UpdateCuttingPlanMutationError = ErrorType<void>
+    export type UpdateCuttingPlanMutationVariables = {jobId: number;id: number;data: BodyType<CuttingSaveInput>}
+
+    export const useUpdateCuttingPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCuttingPlan>>, TError,UpdateCuttingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCuttingPlan>>,
+        TError,
+        UpdateCuttingPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCuttingPlanMutationOptions(options));
+    }
+
+export const getGetCuttingHistoryUrl = (jobId: number,
+    id: number,
+    params?: GetCuttingHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/jobs/${jobId}/cutting/${id}/history?${stringifiedParams}` : `/api/v1/jobs/${jobId}/cutting/${id}/history`
+}
+
+export const getCuttingHistory = async (jobId: number,
+    id: number,
+    params?: GetCuttingHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<CuttingHistoryPage> => {
+
+  return customFetch<CuttingHistoryPage>(getGetCuttingHistoryUrl(jobId,id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCuttingHistoryQueryKey = (jobId: number,
+    id: number,
+    params?: GetCuttingHistoryParams,) => {
+    return [
+    `/api/v1/jobs/${jobId}/cutting/${id}/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCuttingHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getCuttingHistory>>, TError = ErrorType<unknown>>(jobId: number,
+    id: number,
+    params?: GetCuttingHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCuttingHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCuttingHistoryQueryKey(jobId,id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCuttingHistory>>> = ({ signal }) => getCuttingHistory(jobId,id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: jobId !== null && jobId !== undefined && id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCuttingHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCuttingHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getCuttingHistory>>>
+export type GetCuttingHistoryQueryError = ErrorType<unknown>
+
+
+
+export function useGetCuttingHistory<TData = Awaited<ReturnType<typeof getCuttingHistory>>, TError = ErrorType<unknown>>(
+ jobId: number,
+    id: number,
+    params?: GetCuttingHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCuttingHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCuttingHistoryQueryOptions(jobId,id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetReportOverviewUrl = (params?: GetReportOverviewParams,) => {
   const normalizedParams = new URLSearchParams();

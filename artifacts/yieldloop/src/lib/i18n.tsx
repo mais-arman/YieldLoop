@@ -4,7 +4,7 @@ export type Lang = 'en' | 'ar';
 
 const en = {
   brand: 'YieldLoop',
-  phase: 'Phase 6 · Operational reports',
+  phase: 'Phase 7 · Cutting Studio',
   navDashboard: 'Dashboard',
   navReports: 'Reports',
   title: 'System connectivity',
@@ -410,7 +410,7 @@ const en = {
 
 const ar: typeof en = {
   brand: 'YieldLoop',
-  phase: 'المرحلة 6 · التقارير التشغيلية',
+  phase: 'المرحلة 7 · استوديو القص',
   navDashboard: 'لوحة المتابعة',
   navReports: 'التقارير',
   title: 'اتصال النظام',

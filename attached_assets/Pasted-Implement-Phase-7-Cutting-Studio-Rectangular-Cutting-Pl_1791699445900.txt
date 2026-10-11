@@ -1,0 +1,57 @@
+Implement Phase 7: **Cutting Studio — Rectangular Cutting Planner** for YieldLoop.
+
+Before coding, inspect the existing skills, especially `yieldloop-cutting-studio`, and read `docs/phase-3.md` through `docs/phase-6.md`. Inspect the current job lifecycle, permissions, audit patterns, design system, and frontend architecture. Preserve the existing React/TypeScript frontend and Django/PostgreSQL backend.
+
+## Objective
+Build a practical, deterministic first version of a visual cutting planner for rectangular pieces. Users should be able to enter dimensions numerically and arrange pieces on a board through a clear visual canvas. Do not require uploaded drawings or AI image analysis.
+
+## Domain and measurement safety
+- Keep planning dimensions separate from Phase 4's kilogram-based production accounting.
+- Do not infer dimensions from weight or invent density, thickness, units, kerf, margins, or material compatibility.
+- Require explicit units and validate every dimension and quantity.
+- Do not offer a board or offcut as suitable unless its required dimensions and material compatibility are actually known and verified.
+- If factory-specific defaults are not approved, require the user to enter the relevant values rather than silently choosing defaults.
+- Treat a cutting plan as a proposal, not proof of actual material consumption or production completion.
+
+## First-version functionality
+1. Allow users to define a rectangular stock board using explicit width and height, unit, and any required material identifier.
+2. Allow users to define multiple rectangular piece types with width, height, required quantity, and rotation permission.
+3. Capture kerf, edge margins, and any cutting constraints explicitly. Do not invent factory defaults.
+4. Render the board and placed pieces in an interactive canvas with labels, dimensions, clear selection, and understandable visual feedback.
+5. Support adding pieces, selecting, dragging, rotating only when permitted, removing, and resetting placements.
+6. Validate that pieces remain inside usable board boundaries and do not overlap, accounting for kerf and margins according to a documented, tested geometric rule.
+7. Provide a deterministic baseline placement algorithm that produces a valid layout when it can, and clearly reports unplaced pieces when it cannot.
+8. Display board utilization, unused area, placed/unplaced quantities, and board count using explicitly documented definitions. Do not describe a heuristic as globally optimal.
+9. Allow users to compare at least two manually configured scenarios, showing their inputs and calculated results side by side.
+10. Save and reopen plans, with appropriate authorization, revision/stale-edit protection, and audit history. Link saved plans to production jobs without changing material reconciliation or inventory balances.
+
+## Algorithm and geometry
+- Document the baseline placement heuristic and its limitations.
+- Keep geometric calculations deterministic and unit-consistent.
+- Prevent invalid placements, overlapping pieces, out-of-bounds coordinates, and prohibited rotation on both client and server.
+- Include kerf in a documented way that avoids double-counting or ambiguous spacing.
+- If a valid layout cannot be produced, report the limitation instead of silently violating constraints.
+- Do not claim industrial-grade optimization or guarantee a globally minimal board count.
+
+## Permissions and lifecycle
+- Enforce permissions in Django APIs, not just the UI.
+- Respect Manager, Production Supervisor, and Cutting Operator roles and existing job permissions.
+- Preserve Draft/Open/Cancelled job rules; cancelled jobs must not accept plan mutations.
+- Keep planning actions separate from recording actual production outputs.
+
+## UX requirements
+- Support Arabic and English with correct RTL/LTR layouts.
+- Make numeric entry easy and the canvas usable on desktop and mobile; if drag-and-drop is not practical on small screens, provide accessible numeric placement controls.
+- Include clear loading, empty, validation, save/error, and recovery states.
+- Provide keyboard-accessible alternatives for core canvas operations where practical.
+- Do not rely on color alone to communicate invalid or valid placements.
+
+## Tests and verification
+Test geometry, rotation rules, boundaries, overlap, margins, kerf, units, impossible layouts, deterministic output, server-side validation, permissions, cancelled jobs, stale revisions, duplicate requests, audit history, and scenario comparison.
+Run backend tests, lint, migration-drift checks, typecheck, frontend lint/build, and browser checks for both languages, RTL/LTR, and responsive behavior. Use isolated PostgreSQL test data. Preserve the database safety guard and never run production migrations or add startup migrations.
+
+## Scope exclusions
+Do not implement AI, voice, image recognition, automatic purchasing, real material consumption, offcut reservation/consumption, deployment, or multi-tenant onboarding in this phase.
+
+## Final report
+Report the algorithm and geometry rules, supported units, persistence and migration details, permission matrix, test results, and unresolved factory-specific constraints. Clearly distinguish a visual planning tool from validated production optimization. Stop after Phase 7.

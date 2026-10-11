@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { Activity, BarChart3, Boxes, FileText, ClipboardList, KeyRound, LayoutGrid, Loader2, LogOut, Users } from 'lucide-react';
+import { Activity, BarChart3, Boxes, FileText, ClipboardList, KeyRound, LayoutGrid, Ruler, Loader2, LogOut, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandMark, LangSwitch } from '@/components/brand';
 import { logout, type Employee } from '@/lib/auth';
@@ -9,6 +9,7 @@ import { useI18n, type MsgKey } from '@/lib/i18n';
 import { displayName, endSession, initials, errorMessage, isSessionLoss } from '@/lib/session';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useCt } from '@/components/cutting/cutting-i18n';
 
 export function useSignOut() {
   const { t } = useI18n();
@@ -64,12 +65,14 @@ export function UserChip({ user }: { user: Employee }) {
 
 export function AppShell({ user, children, minimal = false }: { user: Employee; children: ReactNode; minimal?: boolean }) {
   const { t } = useI18n();
+  const ct = useCt();
   const [location] = useLocation();
   const items: { href: string; label: string; icon: typeof Users }[] = [
     { href: '/', label: t('navHome'), icon: LayoutGrid },
     { href: '/dashboard', label: t('navDashboard'), icon: BarChart3 },
     { href: '/reports', label: t('navReports'), icon: FileText },
     { href: '/jobs', label: t('navJobs'), icon: ClipboardList },
+    { href: '/cutting', label: ct('navCutting'), icon: Ruler },
     { href: '/inventory', label: t('navInventory'), icon: Boxes },
     ...(user.role === 'manager' ? [{ href: '/employees', label: t('navEmployees'), icon: Users }] : []),
     { href: '/password', label: t('navPassword'), icon: KeyRound },

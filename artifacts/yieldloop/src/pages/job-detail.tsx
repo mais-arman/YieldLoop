@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { ArrowLeft, Ban, Loader2, Lock, PlayCircle, RotateCw, Save, SearchX } from 'lucide-react';
+import { ArrowLeft, Ban, ChevronRight, Ruler, Loader2, Lock, PlayCircle, RotateCw, Save, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { JOBS_KEY, updateJob, useJob, type JobStatus, type JobUpdate, type Produ
 import { useI18n } from '@/lib/i18n';
 import { MaterialsSection } from '@/components/materials/materials-section';
 import { cn } from '@/lib/utils';
+import { useCt } from '@/components/cutting/cutting-i18n';
 
 function BackLink() {
   const { t } = useI18n();
@@ -247,6 +248,8 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
         </aside>
       </div>
 
+      <CuttingLink jobId={job.id} />
+
       <MaterialsSection job={job} />
 
       {confirm !== null && <AlertDialog open onOpenChange={(o) => { if (!o && !transition.isPending) setConfirm(null); }}>
@@ -270,5 +273,19 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
         </AlertDialogContent>
       </AlertDialog>}
     </div>
+  );
+}
+
+function CuttingLink({ jobId }: { jobId: number }) {
+  const ct = useCt();
+  return (
+    <Link href={`/jobs/${jobId}/cutting`} className="group mt-4 flex items-center gap-4 rounded-lg border border-primary/25 bg-primary/5 p-4 transition-colors hover:bg-primary/10" data-testid="link-cutting-studio">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground" aria-hidden><Ruler className="h-5 w-5" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">{ct('openStudio')}</span>
+        <span className="block text-xs text-muted-foreground">{ct('openStudioDesc')}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" aria-hidden />
+    </Link>
   );
 }

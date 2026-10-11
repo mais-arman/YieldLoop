@@ -48,7 +48,10 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
   and consumption stay blocked pending compatibility and receiving-job accounting
   policy. See docs/phase-5.md. Phase 6 read-only dashboard/reporting is approved:
   current balances for source-job creation-date cohorts, exact per-material totals,
-  existing role scope, no schema changes. See docs/phase-6.md. Stop after Phase 6;
+  existing role scope, no schema changes. See docs/phase-6.md.
+  Phase 7 rectangular Cutting Studio is approved: explicit mm dimensions,
+  spacing-only kerf/margins, deterministic shelf heuristic and audited saved proposals.
+  Plans never change kg accounting or inventory. See docs/phase-7.md. Stop after Phase 7;
   no exports, optimization, AI, publishing or multi-tenant onboarding.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
