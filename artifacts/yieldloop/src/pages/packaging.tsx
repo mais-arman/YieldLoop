@@ -242,6 +242,8 @@ function ProposePanel({ available, statusLoading, onApply }: { available: boolea
   const propose = useMutation({ mutationFn: proposePackaging, onSuccess: setDraft });
   const aiErr = propose.error instanceof AuthError && hasFKey(propose.error.code) ? ft(propose.error.code as FKey) : propose.error ? errorMessage(propose.error, t) : null;
 
+  // No provider: omit the proposal entry rather than showing a dead control.
+  if (!statusLoading && !available) return null;
   return (
     <section className="space-y-3 rounded-lg border bg-card p-5" data-testid="panel-propose">
       <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" aria-hidden /><h2 className="text-sm font-semibold">{ft('pkPropose')}</h2></div>

@@ -1,6 +1,7 @@
+import { Pager } from '@/components/pager';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearch } from 'wouter';
-import { Boxes, ChevronLeft, ChevronRight, Loader2, RotateCw, Search, X } from 'lucide-react';
+import { Boxes, Loader2, RotateCw, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -113,17 +114,8 @@ export default function InventoryPage() {
             ))}
           </ul>
         ) : null}
-        {d && d.total_pages > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-2 text-xs text-muted-foreground">
-            <span>{t('pageOf', { page: d.page, total: d.total_pages })}</span>
-            <div className="flex gap-1">
-              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page <= 1 || q.isFetching} onClick={() => setPage(page - 1)} aria-label={t('prevPage')} data-testid="button-inventory-prev"><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page >= d.total_pages || q.isFetching} onClick={() => setPage(page + 1)} aria-label={t('nextPage')} data-testid="button-inventory-next"><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></Button>
-            </div>
-          </div>
-        )}
+        {d && <Pager page={d.page} totalPages={d.total_pages} onPage={setPage} busy={q.isFetching} testId="inventory" className="border-t px-4 py-2" />}
       </section>
-      <p className="text-xs text-muted-foreground">{t('invAvailableHint')}</p>
     </div>
   );
 }

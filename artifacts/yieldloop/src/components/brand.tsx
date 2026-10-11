@@ -12,25 +12,25 @@ import { cn } from '@/lib/utils';
 export function BrandMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={cn('h-8 w-8 shrink-0', className)} aria-hidden>
-      <rect width="32" height="32" rx="8" fill="hsl(217 71% 33%)" />
+      <rect width="32" height="32" rx="8" fill="#0F172A" />
       <rect x="8" y="8" width="12.5" height="16" rx="1.6" fill="hsl(0 0% 100%)" />
-      <path d="M8 18.2h12.5" stroke="hsl(217 71% 33%)" strokeWidth="1.3" strokeDasharray="2 1.6" />
-      <rect x="8" y="18.9" width="5" height="5.1" fill="hsl(172 62% 42%)" opacity=".9" />
-      <path d="M20.5 9.5a8 8 0 0 1 2.6 13.4" fill="none" stroke="hsl(172 62% 52%)" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M19.6 21.3l3.7 1.8-.6-4" fill="none" stroke="hsl(172 62% 52%)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 18.2h12.5" stroke="#0F172A" strokeWidth="1.3" strokeDasharray="2 1.6" />
+      <rect x="8" y="18.9" width="5" height="5.1" fill="#0F766E" opacity=".9" />
+      <path d="M20.5 9.5a8 8 0 0 1 2.6 13.4" fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M19.6 21.3l3.7 1.8-.6-4" fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-export function BrandLockup({ className, sub, size = 'md' }: { className?: string; sub?: string; size?: 'md' | 'lg' }) {
+export function BrandLockup({ className, sub, size = 'md', inverse = false }: { className?: string; sub?: string; size?: 'md' | 'lg'; inverse?: boolean }) {
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
       <BrandMark className={size === 'lg' ? 'h-10 w-10' : 'h-8 w-8'} />
       <span className="leading-tight">
-        <span className={cn('block font-semibold tracking-tight text-foreground', size === 'lg' ? 'text-xl' : 'text-[15px]')} dir="ltr">
-          Yield<span className="text-[hsl(172_62%_32%)]">Loop</span>
+        <span className={cn('block font-semibold tracking-tight', inverse ? 'text-white' : 'text-foreground', size === 'lg' ? 'text-xl' : 'text-[15px]')} dir="ltr">
+          Yield<span className={inverse ? 'text-[#10B981]' : 'text-[#0F766E]'}>Loop</span>
         </span>
-        {sub && <span className="block text-[11px] text-muted-foreground">{sub}</span>}
+        {sub && <span className={cn('block text-[11px]', inverse ? 'text-slate-400' : 'text-muted-foreground')}>{sub}</span>}
       </span>
     </span>
   );

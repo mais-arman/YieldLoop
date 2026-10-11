@@ -78,67 +78,67 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  --background: 216 33% 97%;
+  --background: 210 40% 98%;
 
-  --foreground: 220 39% 13%;
+  --foreground: 222 47% 11%;
 
-  --border: 218 26% 90%;
+  --border: 214 32% 91%;
 
   --card: 0 0% 100%;
 
   --card-foreground: 222 47% 11%;
 
-  --card-border: 218 26% 91%;
+  --card-border: 214 32% 91%;
 
-  --sidebar: 0 0% 100%;
+  --sidebar: 222 47% 11%;
 
-  --sidebar-foreground: 222 47% 11%;
+  --sidebar-foreground: 214 32% 91%;
 
-  --sidebar-border: 214 32% 91%;
+  --sidebar-border: 217 33% 17%;
 
-  --sidebar-primary: 217 71% 33%;
+  --sidebar-primary: 175 77% 26%;
 
-  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 216 60% 96%;
+  --sidebar-accent: 217 33% 17%;
 
-  --sidebar-accent-foreground: 217 71% 28%;
+  --sidebar-accent-foreground: 0 0% 100%;
 
-  --sidebar-ring: 217 71% 40%;
+  --sidebar-ring: 160 84% 39%;
 
   --popover: 0 0% 100%;
 
   --popover-foreground: 222 47% 11%;
 
-  --popover-border: 218 26% 90%;
+  --popover-border: 214 32% 91%;
 
-  --primary: 217 71% 33%;
+  --primary: 175 77% 26%;
 
-  --primary-foreground: 210 40% 98%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 216 33% 94%;
+  --secondary: 210 40% 96%;
 
   --secondary-foreground: 222 47% 11%;
 
-  --muted: 216 33% 95%;
+  --muted: 210 40% 96%;
 
-  --muted-foreground: 218 15% 40%;
+  --muted-foreground: 215 19% 35%;
 
-  --accent: 216 70% 95%;
+  --accent: 167 60% 94%;
 
-  --accent-foreground: 217 71% 28%;
+  --accent-foreground: 175 77% 22%;
 
   --destructive: 0 72% 51%;
 
   --destructive-foreground: 210 40% 98%;
 
-  --input: 218 24% 84%;
-  --ring: 217 71% 45%;
-  --chart-1: 217 71% 40%;
-  --chart-2: 172 62% 36%;
-  --chart-3: 30 88% 52%;
-  --chart-4: 2 68% 52%;
-  --chart-5: 216 20% 76%;
+  --input: 214 32% 85%;
+  --ring: 175 77% 30%;
+  --chart-1: 175 77% 26%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 72% 51%;
+  --chart-5: 215 20% 75%;
 
   --app-font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
@@ -425,9 +425,19 @@
 }
 
 html[lang='ar'] body { font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif; }
-:root { --success: 172 62% 30%; --warning: 30 88% 40%; --brand-teal: 172 62% 38%; }
+:root { --success: 160 84% 30%; --warning: 32 95% 40%; --brand-teal: 175 77% 26%; --navy: 222 47% 11%; --emerald: 160 84% 39%; --amber: 38 92% 50%; }
 .yl-card { background: hsl(var(--card)); border: 1px solid hsl(var(--card-border)); border-radius: 0.875rem; box-shadow: 0 1px 2px hsl(220 40% 20% / 0.04), 0 2px 8px -4px hsl(220 40% 20% / 0.06); }
 @keyframes yl-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 .yl-sweep { animation: yl-sweep 1.4s ease-in-out infinite; }
 [dir='rtl'] .yl-sweep { animation-direction: reverse; }
 @media (prefers-reduced-motion: reduce) { .yl-sweep { animation: none; opacity: .6; } }
+
+/* Reduced motion: state-change animations only, disabled on request */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+.yl-sidebar-link:focus-visible { outline: 2px solid hsl(var(--emerald)); outline-offset: -2px; }
+
+/* Unified page hierarchy: every page title shares one scale */
+[data-testid='text-page-title'] { font-size: 1.5rem; line-height: 2rem; font-weight: 600; letter-spacing: -0.015em; color: hsl(var(--foreground)); }
+@media (max-width: 640px) { [data-testid='text-page-title'] { font-size: 1.3rem; line-height: 1.75rem; } }

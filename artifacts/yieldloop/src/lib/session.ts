@@ -13,8 +13,10 @@ export function endSession(qc: QueryClient) {
 }
 
 /** Replace all cached data with a fresh session for a newly signed-in user. */
-export function startSession(qc: QueryClient, user: Employee) {
-  qc.cancelQueries();
+export async function startSession(qc: QueryClient, user: Employee) {
+  // Finish cancellation before publishing the server-confirmed identity. An older
+  // anonymous /me response must never replace the identity returned by login.
+  await qc.cancelQueries();
   // Keep the observed identity query; deleting it strands mounted observers.
   qc.removeQueries({ predicate: (q) => !(q.queryKey[0] === 'auth' && q.queryKey[1] === 'me') });
   qc.setQueryData(ME_KEY, user);

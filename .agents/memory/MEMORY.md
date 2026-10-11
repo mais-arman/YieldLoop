@@ -1,6 +1,6 @@
 - [Authentication regression checks](auth-regression-checks.md) — verify the first successful login after rejection, not just repeat login in an established browser.
 - [Recovery verification](recovery-verification.md) — PostgreSQL restore tooling and CHECK-expression text can differ; preserve fail-closed evidence requirements.
-- [Shared role experience](shared-role-experience.md) — all three roles share the same application experience; uniform navigation does not imply uniform write permissions.
+- [Shared role experience](shared-role-experience.md) — shared visual system, role-specific navigation and landing pages; backend permissions remain authoritative.
 - [Advisory and packaging boundaries](advisory-and-packaging-boundaries.md) — no unproven AI causes; 3D concepts are not validated manufacturing dielines.
 - [WebGL browser verification](webgl-browser-verification.md) — disabled WebGL and offscreen crops can create false rendering failures; verify interactions separately.
 - [Core challenge boundaries](core-challenge-boundaries.md) — approved Operator recording/closing, honest unspecified demo data, and optional 3D scope.

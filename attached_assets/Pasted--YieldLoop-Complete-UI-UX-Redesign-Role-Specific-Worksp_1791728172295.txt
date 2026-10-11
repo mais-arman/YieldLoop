@@ -1,0 +1,629 @@
+# YieldLoop — Complete UI/UX Redesign, Role-Specific Workspaces, and Login Navigation Fix
+
+Implement a complete, consistent UI/UX redesign of the EXISTING YieldLoop application across all currently implemented pages in one focused pass.
+
+This is an implementation task. Do not return only a plan, audit, or design proposal.
+
+Follow these project skills:
+- yieldloop-design-system
+- yieldloop-engineering-quality
+- yieldloop-domain
+- yieldloop-cutting-studio
+
+## PRIMARY OBJECTIVES
+
+1. Redesign the whole existing application so it looks and feels like one polished, professional manufacturing SaaS product.
+2. Simplify and improve every existing page, not only the dashboard.
+3. Make navigation and landing pages specific to the actual permissions of the three roles.
+4. Remove redundant text, technical clutter, duplicated information, and unnecessary controls.
+5. Fix the unwanted full-page refresh/navigation behavior after sign-in.
+6. Improve Arabic/English switching and RTL/LTR behavior.
+7. Preserve existing business logic, database records, authentication, backend permissions, calculations, inventory safeguards, cutting geometry, and saved-plan history.
+
+Do not restart the project, replace the application architecture, or introduce another UI framework.
+
+Do not stop after a planning-only response. Inspect, implement, test, and report the changes.
+
+---
+
+# 1. ROLE-SPECIFIC EXPERIENCE
+
+The application has exactly three approved roles:
+
+- Cutting Operator
+- Production Supervisor
+- Manager
+
+Do not show every page to every role.
+
+Implement a consistent shared visual system, but provide role-appropriate navigation, landing pages, data, and actions.
+
+Inspect the actual backend permission policies and existing endpoints before finalizing route visibility. Backend permissions are authoritative.
+
+## Cutting Operator
+
+The Operator's home page must focus on operational work, not management analytics.
+
+Prioritize:
+- Accessible Open production jobs.
+- Job details and the supported production recording workflow.
+- Material issue/output recording, scrap by reason, reusable offcut recording, reconciliation status, and permitted corrections/closure.
+- Cutting Studio, respecting the actual permissions enforced by the backend.
+- Inventory visibility only within the existing permitted scope and only where it helps operational work.
+
+Do not display:
+- The Manager management dashboard.
+- Employee administration.
+- Manager-only material/catalogue administration.
+- Management-only reports, aggregate analytics, or unrestricted inventory data.
+- Controls that the Operator cannot actually execute.
+
+Do not introduce assigned-job terminology or functionality unless the current application genuinely supports job assignments.
+
+## Production Supervisor
+
+The Supervisor's home page should focus on production monitoring and operational exceptions.
+
+Prioritize:
+- Open production jobs and relevant status indicators.
+- Material recording and reconciliation.
+- Discrepancies requiring review.
+- Inventory operations allowed by the existing backend.
+- Job comparison and production reports.
+- Cutting Studio for the jobs and actions permitted by current server-side permissions.
+
+Do not display:
+- Employee administration.
+- Manager-only account controls.
+- Catalogue-management actions unavailable to this role.
+- Administrative diagnostics unrelated to production work.
+
+## Manager
+
+The Manager's home page should focus on management oversight.
+
+Include:
+- Production Dashboard.
+- Production Jobs.
+- Materials and Reconciliation.
+- Inventory.
+- Reports and job comparison.
+- Cutting Studio.
+- Employee Management.
+- Material definitions/catalogue settings only where the feature already exists and is functional.
+
+Use actual persisted data and existing calculation rules.
+
+## Navigation rules
+
+Create one shared navigation component and role-specific navigation configurations.
+
+Suggested ordering:
+
+Operator:
+- My Work / Production Jobs
+- Cutting Studio
+- Inventory, only if useful and permitted
+
+Supervisor:
+- Production Overview
+- Production Jobs
+- Materials & Reconciliation
+- Inventory
+- Reports
+- Cutting Studio
+
+Manager:
+- Dashboard
+- Production Jobs
+- Materials & Reconciliation
+- Inventory
+- Reports
+- Cutting Studio
+- Employees
+- Existing authorized material/catalogue settings, if implemented
+
+These are navigation proposals; adapt them to the actual existing routes and backend policy. Do not create nonfunctional routes to match the list.
+
+Hide unavailable pages and actions from navigation, menus, buttons, and contextual links. Enforce all authorization on the backend too.
+
+For direct navigation to an unauthorized route, show a localized access-denied or not-found experience rather than exposing protected data.
+
+The shared account menu is available to all authenticated users.
+
+---
+
+# 2. VISUAL DESIGN SYSTEM
+
+Redesign the application to feel modern, professional, visually balanced, and appropriate for factory employees.
+
+Use a clean light interface inspired by the supplied dashboard reference:
+- Light neutral background.
+- White content surfaces.
+- Readable typography.
+- Consistent spacing and border radii.
+- Subtle, intentional shadows.
+- Calm accent colors.
+- Clear status indicators.
+- Enough whitespace without leaving large areas of the screen unused.
+
+Brand palette:
+- Dark navy: #0F172A
+- Teal: #0F766E
+- Emerald: #10B981
+- Amber: #F59E0B
+- Red: #DC2626
+- Neutral background: #F8FAFC
+- Borders: #E2E8F0
+
+Create or reuse shared design tokens and components for:
+- Typography.
+- Spacing.
+- Buttons and icon buttons.
+- Inputs and forms.
+- Tables and pagination.
+- Cards.
+- Status indicators.
+- Dialogs and dropdown menus.
+- Loading skeletons and empty/error states.
+
+Avoid excessive gradients, oversized headings, unnecessary metadata, too many cards, decorative charts, excessive animation, and crowded toolbars.
+
+Do not replace the whole interface with a generic admin template.
+
+Use a responsive desktop sidebar and an accessible mobile navigation drawer. Prevent horizontal navigation overflow.
+
+Keep the sidebar collapsible if that can be implemented without breaking existing navigation.
+
+Animations should explain real state changes only. Respect reduced-motion preferences.
+
+---
+
+# 3. LOGO AND LOGIN PAGE
+
+Create or reuse a clean YieldLoop logo suggesting a sheet, material flow, or a loop. Prefer a lightweight vector mark with a readable wordmark.
+
+Use it consistently in:
+- Login.
+- Sidebar.
+- Application header.
+
+Do not invent an official Ibn Khaldoun corporate logo.
+
+Redesign the login page with concise bilingual copy.
+
+English:
+
+YieldLoop
+
+Production & Material Yield
+
+Track material, understand scrap, and identify reusable offcuts.
+
+Username
+
+Password
+
+Sign in
+
+Ibn Khaldoun Printing and Publishing
+
+Arabic:
+
+YieldLoop
+
+الإنتاج وكفاءة استخدام المواد
+
+تابع استهلاك المواد، وافهم أسباب الهدر، وحدد القصاصات القابلة لإعادة الاستخدام.
+
+اسم المستخدم
+
+كلمة المرور
+
+تسجيل الدخول
+
+مطبعة ابن خلدون للطباعة والنشر
+
+Requirements:
+- No public sign-up.
+- Clear validation messages.
+- Accessible labels and focus indicators.
+- Responsive layout.
+- Correct RTL/LTR.
+- Preserve the existing secure session and CSRF authentication flow.
+- Do not display default credentials or secret values.
+
+---
+
+# 4. FIX THE UNWANTED POST-LOGIN REFRESH
+
+The user reports that clicking Sign In causes an automatic full-page refresh before the application pages appear.
+
+Inspect the complete login flow and identify the actual cause before changing it.
+
+Investigate:
+- Default browser form submission or missing preventDefault handling.
+- Repeated login submissions.
+- Hard navigation through window.location, location.href, or window.location.reload.
+- Wouter navigation behavior.
+- Authentication-state hydration and the current-user query.
+- CSRF acquisition and session-cookie establishment.
+- React Query cache initialization, invalidation, and stale unauthenticated results.
+- Protected-route redirect loops.
+- Effects that repeatedly redirect when user/session state changes.
+- Incorrect request retries or duplicated login calls.
+
+Fix the underlying defect without weakening session security.
+
+Expected behavior:
+1. The user submits valid credentials.
+2. The form shows a clear loading state and prevents duplicate submission.
+3. The existing secure login and CSRF flow completes.
+4. Authenticated identity is retrieved or safely initialized.
+5. The application updates authentication state and uses client-side routing to navigate to the appropriate role-specific landing page.
+6. The browser does not perform an unnecessary full-document reload.
+7. The intended page appears without redirect loops, stale unauthenticated state, or duplicated login requests.
+
+A legitimate short loading period while the session or current-user state is being verified is acceptable; a needless full-page refresh is not.
+
+Do not remove CSRF protection, disable session validation, or hardcode authentication state just to make navigation appear faster.
+
+Add or update tests covering:
+- Valid login and client-side navigation.
+- Invalid credentials.
+- Duplicate submission prevention.
+- Current-user state after login.
+- Reloading a protected page and restoring an existing valid session.
+- Expired/invalid session handling.
+- Logout and subsequent protected-route denial.
+- Redirect-loop prevention.
+- Browser navigation events and unexpected document reloads, where the available test setup supports it.
+
+Report the verified root cause and the exact fix.
+
+---
+
+# 5. ACCOUNT MENU AND LANGUAGE SWITCH
+
+Remove the standalone text-based language switch from the primary header if it is redundant.
+
+Place language selection within the existing account dropdown, alongside:
+- Current username and role.
+- Language choice.
+- Password-change action, where supported.
+- Sign out.
+
+Use recognizable, accessible globe/language icons for language controls. Do not use decorative flags as the only language indicator.
+
+The menu must work with keyboard and mouse.
+
+Switching language must:
+- Use the existing localization mechanism.
+- Preserve the language preference.
+- Update the document language and direction.
+- Re-render all current content and messages.
+- Correctly handle number inputs, tables, pagination, dialogs, errors, and Cutting Studio labels.
+
+Do not expose unauthorized account actions.
+
+---
+
+# 6. REMOVE REDUNDANT INFORMATION ACROSS ALL PAGES
+
+Inspect every existing page and simplify its content.
+
+Remove the following from normal user-facing pages when they merely repeat information or serve no operational purpose:
+- "All time" panels duplicating the selected filters.
+- "Showing Any status · All materials" summaries.
+- "Generated 11 Oct 2026, 14:03:27 · Timezone UTC" style metadata when not needed by the task.
+- Expanded metric-definition panels that repeat nearby labels.
+- Redundant date-scope explanations in the main content area.
+- Standalone technical system-status sections on normal dashboards.
+- Manual refresh controls that add clutter without meaningful value.
+- Repeated headings/subtitles.
+- Development-stage labels such as "Phase 7 · Cutting Studio".
+- Large warning blocks that can be explained through concise inline guidance or an optional disclosure.
+- Empty decorative cards and nonfunctional buttons.
+
+Do not blindly delete useful filters, record-level traceability, measurement units, essential reconciliation explanations, or warnings that prevent incorrect production decisions.
+
+Keep important technical diagnostics on an appropriately restricted diagnostic page if such a page genuinely exists. They should not dominate ordinary production workflows.
+
+---
+
+# 7. PAGINATION AND TABLES
+
+Replace text-heavy pagination such as:
+
+"Page 1 of 1 · 4 total"
+
+with simple, accessible Previous and Next arrow controls.
+
+Requirements:
+- Correct RTL and LTR arrow directions.
+- Accessible labels such as Previous page / الصفحة السابقة.
+- Disable Previous on the first page and Next on the last page.
+- Show a minimal page indicator only when useful.
+- Hide unnecessary pagination controls when there is only one page.
+- Preserve backend pagination, search, filtering, and ordering.
+- Keep record totals only where they genuinely help users.
+- Do not load an unbounded dataset into the browser just to simplify pagination.
+
+Apply consistently to Jobs, Reports, Inventory, Employees, and any other existing paginated list.
+
+Tables should remain readable on desktop and mobile. Use horizontal scrolling only when necessary and provide appropriate responsive alternatives.
+
+---
+
+# 8. DASHBOARDS BY ROLE
+
+Do not display the same administrative dashboard to all three roles.
+
+## Operator home
+
+Use a compact work-focused landing page:
+- Permitted Open jobs.
+- Status and next useful action.
+- Operational recording entry points when authorized.
+- Clear reconciliation status for relevant jobs.
+
+No management KPI grid, employee statistics, or unrestricted aggregate reports.
+
+## Supervisor home
+
+Use a production-focused overview:
+- Jobs needing attention.
+- Relevant material and reconciliation exceptions.
+- Current production overview.
+- Shortcuts to operational reports and job comparison.
+
+## Manager dashboard
+
+Use a concise management dashboard:
+- Open and completed job counts where available.
+- Material issued.
+- Good output.
+- Scrap and reusable offcut quantities.
+- Yield and scrap rates.
+- Relevant job comparisons or records needing attention.
+
+Use actual API data, not hardcoded values or fabricated trends.
+
+Do not combine quantities from different materials into misleading totals. Preserve existing reporting rules and explicitly handle unavailable metrics.
+
+Use a few meaningful charts at most. Each chart must answer a useful question and allow access to supporting records when practical.
+
+Remove the redundant Definition, System Status, and unnecessary Refresh panels from the normal Dashboard.
+
+Keep detailed reports on the Reports page.
+
+---
+
+# 9. PRODUCTION JOBS AND JOB DETAILS
+
+Simplify Production Jobs:
+- Clear page heading and a single primary action.
+- Compact, useful search and filtering controls.
+- Readable table columns.
+- Consistent status indicators.
+- Accessible Previous/Next pagination.
+- Responsive layout.
+- Useful empty states.
+- Easy links to relevant job details.
+
+Redesign Job Details into clear, coherent sections:
+- Job identity and status.
+- Permitted job actions.
+- Cutting plan.
+- Materials and Reconciliation.
+- Recorded output and scrap breakdown.
+- Reusable offcut records.
+- History/audit details where available.
+
+Use tabs, sections, or a clear information hierarchy rather than scattering unrelated panels across a long page.
+
+Show each section only when it provides actual supported functionality and the current user has permission to access it.
+
+Preserve job lifecycle transitions, correction/void behavior, material-balance validation, source links, and stale-revision protection.
+
+Do not allow styling changes to alter business calculations.
+
+---
+
+# 10. MATERIALS, RECONCILIATION, AND INVENTORY
+
+Make the material workflow easier to read:
+- Show issued material prominently.
+- Group good output, scrap categories, and reusable offcuts separately.
+- Display variance clearly.
+- Explain an imbalance in concise, actionable language.
+- Do not count offcuts as scrap.
+- Do not silently convert unexplained variance to scrap.
+- Preserve exact stored Decimal values and server-side calculations.
+
+Inventory must distinguish registered lots from confirmed physically reusable material.
+
+Keep existing inventory operations and permission restrictions. Do not expose Reserve, Consume, or Release controls unless the backend actually supports and authorizes them.
+
+Reduce repetitive warning text while retaining essential limitations.
+
+---
+
+# 11. REPORTS AND COMPARISON
+
+Keep Reports distinct from Dashboard.
+
+Reports should focus on:
+- Date and material filters.
+- Status filters when meaningful.
+- Same-machine job comparison.
+- Issued material, good output, scrap by reason, reusable offcuts, variance, scrap rate, and good yield.
+- Differences between comparable jobs.
+- Links to the source records.
+- Readable paginated tables.
+
+Remove repetitive filter summaries, unnecessary generated timestamps, oversized definition panels, and duplicated explanations.
+
+Preserve reporting semantics:
+- Existing dates select jobs by creation date and show their current reconciled balances.
+- Quantities from different materials must not be combined.
+- Use only each job's latest reconciliation where that is the established rule.
+- Keep variance separate from scrap.
+- Zero-issued rates remain unavailable.
+- Do not invent historical as-of reports or unsupported comparisons.
+
+---
+
+# 12. CUTTING STUDIO
+
+Improve the existing Cutting Studio without rebuilding the algorithm.
+
+Desktop layout:
+- Compact input/parts panel on the left.
+- Large interactive 2D canvas in the center.
+- Results and scenario controls on the right.
+
+Mobile/tablet:
+- Clear Setup / Layout / Results sections or tabs.
+- Usable numeric placement controls where direct dragging is difficult.
+
+Preserve all existing supported behaviors:
+- Numeric board and part dimensions.
+- Piece quantities and rotation permissions.
+- Mouse and touch dragging.
+- Keyboard movement and rotation.
+- Placement validation.
+- Save/reopen and revision history.
+- Scenario comparisons.
+- Backend permission and revision protections.
+
+Use readable dimension labels and metric formatting. Avoid unnecessary trailing zeros in display values while preserving calculation precision.
+
+Do not change the existing placement algorithm or silently change manually saved positions.
+
+Continue to distinguish geometric utilization from kilogram-based yield.
+
+If a 3D packaging preview is already implemented, make its existing interface consistent with the design system. Do not invent unsupported 3D manufacturing capabilities or make the visualization appear to be a verified cutting dieline.
+
+---
+
+# 13. AI ASSISTANT
+
+The assistant should be a contextual, compact assistant rather than a large technical report page.
+
+If the real AI provider is configured and the endpoint is operational:
+- Provide a small floating assistant launcher.
+- Open a compact panel with a question input, send, close, and useful role-appropriate suggestions.
+- Support Arabic and English.
+- Use real authorized records and actual calculated results.
+- Distinguish recorded facts from hypotheses.
+- Include source links when appropriate.
+- Preserve all backend permissions.
+- Do not let AI silently update production records or inventory.
+
+For the 180 kg setup/layout example, it may identify the category as the largest recorded scrap category and suggest an investigation. It must not claim the exact root cause without operator evidence.
+
+If the AI provider is not configured:
+- Remove the dead floating chatbot launcher and nonfunctional chat entry points from ordinary user pages.
+- Remove the persistent warning "AI provider not configured — Evidence stays readable..." from normal application screens.
+- Do not simulate live AI responses.
+- Preserve any useful working evidence-based investigation view that does not need a provider.
+- Do not remove the real production records or comparison functions.
+- Do not expose provider credentials or alter provider configuration in this design task.
+
+Do not add a new AI provider or incur usage costs without approval.
+
+---
+
+# 14. EMPLOYEE MANAGEMENT
+
+Employees must be visible only to Manager.
+
+Use the same visual system as other pages:
+- Clean employee table.
+- Search and accessible pagination.
+- Clear role indicators.
+- Concise create/edit forms.
+- Clear account activation state.
+- Confirmation for consequential actions.
+- Useful validation messages.
+
+Preserve existing safeguards for account creation, role changes, password reset, self-demotion prevention, last-active-Manager protection, and audit logging.
+
+Do not introduce public registration.
+
+---
+
+# 15. ANIMATIONS AND ACCESSIBILITY
+
+Use subtle animation only when it improves comprehension:
+- Sidebar open/close.
+- Dialogs and dropdowns.
+- KPI transitions when data changes.
+- Cutting-plan interaction feedback.
+- Assistant panel opening/closing.
+
+Avoid decorative animation that delays work or makes a factory interface distracting.
+
+Respect reduced-motion settings.
+
+Verify keyboard focus, accessible labels, dialog focus restoration, text contrast, RTL/LTR, responsive overflow, and clear validation feedback.
+
+---
+
+# 16. ENGINEERING SAFETY
+
+This is primarily a frontend redesign.
+
+- Keep React, TypeScript, Vite, Django, DRF, PostgreSQL, and existing routing.
+- Reuse existing API contracts and generated clients.
+- Preserve all database records, seeded jobs IK-202 and IK-203, inventory history, revisions, and audit data.
+- Do not generate or apply migrations.
+- Do not modify the database write guard or production environment.
+- Do not weaken authentication, CSRF, session behavior, or backend authorization.
+- Do not change accounting formulas, reconciliation rules, inventory state transitions, or cutting geometry.
+- Avoid adding unnecessary dependencies.
+- Do not fabricate data or render success states for failed API calls.
+- Do not delete useful existing functionality merely to simplify a page.
+
+If a requested visual change appears to require a backend/business-rule change, keep the current behavior and report the issue instead of silently changing it.
+
+---
+
+# 17. ACCEPTANCE TESTS
+
+After implementing the redesign:
+
+1. Verify role-specific landing pages and navigation for all three roles.
+2. Verify Employees appears only to Manager and direct unauthorized access remains blocked.
+3. Verify the login flow no longer performs an unnecessary full-page reload.
+4. Verify CSRF, valid/invalid login, session restoration, logout, and expired-session behavior still work.
+5. Verify IK-202 and IK-203 persisted values and existing comparison results remain unchanged.
+6. Verify material reconciliation, correction/void behavior, inventory history, reports, and Cutting Studio interactions still work.
+7. Verify pagination controls with one page and multiple pages.
+8. Verify account-menu language selection in Arabic RTL and English LTR.
+9. Verify the AI launcher is present only when real AI is operational and otherwise does not appear as a dead control.
+10. Verify all redesigned pages at desktop and mobile/tablet widths.
+11. Run relevant frontend tests, type checks, lint, production build, and backend regression tests where appropriate.
+12. Use actual browser verification for login, route navigation, role visibility, and representative production workflows.
+13. Do not claim physical-device testing if only browser emulation was used.
+
+Do not disable tests, weaken assertions, create default privileged accounts, or alter production safeguards to obtain passing results.
+
+---
+
+# 18. FINAL REPORT
+
+Implement the redesign across the currently existing application pages in this pass.
+
+Then report:
+- Pages/components changed.
+- Role-specific navigation and landing-page behavior.
+- Removed redundant UI elements.
+- Login refresh root cause and fix.
+- Arabic/English and RTL/LTR verification.
+- AI assistant availability behavior.
+- Tests actually run and their exact results.
+- Any remaining defects or limitations.
+
+Do not publish, deploy, add unrelated business features, or start another redesign phase. Stop after this complete UI/UX pass so we can review the actual redesigned screenshots together.

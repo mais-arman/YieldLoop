@@ -1,4 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { Pager } from '@/components/pager';
+import { pageSlice } from '@/lib/role-access';
+import { useUt } from '@/lib/ui-i18n';
+
+const EMP_PAGE_SIZE = 15;
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Loader2, Plus, RotateCw, Search, UserPlus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -252,6 +257,7 @@ export default function EmployeesPage({ user }: { user: Employee }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const q = useEmployees(user.role === 'manager');
+  const ut = useUt();
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
   const [resetFor, setResetFor] = useState<Employee | null>(null);
@@ -278,9 +284,12 @@ export default function EmployeesPage({ user }: { user: Employee }) {
     if (!s) return all;
     return all.filter((e) => `${e.username} ${e.first_name} ${e.last_name}`.toLowerCase().includes(s));
   }, [q.data, query, roleFilter]);
+  // Employees API returns a bounded array without a paging contract; page it client-side.
+  const [empPage, setEmpPage] = useState(1);
+  const paged = pageSlice(list, empPage, EMP_PAGE_SIZE);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="space-y-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-xl">
           <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{t('empTitle')}</h1>
@@ -302,12 +311,12 @@ export default function EmployeesPage({ user }: { user: Employee }) {
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1 sm:max-w-sm">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input className="ps-9" placeholder={t('searchEmployees')} aria-label={t('searchEmployees')} value={query} onChange={(e) => setQuery(e.target.value)} data-testid="input-search-employees" />
+          <Input className="ps-9" placeholder={t('searchEmployees')} aria-label={t('searchEmployees')} value={query} onChange={(e) => { setQuery(e.target.value); setEmpPage(1); }} data-testid="input-search-employees" />
         </div>
-        <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | 'all')}>
+        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v as Role | 'all'); setEmpPage(1); }}>
           <SelectTrigger className="sm:w-52" aria-label={t('colRole')} data-testid="select-role-filter"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('colRole')}: *</SelectItem>
+            <SelectItem value="all">{ut('allRoles')}</SelectItem>
             {ROLES.map((r) => <SelectItem key={r} value={r}>{t(`role_${r}` as MsgKey)}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -349,11 +358,12 @@ export default function EmployeesPage({ user }: { user: Employee }) {
           </div>
         ) : (
           <ul className="divide-y">
-            {list.map((e) => (
+            {paged.rows.map((e) => (
               <EmployeeRow key={e.id} e={e} self={e.id === user.id} onReset={() => setResetFor(e)} onDeactivate={() => setDeact(e)} />
             ))}
           </ul>
         )}
+        <Pager page={paged.page} totalPages={paged.totalPages} onPage={setEmpPage} testId="employees" className="border-t px-4 py-2" />
       </div>
 
       <CreateDialog open={creating} onOpenChange={setCreating} />

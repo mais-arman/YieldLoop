@@ -197,7 +197,7 @@ export default function ConnectivityPage() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-          <Link href="/dashboard" className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" data-testid="link-back-app">
+          <Link href="/" className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" data-testid="link-back-app">
             <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />{ut('pageDashboard')}
           </Link>
           <Button

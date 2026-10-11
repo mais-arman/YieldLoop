@@ -35,7 +35,7 @@ def main():
     assert (root / "index.html").is_file(), "Build the frontend first."
     credentials = {}
     for role in User.Role.values:
-        username = f"acceptance_browser_{role}"
+        username = f"acceptance_{role}_{secrets.token_hex(4)}"
         password = secrets.token_urlsafe(32)
         user = User.objects.create_user(username=username, password=password, role=role)
         credentials[role] = {"username": username, "password": password, "id": user.pk}

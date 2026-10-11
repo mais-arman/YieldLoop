@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +11,14 @@ import { login } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { errorMessage, fieldErrors, startSession } from '@/lib/session';
 import { useUt } from '@/lib/ui-i18n';
+import { roleHome } from '@/lib/role-home';
 
 export default function LoginPage() {
   const { t } = useI18n();
   const ut = useUt();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
+  const submitting = useRef(false);
   const notice = new URLSearchParams(window.location.search).get('notice');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,26 +26,24 @@ export default function LoginPage() {
 
   const m = useMutation({
     mutationFn: () => login(username.trim(), password),
-    onSuccess: ({ user }) => {
+    onSuccess: async ({ user }) => {
       setPassword('');
       setUsername('');
-      startSession(qc, user);
-      // Start a fresh document after the server rotates the session cookie.
-      // This prevents an older anonymous /me result or route guard from racing
-      // the login transition (especially after a rejected credential attempt).
-      const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-      window.location.replace(`${base}${user.must_change_password ? '/password' : '/'}`);
+      await startSession(qc, user);
+      navigate(user.must_change_password ? '/password' : roleHome(user.role), { replace: true });
     },
     onError: () => {
       setPassword('');
       pwdRef.current?.focus();
     },
+    onSettled: () => { submitting.current = false; },
   });
   const fe = fieldErrors(m.error, t);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password || m.isPending) return;
+    if (!username.trim() || !password || m.isPending || submitting.current) return;
+    submitting.current = true;
     m.mutate();
   };
 

@@ -18,11 +18,11 @@ async function csrfToken(): Promise<string> {
   csrf = (await response.json()).csrfToken;
   return csrf!;
 }
-export async function authRequest<T>(path: string, method = "GET", data?: unknown): Promise<T> {
+export async function authRequest<T>(path: string, method = "GET", data?: unknown, signal?: AbortSignal): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (method !== "GET") headers["X-CSRFToken"] = csrf ?? await csrfToken();
   const response = await fetch(`/api/v1/${path}`, {
-    method, headers, credentials: "same-origin", cache: "no-store",
+    method, headers, credentials: "same-origin", cache: "no-store", signal,
     body: data === undefined ? undefined : JSON.stringify(data),
   });
   const body = await response.json().catch(() => ({}));
@@ -36,8 +36,8 @@ export async function authRequest<T>(path: string, method = "GET", data?: unknow
 export function useCurrentUser() {
   return useQuery({
     queryKey: ["auth", "me"],
-    queryFn: async () => {
-      try { return await authRequest<Employee>("auth/me"); }
+    queryFn: async ({ signal }) => {
+      try { return await authRequest<Employee>("auth/me", "GET", undefined, signal); }
       catch (error) { if (error instanceof AuthError && error.status === 401) return null; throw error; }
     },
     retry: false, staleTime: 0, refetchOnWindowFocus: true,

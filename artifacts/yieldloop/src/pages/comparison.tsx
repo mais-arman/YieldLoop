@@ -37,7 +37,7 @@ export default function ComparisonPage({ user }: { user: Employee }) {
   const q = useComparison(left, right);
 
   return (
-    <div className="mx-auto max-w-6xl animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="mx-auto max-w-6xl">
       <Link href="/reports" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" data-testid="link-back-reports">
         <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />{t('navReports')}
       </Link>

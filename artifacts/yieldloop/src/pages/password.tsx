@@ -63,7 +63,7 @@ export default function PasswordPage({ user }: { user: Employee }) {
   };
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-[1fr_1.2fr] animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-[1fr_1.2fr]">
       <div>
         <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground" aria-hidden>
           <KeyRound className="h-5 w-5" />

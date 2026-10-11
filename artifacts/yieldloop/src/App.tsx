@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppShell } from '@/components/app-shell';
 import { BrandMark, LangSwitch } from '@/components/brand';
+import { roleHome } from '@/lib/role-home';
+import { canAccess, type Area } from '@/lib/role-access';
 import NotFound from '@/pages/not-found';
 import ConnectivityPage from '@/pages/connectivity';
 import LoginPage from '@/pages/login';
@@ -85,7 +87,6 @@ function SessionError({ error, retry }: { error: unknown; retry: () => void }) {
           <p className="mt-2 text-sm text-muted-foreground">{errorMessage(error, t)}</p>
           <div className="mt-6 flex justify-center gap-2">
             <Button onClick={retry} data-testid="button-retry-session"><RotateCw className="h-4 w-4" aria-hidden />{t('retry')}</Button>
-            <Link href="/health" className="inline-flex h-9 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted">{t('navHealth')}</Link>
           </div>
         </div>
       </div>
@@ -93,14 +94,14 @@ function SessionError({ error, retry }: { error: unknown; retry: () => void }) {
   );
 }
 
-function Forbidden() {
+function Forbidden({ home = '/jobs' }: { home?: string }) {
   const { t } = useI18n();
   return (
     <section className="mx-auto max-w-md py-10 text-center" data-testid="panel-forbidden">
       <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-destructive/10 text-destructive" aria-hidden><ShieldAlert className="h-5 w-5" /></span>
       <h1 className="mt-4 text-xl font-semibold" data-testid="text-page-title">{t('forbiddenTitle')}</h1>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t('forbiddenDesc')}</p>
-      <Link href="/dashboard" className="mt-6 inline-block text-sm font-medium text-primary hover:underline">{t('backHome')}</Link>
+      <Link href={home} className="mt-6 inline-block text-sm font-medium text-primary hover:underline">{t('backHome')}</Link>
     </section>
   );
 }
@@ -112,7 +113,10 @@ function useSessionWatch(user: Employee | null | undefined) {
   useEffect(() => {
     if (user === undefined) return;
     const id = user?.id ?? null;
-    if (last.current !== undefined && last.current !== id) {
+    // startSession already clears anonymous/previous data before publishing login.
+    // Clearing again after null -> user removes newly mounted protected queries
+    // and strands their observers in a loading state.
+    if (last.current !== undefined && last.current !== null && last.current !== id) {
       qc.removeQueries({ predicate: (q) => !(q.queryKey[0] === 'auth' && q.queryKey[1] === 'me') });
     }
     last.current = id;
@@ -121,38 +125,39 @@ function useSessionWatch(user: Employee | null | undefined) {
 
 function Authed({ user }: { user: Employee }) {
   const [location] = useLocation();
+  const home = roleHome(user.role);
+  // Password change always takes precedence over role landing.
   if (user.must_change_password && location !== '/password') return <Redirect to="/password" replace />;
   if (user.must_change_password) {
     return <AppShell user={user} minimal><PasswordPage user={user} /></AppShell>;
   }
+  const guard = (area: Area, node: ReactNode, wide = false) => (
+    <AppShell user={user} wide={wide}>{canAccess(user.role, area) ? node : <Forbidden home={home} />}</AppShell>
+  );
   return (
     <Switch>
-      <Route path="/login"><Redirect to="/dashboard" replace /></Route>
-      <Route path="/"><Redirect to="/dashboard" replace /></Route>
-      <Route path="/employees">
-        <AppShell user={user}>{user.role === 'manager' ? <EmployeesPage user={user} /> : <Forbidden />}</AppShell>
-      </Route>
-      <Route path="/jobs"><AppShell user={user}><JobsPage user={user} /></AppShell></Route>
-      <Route path="/jobs/new">
-        <AppShell user={user}>{user.role === 'manager' ? <JobNewPage /> : <Forbidden />}</AppShell>
-      </Route>
+      <Route path="/login"><Redirect to={home} replace /></Route>
+      <Route path="/"><Redirect to={home} replace /></Route>
+      <Route path="/employees">{guard('employees', <EmployeesPage user={user} />)}</Route>
+      <Route path="/jobs">{guard('jobs', <JobsPage user={user} />)}</Route>
+      <Route path="/jobs/new">{guard('jobNew', <JobNewPage />)}</Route>
       <Route path="/jobs/:id/cutting">
-        {(params) => <AppShell user={user} wide><CuttingStudioPage key={params.id} id={Number(params.id)} user={user} /></AppShell>}
+        {(params) => guard('cutting', <CuttingStudioPage key={params.id} id={Number(params.id)} user={user} />, true)}
       </Route>
-      <Route path="/cutting"><AppShell user={user}><CuttingEntryPage /></AppShell></Route>
+      <Route path="/cutting">{guard('cutting', <CuttingEntryPage />)}</Route>
       <Route path="/jobs/:id">
-        {(params) => <AppShell user={user}><JobDetailPage key={params.id} id={Number(params.id)} user={user} /></AppShell>}
+        {(params) => guard('jobs', <JobDetailPage key={params.id} id={Number(params.id)} user={user} />)}
       </Route>
-      <Route path="/inventory"><AppShell user={user}><InventoryPage /></AppShell></Route>
+      <Route path="/inventory">{guard('inventory', <InventoryPage />)}</Route>
       <Route path="/inventory/:id">
-        {(params) => <AppShell user={user}><InventoryDetailPage key={params.id} id={Number(params.id)} /></AppShell>}
+        {(params) => guard('inventory', <InventoryDetailPage key={params.id} id={Number(params.id)} />)}
       </Route>
-      <Route path="/dashboard"><AppShell user={user}><DashboardPage user={user} /></AppShell></Route>
-      <Route path="/comparison"><AppShell user={user}><ComparisonPage user={user} /></AppShell></Route>
-      <Route path="/reports"><AppShell user={user}><ReportsPage /></AppShell></Route>
-      <Route path="/assistant"><AppShell user={user}><AssistantPage /></AppShell></Route>
+      <Route path="/dashboard">{user.role === 'cutting_operator' ? <Redirect to={home} replace /> : guard('dashboard', <DashboardPage user={user} />)}</Route>
+      <Route path="/comparison">{guard('comparison', <ComparisonPage user={user} />)}</Route>
+      <Route path="/reports">{guard('reports', <ReportsPage />)}</Route>
+      <Route path="/assistant">{guard('assistant', <AssistantPage />)}</Route>
       <Route path="/packaging">
-        <AppShell user={user} wide><Suspense fallback={<div className="space-y-3"><Skeleton className="h-8 w-64" /><Skeleton className="h-96 w-full" /></div>}><PackagingPage /></Suspense></AppShell>
+        {guard('packaging', <Suspense fallback={<div className="space-y-3"><Skeleton className="h-8 w-64" /><Skeleton className="h-96 w-full" /></div>}><PackagingPage /></Suspense>, true)}
       </Route>
       <Route path="/password"><AppShell user={user}><PasswordPage user={user} /></AppShell></Route>
       <Route component={NotFound} />

@@ -21,19 +21,19 @@ import { errorMessage } from '@/lib/session';
 import { useUt } from '@/lib/ui-i18n';
 import { cn } from '@/lib/utils';
 
-type Ctx = { available: boolean; openFor: (jobId: number | null) => void };
-const AssistantCtx = createContext<Ctx>({ available: false, openFor: () => {} });
+type Ctx = { available: boolean; allowCompare: boolean; openFor: (jobId: number | null) => void };
+const AssistantCtx = createContext<Ctx>({ available: false, allowCompare: false, openFor: () => {} });
 export const useAssistantPanel = () => useContext(AssistantCtx);
 
 /** Floating, per-job assistant. Rendered only when the server reports a configured provider. */
-export function AssistantProvider({ children }: { children: ReactNode }) {
+export function AssistantProvider({ children, allowCompare = false }: { children: ReactNode; allowCompare?: boolean }) {
   const status = useAssistanceStatus();
   const available = assistantEntryAvailable(status.data);
   const [open, setOpen] = useState(false);
   const [jobId, setJobId] = useState<number | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const openFor = useCallback((id: number | null) => { if (id !== null) setJobId(id); setOpen(true); }, []);
-  const value = useMemo(() => ({ available, openFor }), [available, openFor]);
+  const value = useMemo(() => ({ available, allowCompare, openFor }), [available, allowCompare, openFor]);
   const ut = useUt();
   return (
     <AssistantCtx.Provider value={value}>
@@ -105,7 +105,8 @@ function AssistantBody({ jobId, setJobId, close }: { jobId: number | null; setJo
 
   const list = jobs.data?.results ?? [];
   const current = list.find((j) => j.id === jobId);
-  const suggestions = buildSuggestions(evidence.data, current, list);
+  const { allowCompare } = useContext(AssistantCtx);
+  const suggestions = buildSuggestions(evidence.data, current, list, allowCompare);
   const sgText = (s: Suggestion) => s.kind === 'scrap' ? ut('sgScrap', { job: s.job }) : s.kind === 'material' ? ut('sgMaterial', { job: s.job }) : ut('sgCompare', { a: s.a, b: s.b });
 
   const submit = (e: FormEvent) => {

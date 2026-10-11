@@ -37,13 +37,17 @@ export type DashboardFocus = {
   employees: boolean;
   /** Table lists open jobs first and is titled as open work. */
   openFirst: boolean;
+  /** Exceptions lead the page, above KPIs (production overview). */
+  exceptionsFirst: boolean;
+  /** Show management composition charts. */
+  charts: boolean;
 };
 
-/** Same layout for every role; only emphasis and shortcuts change. Data scope is enforced by the server. */
+/** Manager: oversight dashboard. Supervisor: exceptions-first production overview. Data scope is enforced by the server. */
 export function dashboardFocus(role: EmployeeRole): DashboardFocus {
-  if (role === 'manager') return { exceptions: true, comparison: true, employees: true, openFirst: false };
-  if (role === 'production_supervisor') return { exceptions: true, comparison: true, employees: false, openFirst: true };
-  return { exceptions: false, comparison: false, employees: false, openFirst: true };
+  if (role === 'manager') return { exceptions: true, comparison: true, employees: true, openFirst: false, exceptionsFirst: false, charts: true };
+  if (role === 'production_supervisor') return { exceptions: true, comparison: true, employees: false, openFirst: true, exceptionsFirst: true, charts: false };
+  return { exceptions: false, comparison: false, employees: false, openFirst: true, exceptionsFirst: false, charts: false };
 }
 
 /** Stable ordering for the jobs table: open jobs first when requested, otherwise server order. */

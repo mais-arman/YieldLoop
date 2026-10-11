@@ -27,6 +27,10 @@ test('dashboard focus differs by role without inventing data', () => {
   assert.equal(dashboardFocus('cutting_operator').employees, false);
   assert.equal(dashboardFocus('production_supervisor').comparison, true);
   assert.equal(dashboardFocus('manager').employees, true);
+  assert.equal(dashboardFocus('production_supervisor').exceptionsFirst, true);
+  assert.equal(dashboardFocus('production_supervisor').charts, false);
+  assert.equal(dashboardFocus('manager').charts, true);
+  assert.equal(dashboardFocus('manager').exceptionsFirst, false);
   const jobs = [{ id: 1, status: 'completed' as const }, { id: 2, status: 'open' as const }];
   assert.deepEqual(orderJobs(jobs, true).map((j) => j.id), [2, 1]);
   assert.deepEqual(orderJobs(jobs, false).map((j) => j.id), [1, 2]);

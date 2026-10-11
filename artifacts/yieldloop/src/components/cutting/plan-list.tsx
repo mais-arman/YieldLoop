@@ -1,5 +1,6 @@
+import { Pager } from '@/components/pager';
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, FileStack, Plus, RotateCw } from 'lucide-react';
+import { FileStack, Plus, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFormatDate } from '@/components/job-ui';
@@ -49,15 +50,7 @@ export function PlanList({ jobId, active, isNew, onOpen, onNew, writable }: {
           ))}
         </ul>
       )}
-      {q.data && q.data.total_pages > 1 && (
-        <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
-          <span>{t('pageOf', { page: q.data.page, total: q.data.total_pages })}</span>
-          <div className="flex gap-1">
-            <Button size="icon" variant="ghost" className="h-7 w-7" disabled={page <= 1 || q.isFetching} onClick={() => setPage((x) => x - 1)} aria-label={t('prevPage')}><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></Button>
-            <Button size="icon" variant="ghost" className="h-7 w-7" disabled={page >= q.data.total_pages || q.isFetching} onClick={() => setPage((x) => x + 1)} aria-label={t('nextPage')}><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></Button>
-          </div>
-        </div>
-      )}
+      {q.data && <Pager page={q.data.page} totalPages={q.data.total_pages} onPage={setPage} busy={q.isFetching} testId="plan-list" />}
     </nav>
   );
 }

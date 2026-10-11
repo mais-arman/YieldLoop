@@ -72,7 +72,7 @@ function Studio({ job, user }: { job: ProductionJob; user: Employee }) {
   if (!writable) notice = job.status === 'cancelled' ? 'readOnlyCancelled' : user.role === 'production_supervisor' && job.status === 'draft' ? 'readOnlyDraftSup' : 'readOnlyOperator';
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="">
       <Link href={`/jobs/${job.id}`} onClick={guardLink(`/jobs/${job.id}`)} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" data-testid="link-back-job">
         <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />{ct('backToJob')}
       </Link>

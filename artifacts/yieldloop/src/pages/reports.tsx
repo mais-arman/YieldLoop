@@ -1,3 +1,4 @@
+import { Pager as SharedPager } from '@/components/pager';
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
 import { AlertTriangle, ArrowRight, CircleHelp, Users, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, GitCompare, Info, RotateCw, Scissors, X } from 'lucide-react';
@@ -101,44 +102,6 @@ const S = {
 };
 type SKey = keyof typeof S.en;
 
-const DEFS: Record<Lang, [string, string][]> = {
-  en: [
-    ['Date basis', 'Start and end dates (inclusive, in the chosen timezone) select jobs by their creation date. The same cohort drives every metric, including inventory. They are not production-activity dates, lot registration dates, or a historical as-of view. With no dates, all time is shown.'],
-    ['Current balances', 'Every value is the latest current state, including corrections made after the date range. Only the highest reconciliation revision per job contributes; voided entries are excluded. Inventory registration and voiding never change production totals.'],
-    ['Job counts', 'Distinct visible jobs by their current Draft, Open or Cancelled status. All statuses includes Cancelled jobs for permitted readers; Operators see Open jobs only.'],
-    ['Measured / Unmeasured', 'A measured job has a reconciliation snapshot. A job without one is unmeasured; it is not counted as zero.'],
-    ['Issued', 'Material issued to the job, in kg.'],
-    ['Good', 'Recorded good output, in kg.'],
-    ['Scrap', 'Recorded scrap, in kg.'],
-    ['Offcut', 'Recorded potential offcut output. It is not confirmed reusable.'],
-    ['Accounted', 'Good + Scrap + Offcut.'],
-    ['Variance', 'Issued minus Accounted, signed. It is unaccounted material, not scrap. Negative means more was accounted than issued. Opposing job variances can cancel in the net total; inspect each job for discrepancies.'],
-    ['Rates', 'Yield = total Good / total Issued × 100; Scrap rate = Scrap / Issued × 100; Offcut rate = Offcut / Issued × 100. Weighted across measured jobs, rounded to 3 decimals, not clamped above 100%. Unavailable when Issued is zero.'],
-    ['Material selection', 'Quantity totals, rates and inventory weights are returned only for one selected material. Job counts and per-job quantities are always shown.'],
-    ['Available lot', 'Registered in inventory only. It does not mean suitable or approved for reuse. All reuse is blocked.'],
-    ['Voided lot', 'The original registered quantity was removed from inventory. It was not consumed.'],
-    ['Inventory counts and weights', 'Lots from the selected source jobs, counted separately by absence or presence of a void event. Original kg is the sum of source offcut weights. Available remaining equals original; voided remaining is zero. Voided original weight is retained history, not consumption.'],
-    ['Not available here', 'No historical targets, rework or completion data exist in YieldLoop, so they are not reported.'],
-  ],
-  ar: [
-    ['أساس التاريخ', 'تحدد تواريخ البداية والنهاية (شاملة، بالمنطقة الزمنية المختارة) الأوامر حسب تاريخ إنشائها. المجموعة نفسها تُستخدم لكل المقاييس بما فيها المخزون. ليست تواريخ نشاط إنتاج ولا تواريخ تسجيل دفعات ولا عرضًا تاريخيًا. بلا تواريخ تُعرض كل الأوقات.'],
-    ['الأرصدة الحالية', 'كل قيمة هي أحدث حالة حالية، بما فيها التصحيحات اللاحقة لنطاق التاريخ. تساهم آخر مراجعة تسوية لكل أمر فقط وتُستبعد القيود الملغاة. تسجيل المخزون وإلغاؤه لا يغيران إجماليات الإنتاج.'],
-    ['أعداد الأوامر', 'أوامر مرئية مميزة حسب حالتها الحالية: مسودة أو مفتوحة أو ملغاة. تشمل كل الحالات الأوامر الملغاة لمن يملك الصلاحية؛ يرى المشغل الأوامر المفتوحة فقط.'],
-    ['مقيس / غير مقيس', 'الأمر المقيس له لقطة تسوية. الأمر بدونها غير مقيس ولا يُحتسب صفرًا.'],
-    ['المصروف', 'المادة المصروفة للأمر بالكيلوغرام.'],
-    ['الجيد', 'الناتج الجيد المسجّل بالكيلوغرام.'],
-    ['الهالك', 'الهالك المسجّل بالكيلوغرام.'],
-    ['القصاصات', 'ناتج قصاصات محتمل مسجّل. ليس مؤكدًا أنه قابل لإعادة الاستخدام.'],
-    ['المحتسب', 'الجيد + الهالك + القصاصات.'],
-    ['الفرق', 'المصروف ناقص المحتسب، بإشارة. هو مادة غير محتسبة وليس هالكًا. السالب يعني احتساب أكثر من المصروف. قد تتعادل فروق الأوامر المتعاكسة في الإجمالي الصافي؛ راجع كل أمر.'],
-    ['النسب', 'المردود = إجمالي الجيد / إجمالي المصروف × 100؛ نسبة الهالك = الهالك / المصروف × 100؛ نسبة القصاصات = القصاصات / المصروف × 100. مرجّحة عبر الأوامر المقيسة، مقرّبة إلى 3 منازل، وغير مقيّدة بحد 100%. غير متاحة عندما يكون المصروف صفرًا.'],
-    ['اختيار المادة', 'تُعاد إجماليات الكميات والنسب وأوزان المخزون لمادة واحدة مختارة فقط. أعداد الأوامر وكميات كل أمر تُعرض دائمًا.'],
-    ['دفعة متاحة', 'مسجّلة في المخزون فقط. لا تعني أنها مناسبة أو معتمدة لإعادة الاستخدام. كل إعادة استخدام محظورة.'],
-    ['دفعة ملغاة', 'أُزيلت الكمية المسجّلة الأصلية من المخزون. لم تُستهلك.'],
-    ['أعداد وأوزان المخزون', 'دفعات من الأوامر المصدر المحددة، تُعدّ حسب وجود حدث إلغاء أو غيابه. الوزن الأصلي هو مجموع أوزان القصاصات المصدر. المتبقي للمتاح يساوي الأصلي وللملغى صفر. الوزن الأصلي الملغى سجل تاريخي وليس استهلاكًا.'],
-    ['غير متاح هنا', 'لا توجد أهداف تاريخية أو بيانات إعادة تشغيل أو إكمال في YieldLoop، لذا لا تُعرض.'],
-  ],
-};
 
 const MEASURE_LABEL: Record<Lang, Record<string, string>> = {
   en: { issued: 'Issued', good: 'Good', scrap: 'Scrap', offcut: 'Offcut', accounted: 'Accounted', variance: 'Variance', yield_rate: 'Yield', scrap_rate: 'Scrap rate', offcut_rate: 'Offcut rate' },
@@ -238,40 +201,8 @@ function MeasureGrid({ m, compact }: { m: ReportMeasures; compact?: boolean }) {
   );
 }
 
-function Definitions() {
-  const { lang } = useI18n();
-  const s = useS();
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="rounded-lg border bg-card" data-testid="panel-definitions">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="report-defs"
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start text-sm font-medium" data-testid="button-toggle-definitions">
-        <span className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" aria-hidden />{s('defs')} <span className="font-normal text-muted-foreground">· {s('defsHint')}</span></span>
-        <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />
-      </button>
-      {open && (
-        <dl id="report-defs" className="grid gap-x-6 gap-y-3 border-t px-4 py-4 text-sm sm:grid-cols-2">
-          {DEFS[lang].map(([k, v]) => (
-            <div key={k}><dt className="font-medium">{k}</dt><dd className="mt-0.5 leading-relaxed text-muted-foreground">{v}</dd></div>
-          ))}
-        </dl>
-      )}
-    </section>
-  );
-}
-
-function Pager({ page, total, count, onPage, disabled, testId }: { page: number; total: number; count: number; onPage: (p: number) => void; disabled: boolean; testId: string }) {
-  const s = useS();
-  if (total <= 1) return <p className="text-xs text-muted-foreground">{s('pageOf', { p: page, n: Math.max(total, 1), c: count })}</p>;
-  return (
-    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-      <span>{s('pageOf', { p: page, n: total, c: count })}</span>
-      <div className="flex gap-1">
-        <Button size="icon" variant="outline" className="h-8 w-8" disabled={disabled || page <= 1} onClick={() => onPage(page - 1)} aria-label={s('prev')} data-testid={`button-${testId}-prev`}><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></Button>
-        <Button size="icon" variant="outline" className="h-8 w-8" disabled={disabled || page >= total} onClick={() => onPage(page + 1)} aria-label={s('next')} data-testid={`button-${testId}-next`}><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></Button>
-      </div>
-    </div>
-  );
+function Pager({ page, total, onPage, disabled, testId }: { page: number; total: number; count: number; onPage: (p: number) => void; disabled: boolean; testId: string }) {
+  return <SharedPager page={page} totalPages={total} onPage={onPage} busy={disabled} testId={testId} />;
 }
 
 /* ---------- filters ---------- */
@@ -361,35 +292,6 @@ function FilterBar({ applied, go, serverFields }: { applied: Filters; go: (f: Fi
 }
 
 /* ---------- freshness / scope ---------- */
-function useDay() {
-  const { lang } = useI18n();
-  return (d: string) => {
-    const x = new Date(`${d}T00:00:00Z`);
-    return Number.isNaN(x.getTime()) ? d : new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', { dateStyle: 'medium', timeZone: 'UTC' }).format(x);
-  };
-}
-function Freshness({ data, refetch, fetching }: { data: ReportOverview; refetch: () => void; fetching: boolean }) {
-  const s = useS();
-  const { lang, t } = useI18n();
-  const day = useDay();
-  const gen = new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', { dateStyle: 'medium', timeStyle: 'medium', timeZone: data.timezone }).format(new Date(data.generated_at));
-  const range = data.start_date && data.end_date ? s('range', { a: day(data.start_date), b: day(data.end_date) })
-    : data.start_date ? s('from', { a: day(data.start_date) }) : data.end_date ? s('until', { b: day(data.end_date) }) : s('allTime');
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-testid="panel-freshness">
-      <div className="min-w-0 space-y-0.5 text-sm">
-        <p className="font-semibold" data-testid="text-report-range">{range}</p>
-        <p className="text-xs text-muted-foreground">{s('viewing', { status: data.status ? t(`status_${data.status}`) : s('anyStatus'), material: data.material ? `${data.material.name} · ${data.material.specification}` : s('allMaterials') })}</p>
-        <p className="text-xs text-muted-foreground"><span data-testid="text-generated-at">{s('generated', { time: gen })}</span> · <span dir="ltr">{s('tzLabel', { tz: data.timezone })}</span></p>
-        <p className="text-xs text-muted-foreground">{s('basis')}</p>
-      </div>
-      <Button size="sm" variant="outline" onClick={refetch} disabled={fetching} className="self-start sm:self-center" data-testid="button-refresh-report">
-        <RotateCw className={cn('h-3.5 w-3.5', fetching && 'animate-spin')} aria-hidden />{fetching ? s('refreshing') : s('refresh')}
-      </Button>
-    </div>
-  );
-}
-
 /* ---------- summary ---------- */
 function Summary({ data }: { data: ReportOverview }) {
   const s = useS();
@@ -608,7 +510,6 @@ function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
         <ReportError error={q.error} retry={() => q.refetch()} clear={() => go(EMPTY)} />
       ) : (
         <>
-          <Freshness data={data} refetch={() => q.refetch()} fetching={q.isFetching} />
           {data.job_count === 0 ? (
             <div className="rounded-lg border border-dashed bg-card px-6 py-10 text-center" data-testid="panel-report-empty">
               <h2 className="font-semibold">{s('emptyTitle')}</h2>
@@ -628,7 +529,6 @@ function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
           )}
         </>
       )}
-      <Definitions />
     </div>
   );
 }
@@ -773,12 +673,37 @@ function DashboardView({ user }: { user: Employee }) {
   }), [data]);
   const tableJobs = useMemo(() => orderJobs(data?.jobs.results ?? [], focus.openFirst).slice(0, 8), [data, focus.openFirst]);
   const linkCls = 'inline-flex h-8 items-center gap-1.5 rounded-md border bg-card px-3 text-sm font-medium hover:border-primary/40';
+  const attentionPanel = data ? (
+<section className="yl-card min-w-0 overflow-hidden" aria-labelledby="h-att" data-testid="panel-attention">
+                <header className="px-5 py-4">
+                  <h2 id="h-att" className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" aria-hidden />{s('attention')}<span className="font-mono text-xs text-muted-foreground">{attention.length}</span><Help text={s('attentionScope', { n: data.jobs.results.length })} /></h2>
+                </header>
+                {attention.length === 0 ? (
+                  <div className="border-t px-5 py-8 text-center"><p className="text-sm font-medium">{s('allClear')}</p><p className="mt-1 text-xs text-muted-foreground">{s('allClearSub')}</p></div>
+                ) : (
+                  <ul className="divide-y border-t">
+                    {attention.map(({ job, kind, v }) => (
+                      <li key={job.id}>
+                        <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/40" data-testid={`link-attention-${job.id}`}>
+                          <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(var(--chart-3))]')} aria-hidden />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} /></span>
+                            <span className="block text-xs text-muted-foreground">{kind === 'unmeasured' ? s('attUnmeasured') : kind === 'neg' ? s('attNegVariance', { v }) : s('attVariance', { v })}</span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+  ) : null;
 
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{ut('welcome', { name })}</h1>
+          <h1 className="break-words text-2xl font-semibold tracking-tight [overflow-wrap:anywhere]" data-testid="text-page-title">{ut('welcome', { name })}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{ut(`dashLead_${user.role}` as UiKey)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -808,6 +733,7 @@ function DashboardView({ user }: { user: Employee }) {
         </div>
       ) : (
         <>
+          {focus.exceptionsFirst && attentionPanel}
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" data-testid="grid-metrics">
             <Metric label={ut('mOpen')} testId="text-job-count" value={<span dir="ltr" className="font-mono tabular-nums">{data.job_counts.open}</span>} sub={ut('mOpenSub', { d: data.job_counts.draft, c: data.job_counts.completed })} />
             {data.production ? (
@@ -832,12 +758,14 @@ function DashboardView({ user }: { user: Employee }) {
             )}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <StatusChart data={data} />
-            <OutputChart data={data} onChoose={chooseMaterial} />
-          </div>
+          {focus.charts && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <StatusChart data={data} />
+              <OutputChart data={data} onChoose={chooseMaterial} />
+            </div>
+          )}
 
-          <div className={cn('grid gap-4', focus.exceptions && 'xl:grid-cols-[minmax(0,1fr)_340px]')}>
+          <div className={cn('grid gap-4', focus.exceptions && !focus.exceptionsFirst && 'xl:grid-cols-[minmax(0,1fr)_340px]')}>
             <section className="yl-card min-w-0 overflow-hidden" aria-labelledby="h-recent" data-testid="panel-recent-jobs">
               <header className="flex items-center justify-between px-5 py-4">
                 <h2 id="h-recent" className="text-sm font-semibold">{focus.openFirst ? ut('tblOpen') : ut('tblRecent')}</h2>
@@ -878,31 +806,7 @@ function DashboardView({ user }: { user: Employee }) {
               </table>
             </section>
 
-            {focus.exceptions && (
-              <section className="yl-card min-w-0 overflow-hidden" aria-labelledby="h-att" data-testid="panel-attention">
-                <header className="px-5 py-4">
-                  <h2 id="h-att" className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" aria-hidden />{s('attention')}<span className="font-mono text-xs text-muted-foreground">{attention.length}</span><Help text={s('attentionScope', { n: data.jobs.results.length })} /></h2>
-                </header>
-                {attention.length === 0 ? (
-                  <div className="border-t px-5 py-8 text-center"><p className="text-sm font-medium">{s('allClear')}</p><p className="mt-1 text-xs text-muted-foreground">{s('allClearSub')}</p></div>
-                ) : (
-                  <ul className="divide-y border-t">
-                    {attention.map(({ job, kind, v }) => (
-                      <li key={job.id}>
-                        <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/40" data-testid={`link-attention-${job.id}`}>
-                          <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(var(--chart-3))]')} aria-hidden />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} /></span>
-                            <span className="block text-xs text-muted-foreground">{kind === 'unmeasured' ? s('attUnmeasured') : kind === 'neg' ? s('attNegVariance', { v }) : s('attVariance', { v })}</span>
-                          </span>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
+            {focus.exceptions && !focus.exceptionsFirst && attentionPanel}
           </div>
         </>
       )}

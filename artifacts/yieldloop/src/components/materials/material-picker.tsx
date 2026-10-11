@@ -1,6 +1,7 @@
+import { Pager } from '@/components/pager';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight, Loader2, Plus, RotateCw, Search } from 'lucide-react';
+import { Check, Loader2, Plus, RotateCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,15 +86,7 @@ export function MaterialPicker({ value, onChange, canCreate, disabled, errorId }
           </ul>
         )}
       </div>
-      {q.data && q.data.total_pages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{t('pageOf', { page: q.data.page, total: q.data.total_pages })}</span>
-          <div className="flex gap-1">
-            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" disabled={page <= 1 || q.isFetching} onClick={() => setPage((p) => p - 1)} aria-label={t('prevPage')} data-testid="button-materials-prev"><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></Button>
-            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" disabled={page >= q.data.total_pages || q.isFetching} onClick={() => setPage((p) => p + 1)} aria-label={t('nextPage')} data-testid="button-materials-next"><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></Button>
-          </div>
-        </div>
-      )}
+      {q.data && <Pager page={q.data.page} totalPages={q.data.total_pages} onPage={setPage} busy={q.isFetching} testId="materials" />}
 
       {canCreate ? (
         creating ? (

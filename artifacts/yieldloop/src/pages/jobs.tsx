@@ -1,6 +1,8 @@
+import { Pager } from '@/components/pager';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ArrowRight, ChevronLeft, ChevronRight, ClipboardList, Plus, RotateCw, Scissors, Search } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, ClipboardList, Plus, RotateCw, Scale, Scissors, Search } from 'lucide-react';
+import { useReportOverview } from '@/lib/reports';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +41,7 @@ export default function JobsPage({ user }: { user: Employee }) {
   const clear = () => { if (timer.current) clearTimeout(timer.current); setSearchInput(''); setSearch(''); setStatus('all'); setPage(1); };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-xl">
           <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{t('jobsTitle')}</h1>
@@ -52,7 +54,9 @@ export default function JobsPage({ user }: { user: Employee }) {
         )}
       </div>
 
-      <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+      {isOperator && <OpenReconciliation />}
+
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1 sm:max-w-sm">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" className="ps-9" placeholder={t('searchJobs')} aria-label={t('searchJobs')} value={searchInput} onChange={(e) => onSearch(e.target.value)} data-testid="input-search-jobs" />
@@ -129,6 +133,11 @@ export default function JobsPage({ user }: { user: Employee }) {
                   <td className="text-xs text-muted-foreground xl:px-4 xl:py-3">{fmt(j.updated_at)}</td>
                   <td className="ms-auto xl:px-4 xl:py-3">
                     <div className="flex justify-end gap-1">
+                      {j.status === 'open' && (
+                        <Link href={`/jobs/${j.id}#materials`} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90" data-testid={`link-record-${j.id}`}>
+                          <Scale className="h-3.5 w-3.5" aria-hidden />{ut('recordMaterials')}
+                        </Link>
+                      )}
                       <Link href={`/jobs/${j.id}/cutting`} className="inline-flex h-8 items-center gap-1.5 rounded-md border bg-card px-2.5 text-xs font-medium hover:border-primary/40 hover:text-primary" data-testid={`link-job-cutting-${j.id}`}>
                         <Scissors className="h-3.5 w-3.5" aria-hidden />{ut('pageCutting')}
                       </Link>
@@ -145,18 +154,51 @@ export default function JobsPage({ user }: { user: Employee }) {
       </div>
 
       {data && data.count > 0 && (
-        <nav className="mt-4 flex items-center justify-between gap-3 text-sm" aria-label={t('pageOf', { page: data.page, total: data.total_pages })}>
-          <span className="text-muted-foreground">{t('jobsCount', { n: data.count })} · {t('pageOf', { page: data.page, total: Math.max(1, data.total_pages) })}</span>
-          <div className="flex gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" aria-label={t('prevPage')} disabled={page <= 1 || q.isFetching} onClick={() => setPage((p) => p - 1)} data-testid="button-prev-page">
-              <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" aria-label={t('nextPage')} disabled={page >= data.total_pages || q.isFetching} onClick={() => setPage((p) => p + 1)} data-testid="button-next-page">
-              <ChevronRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
-            </Button>
-          </div>
-        </nav>
+        <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+          <span className="text-xs text-muted-foreground" data-testid="text-jobs-count">{t('jobsCount', { n: data.count })}</span>
+          <Pager page={data.page} totalPages={data.total_pages} onPage={setPage} busy={q.isFetching} testId="jobs" />
+        </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Operator reconciliation strip: one bounded, server-scoped report request
+ * (first page of Open jobs, latest reconciliation each). No per-job requests.
+ */
+function OpenReconciliation() {
+  const ut = useUt();
+  const q = useReportOverview({ status: 'open', page_size: 10 });
+  if (q.isPending) return <Skeleton className="mt-6 h-20 w-full rounded-lg" />;
+  if (q.isError || !q.data) return null;
+  const rows = q.data.jobs.results.flatMap((j): { job: typeof j; kind: 'unmeasured' | 'variance'; v: string }[] => {
+    const r = j.reconciliation;
+    if (!r) return [{ job: j, kind: 'unmeasured', v: '' }];
+    if (Number(r.variance) !== 0) return [{ job: j, kind: 'variance', v: r.variance }];
+    return [];
+  });
+  return (
+    <section className="mt-6 rounded-lg border bg-card" aria-labelledby="h-op-rec" data-testid="panel-open-reconciliation">
+      <header className="flex items-center gap-2 px-4 py-3">
+        {rows.length ? <AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" aria-hidden /> : <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" aria-hidden />}
+        <h2 id="h-op-rec" className="text-sm font-semibold">{rows.length ? ut('opRecTitle') : ut('opRecClear')}</h2>
+        {rows.length > 0 && <span className="font-mono text-xs text-muted-foreground">{rows.length}</span>}
+      </header>
+      {rows.length > 0 && (
+        <ul className="divide-y border-t">
+          {rows.map(({ job, kind, v }) => (
+            <li key={job.id}>
+              <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/40" data-testid={`link-op-rec-${job.id}`}>
+                <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(var(--amber))]')} aria-hidden />
+                <JobNumber value={jobLabel(job)} />
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{kind === 'unmeasured' ? ut('opRecUnmeasured') : ut('opRecVariance', { v })}</span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -35,7 +35,7 @@ export default function JobNewPage() {
     m.mutate();
   };
   return (
-    <div className="mx-auto max-w-2xl animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="mx-auto max-w-2xl">
       <Link href="/jobs" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" data-testid="link-back-jobs">
         <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />{t('backToJobs')}
       </Link>

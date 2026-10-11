@@ -170,6 +170,7 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
     if (h === 'materials' || h === 'cutting') requestAnimationFrame(() => document.getElementById(h)?.scrollIntoView({ block: 'start' }));
   }, []);
 
+  const workFirst = job.status === 'open';
   const discard = () => { setTitle(base.current.title); setNotes(base.current.notes); setReference(base.current.reference); setMachine(base.current.machine); save.reset(); };
 
   const close = useMutation({
@@ -186,7 +187,7 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
   });
 
   return (
-    <div className="mx-auto max-w-6xl animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="mx-auto max-w-6xl">
       <BackLink />
       <header className="mt-4 flex flex-col gap-4 rounded-lg border bg-card p-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -224,13 +225,15 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
       </header>
 
       <nav aria-label={t('jobDetails')} className="sticky top-14 z-10 -mx-1 mt-4 flex flex-wrap gap-1 bg-background/90 px-1 py-2 backdrop-blur">
-        {([['details', t('jobDetails')], ['cutting', ut('pageCutting')], ['materials', t('matTitle')]] as const).map(([id, label]) => (
+        {(workFirst ? ([['materials', t('matTitle')], ['cutting', ut('pageCutting')], ['details', t('jobDetails')]] as const) : ([['details', t('jobDetails')], ['cutting', ut('pageCutting')], ['materials', t('matTitle')]] as const)).map(([id, label]) => (
           <a key={id} href={`#${id}`} onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
             className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" data-testid={`link-section-${id}`}>{label}</a>
         ))}
       </nav>
 
-      <div id="details" className="mt-2 grid scroll-mt-28 gap-4 lg:grid-cols-[1fr_18rem]">
+      {/* Open jobs lead with operational recording; other states lead with identity/details. */}
+      <div className="flex flex-col">
+      <div id="details" className={cn('mt-2 grid scroll-mt-28 gap-4 lg:grid-cols-[1fr_18rem]', workFirst ? 'order-4 mt-6' : 'order-1')}>
         <form onSubmit={submit} noValidate className="flex flex-col gap-5 rounded-lg border bg-card p-5 sm:p-6" data-testid="form-edit-job">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold">{t('jobDetails')}</h2>
@@ -329,13 +332,14 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
         </aside>
       </div>
 
-      <div id="cutting" className="scroll-mt-28"><CuttingLink jobId={job.id} /></div>
+      <div id="cutting" className={cn('scroll-mt-28', workFirst ? 'order-3' : 'order-2')}><CuttingLink jobId={job.id} /></div>
 
-      <div id="materials" className="scroll-mt-28"><MaterialsSection job={job} canManageInventory={user.role !== 'cutting_operator'} /></div>
+      <div id="materials" className={cn('scroll-mt-28', workFirst ? 'order-1' : 'order-3')}><MaterialsSection job={job} canManageInventory={user.role !== 'cutting_operator'} /></div>
 
       {job.status === 'open' && (
-        <ClosePanel jobId={job.id} dirty={dirty} busy={close.isPending || save.isPending || transition.isPending || reloading || stale} error={close.error} onClose={() => setConfirm('completed')} />
+        <div className="order-2"><ClosePanel jobId={job.id} dirty={dirty} busy={close.isPending || save.isPending || transition.isPending || reloading || stale} error={close.error} onClose={() => setConfirm('completed')} /></div>
       )}
+      </div>
 
       {confirm === 'completed' && <AlertDialog open onOpenChange={(o) => { if (!o && !close.isPending) setConfirm(null); }}>
         <AlertDialogContent>

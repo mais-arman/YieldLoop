@@ -127,14 +127,14 @@ export function ScenarioWorkspace({ jobId, draft, update, readOnly, canCreateMat
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1 xl:hidden" role="tablist" aria-label={ut('tabLayout')}>
         {tabs.map(({ k, label }) => (
-          <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} data-testid={`tab-mobile-${k}`}
+          <button key={k} type="button" role="tab" aria-selected={tab === k} aria-controls={`studio-panel-${k}`} id={`studio-tab-${k}`} onClick={() => setTab(k)} data-testid={`tab-mobile-${k}`}
             className={cn('rounded-md px-3 py-1.5 text-sm font-medium transition-colors', tab === k ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
             {label}
           </button>
         ))}
       </div>
       <div className="grid gap-4 xl:grid-cols-[21rem_minmax(0,1fr)_19rem] xl:items-start">
-        <section className={cn(col('setup'), 'xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto xl:pe-1')} aria-label={ut('tabSetup')}>
+        <section id="studio-panel-setup" className={cn(col('setup'), 'xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto xl:pe-1')} aria-label={ut('tabSetup')}>
           {locked && !readOnly && (
             <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/60 px-3 py-2.5">
               <Lock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -149,7 +149,7 @@ export function ScenarioWorkspace({ jobId, draft, update, readOnly, canCreateMat
             onChange={(f) => update((d) => ({ ...d, form: f, result: null, resultSig: null }))} />
         </section>
 
-        <section className={cn(col('layout'), 'rounded-lg border bg-card p-4')} aria-label={ct('canvas')}>
+        <section id="studio-panel-layout" className={cn(col('layout'), 'rounded-lg border bg-card p-4')} aria-label={ct('canvas')}>
           {!input ? (
             <>
               <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export function ScenarioWorkspace({ jobId, draft, update, readOnly, canCreateMat
           )}
         </section>
 
-        <div className={cn(col('results'), 'xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto')}>
+        <div id="studio-panel-results" className={cn(col('results'), 'xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto')}>
           <ResultPanel result={result} input={input} status={status} errorMsg={evalErr} readOnly={readOnly} onRetry={() => setNonce((n) => n + 1)} />
           {input && (
             <div className="hidden xl:block">

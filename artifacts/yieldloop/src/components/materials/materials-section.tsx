@@ -1,6 +1,7 @@
+import { Pager } from '@/components/pager';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, ChevronRight, Info, Loader2, Lock, Package, Plus, RotateCw, Scale } from 'lucide-react';
+import { AlertTriangle, Info, Loader2, Lock, Package, Plus, RotateCw, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -436,15 +437,7 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
         ))}
         </div>
       )}
-      {e.total_pages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{t('pageOf', { page: e.page, total: e.total_pages })}</span>
-          <div className="flex gap-1">
-            <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page <= 1 || busy} onClick={() => setPage(page - 1)} aria-label={t('prevPage')} data-testid="button-entries-prev"><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page >= e.total_pages || busy} onClick={() => setPage(page + 1)} aria-label={t('nextPage')} data-testid="button-entries-next"><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></Button>
-          </div>
-        </div>
-      )}
+      <Pager page={page} totalPages={e.total_pages} onPage={setPage} busy={busy} testId="entries" />
     </div>
   );
 }

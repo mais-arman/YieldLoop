@@ -19,7 +19,7 @@ const label = (j: { reference: string; job_number: string }) => (j.reference.tri
  * Per-job questions need recorded scrap / issued material; comparisons link to
  * the existing comparison view for an accessible job on the same machine.
  */
-export function buildSuggestions(ev: AssistanceEvidence | undefined, current: PeerJob | undefined, peers: PeerJob[]): Suggestion[] {
+export function buildSuggestions(ev: AssistanceEvidence | undefined, current: PeerJob | undefined, peers: PeerJob[], allowCompare = true): Suggestion[] {
   if (!ev) return [];
   const out: Suggestion[] = [];
   const name = label(ev.job);
@@ -27,7 +27,7 @@ export function buildSuggestions(ev: AssistanceEvidence | undefined, current: Pe
   const issued = ev.calculated_findings?.issued;
   if (issued != null && Number(issued) > 0) out.push({ kind: 'material', job: name });
   const machine = current?.machine.trim();
-  if (machine) {
+  if (machine && allowCompare) {
     const peer = peers.find((p) => p.id !== ev.job.id && p.machine.trim() === machine);
     if (peer) out.push({ kind: 'compare', a: name, b: label(peer), href: `/comparison?left=${ev.job.id}&right=${peer.id}` });
   }
