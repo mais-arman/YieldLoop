@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { jobLabel } from '@/lib/core-helpers';
 import { scrapReasonText, useKt } from '@/lib/core';
 
-const FINDINGS = ['issued', 'good', 'scrap', 'offcut', 'accounted', 'variance', 'yield_rate', 'scrap_rate'] as const;
+const FINDINGS = ['issued', 'good', 'scrap', 'offcut', 'pending_rework', 'accounted', 'variance', 'yield_rate', 'scrap_rate'] as const;
 
 export default function AssistantPage() {
   const ft = useFt();

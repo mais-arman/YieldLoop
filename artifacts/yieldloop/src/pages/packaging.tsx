@@ -1,6 +1,8 @@
 import { lazy, Suspense, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { AlertTriangle, Box, Download, Loader2, RotateCw, Sparkles, Upload } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, Box, Download, Loader2, RotateCw, Save, Sparkles, Upload } from 'lucide-react';
+import { SavedConcepts } from '@/components/packaging/saved-concepts';
+import { createPackagingDesign, getPackagingDesign, PK_DESIGNS_KEY, updatePackagingDesign } from '@/lib/packaging-designs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,10 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 import { AuthError } from '@/lib/auth';
 import type { PackagingProposal as ProposeResponse } from '@workspace/api-client-react';
 import { proposePackaging, useAssistanceStatus, usePackagingTemplates, validatePackaging } from '@/lib/assistance';
-import { hasFKey, localizeLimitation, useFt, type FKey } from '@/lib/feature-i18n';
+import { extraErrorText, hasFKey, localizeLimitation, useFt, type FKey } from '@/lib/feature-i18n';
 import { useI18n } from '@/lib/i18n';
 import { errorMessage } from '@/lib/session';
-import { blankParams, isTemplateId, paramKeysFor, statesFor, switchTemplate, TEMPLATE_IDS, type PackagingDesign, type Params, type ParamKey, type TemplateId, type ViewState } from '@/lib/packaging-templates';
+import { blankParams, hasLid, isTemplateId, paramKeysFor, statesFor, switchTemplate, TEMPLATE_IDS, type PackagingDesign, type Params, type ParamKey, type TemplateId, type ViewState } from '@/lib/packaging-templates';
 import { LIMITS, toDims, validateDesign, type FieldErrors } from '@/lib/packaging-validation';
 import { buildPanels, externalSize } from '@/lib/packaging-geometry';
 import { conceptFileName, parseConceptFile, toConceptFile } from '@/lib/packaging-file';
@@ -22,7 +24,7 @@ import { cn } from '@/lib/utils';
 
 const ConceptViewer = lazy(() => import('@/components/packaging/concept-viewer'));
 const TPL_LABEL: Record<TemplateId, { en: string; ar: string }> = {
-  tray: { en: 'Tray', ar: 'صينية' }, sleeve: { en: 'Sleeve', ar: 'غلاف' }, lid_box: { en: 'Lid box', ar: 'علبة بغطاء' },
+  tray: { en: 'Tray', ar: 'صينية' }, sleeve: { en: 'Sleeve', ar: 'غلاف' }, lid_box: { en: 'Lid box', ar: 'علبة بغطاء' }, flat_box: { en: 'Flat box', ar: 'علبة مسطحة' },
 };
 
 /** Server field codes -> localized text. Unknown codes fall back to a generic localized message, never raw codes. */
@@ -36,7 +38,7 @@ function serverFieldErrors(err: unknown, ft: ReturnType<typeof useFt>): Record<s
 
 function Segmented<T extends string>({ value, options, onChange, label, testId }: { value: T; options: { id: T; label: string; disabled?: boolean }[]; onChange: (v: T) => void; label: string; testId: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-md border bg-muted/50 p-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-md border bg-muted/50 p-0.5">
       {options.map((o) => (
         <button key={o.id} type="button" role="radio" aria-checked={value === o.id} disabled={o.disabled} onClick={() => onChange(o.id)}
           data-testid={`${testId}-${o.id}`}
@@ -63,6 +65,37 @@ export default function PackagingPage() {
   const [design, setDesign] = useState<PackagingDesign | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const qc = useQueryClient();
+  const [saved, setSaved] = useState<{ id: number; revision: number } | null>(null);
+  const [saveReason, setSaveReason] = useState('');
+  const [opening, setOpening] = useState<number | null>(null);
+  const saveReq = useRef(crypto.randomUUID());
+  const save = useMutation({
+    mutationFn: ({ asNew }: { asNew: boolean }) => {
+      const body = { design: design!, reason: saveReason.trim(), request_id: saveReq.current };
+      return saved && !asNew ? updatePackagingDesign(saved.id, { ...body, revision: saved.revision }) : createPackagingDesign(body);
+    },
+    onSuccess: (r) => {
+      saveReq.current = crypto.randomUUID();
+      setSaved({ id: r.id, revision: r.revision }); setSaveReason('');
+      qc.invalidateQueries({ queryKey: PK_DESIGNS_KEY });
+      toast({ description: ft('pkSaved', { r: r.revision }) });
+    },
+    onError: (err) => { if (err instanceof AuthError) saveReq.current = crypto.randomUUID(); },
+  });
+  const loadDesign = (d: PackagingDesign) => {
+    setTemplate(isTemplateId(d.template) ? d.template : 'tray'); setName(d.name); setParams(d.parameters); setState(d.state); setErrors({}); setFormError(null);
+  };
+  const openSaved = async (id: number) => {
+    setOpening(id);
+    try {
+      const r = await getPackagingDesign(id);
+      loadDesign(r.design); setDesign(r.design); setSaved({ id: r.id, revision: r.revision }); save.reset();
+      toast({ description: ft('pkOpened', { n: r.design.name }) });
+    } catch (err) { setFormError(errorMessage(err, t)); }
+    finally { setOpening(null); }
+  };
+  const saveConflict = save.error instanceof AuthError && save.error.status === 409;
 
   const current: PackagingDesign = { template, name, parameters: params, state };
   const stale = design !== null && JSON.stringify(design) !== JSON.stringify(current);
@@ -99,6 +132,17 @@ export default function PackagingPage() {
   };
 
   const panels = useMemo(() => design ? buildPanels(design.template, toDims(design.template, design.parameters), design.state) : null, [design]);
+  // Live concept preview from locally valid inputs; the server result stays authoritative for save/export.
+  const liveKey = JSON.stringify([template, params, state]);
+  const liveErrors = useMemo(() => validateDesign(template, params, state), [liveKey]);
+  const liveOk = Object.keys(liveErrors).length === 0;
+  const livePanels = useMemo(() => {
+    if (!liveOk) return null;
+    try { return buildPanels(template, toDims(template, params), state); } catch { return null; }
+  }, [liveOk, liveKey]);
+  const showLive = stale || !design;
+  const viewPanels = showLive ? livePanels : panels;
+  const liveErrorList = Object.entries(liveErrors).filter(([k, c]) => c && !(c === 'required' && !(params as Record<string, string | undefined>)[k])).map(([k, c]) => `${hasFKey(`p_${k}`) ? ft(`p_${k}` as FKey) : ''} ${errText(c, k)}`.trim());
   const ext = design ? externalSize(design.template, toDims(design.template, design.parameters)) : null;
 
   const exportFile = () => {
@@ -112,7 +156,7 @@ export default function PackagingPage() {
     if (!file) return;
     const r = parseConceptFile(await file.text());
     if (!r.ok) { setFormError(ft(`pkFileErr_${r.code}` as FKey)); return; }
-    setTemplate(isTemplateId(r.design.template) ? r.design.template : 'tray'); setName(r.design.name); setParams(r.design.parameters); setState(r.design.state);
+    loadDesign(r.design);
     validate.mutate(r.design, { onSuccess: () => toast({ description: ft('pkImported') }) });
   };
 
@@ -196,10 +240,26 @@ export default function PackagingPage() {
         </div>
 
         <section className="space-y-4" aria-label={ft('v_title')}>
-          {stale && design && <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900" role="status" data-testid="text-stale">{ft('pkStale', { state: ft(`st_${design.state}`) })}</div>}
-          {panels ? (
+          <div className="flex flex-wrap items-center gap-2" role="status" aria-live="polite" data-testid="text-preview-mode">
+            {showLive ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/50 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary" data-testid="badge-live">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" aria-hidden />{ft('pkLiveBadge')}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600/10 px-2.5 py-0.5 text-xs font-medium text-emerald-800" data-testid="badge-validated">{ft('pkValidatedBadge')}</span>
+            )}
+            <span className="text-xs text-muted-foreground">{showLive ? ft('pkLiveHint') : ft('pkValidatedHint')}</span>
+          </div>
+          {stale && design && <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900" data-testid="text-stale">{ft('pkStale', { state: ft(`st_${design.state}`) })}</div>}
+          {showLive && !liveOk && liveErrorList.length > 0 && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm" role="alert" data-testid="text-live-errors">
+              <p className="font-medium text-destructive">{ft('pkLiveInvalid')}</p>
+              <ul className="mt-1 list-disc ps-5 text-xs">{liveErrorList.map((e) => <li key={e}>{e}</li>)}</ul>
+            </div>
+          )}
+          {viewPanels ? (
             <Suspense fallback={<Skeleton className="aspect-[4/3] w-full rounded-lg" />}>
-              <div className={cn(stale && 'opacity-70')}><ConceptViewer panels={panels} /></div>
+              <div className={cn('rounded-lg', showLive && 'outline-dashed outline-2 outline-offset-2 outline-primary/30')} data-testid={showLive ? 'viewer-live' : 'viewer-validated'}><ConceptViewer panels={viewPanels} /></div>
             </Suspense>
           ) : (
             <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-[repeating-linear-gradient(45deg,transparent,transparent_12px,hsl(var(--muted))_12px,hsl(var(--muted))_13px)] p-6 text-center" data-testid="viewer-empty">
@@ -214,12 +274,35 @@ export default function PackagingPage() {
                 <div><dt className="text-xs text-muted-foreground">{ft('pkInternal')}</dt><dd className="font-mono tabular-nums" dir="ltr">{design.parameters.length} × {design.parameters.width} × {design.parameters.height} mm</dd></div>
                 <div><dt className="text-xs text-muted-foreground">{ft('pkExternal')}</dt><dd className="font-mono tabular-nums" dir="ltr">{ext[0]} × {ext[2]} × {ext[1]} mm</dd></div>
                 <div><dt className="text-xs text-muted-foreground">{tplLabel(design.template)} · {ft(`st_${design.state}`)}</dt><dd>{ft('pkPanels', { n: panels?.length ?? 0, t: design.parameters.thickness ?? '' })}</dd></div>
-                {design.template === 'lid_box' && (
+                {hasLid(design.template) && (
                   <div className="sm:col-span-3 text-xs text-muted-foreground" dir="auto">{ft('p_lid_height')}: <span className="font-mono">{design.parameters.lid_height} mm</span> · {ft('p_clearance')}: <span className="font-mono">{design.parameters.clearance} mm</span></div>
                 )}
               </dl>
             </div>
           )}
+          <div className="rounded-lg border bg-card p-4" data-testid="panel-save">
+            {saved && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-accent/50 px-3 py-2 text-xs" data-testid="text-editing">
+                <span>{ft('pkEditing', { id: saved.id, r: saved.revision })}</span>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setSaved(null); save.reset(); }} data-testid="button-detach">{ft('pkDetach')}</Button>
+              </div>
+            )}
+            <Label htmlFor="pk-save-reason" className="text-xs text-muted-foreground">{ft('pkSaveReason')}</Label>
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+              <Input id="pk-save-reason" value={saveReason} maxLength={1000} onChange={(e) => setSaveReason(e.target.value)} placeholder={ft('pkSaveReasonPh')} disabled={save.isPending} data-testid="input-save-reason" />
+              <div className="flex shrink-0 gap-2">
+                {saved && <Button variant="outline" onClick={() => save.mutate({ asNew: true })} disabled={!design || stale || save.isPending} data-testid="button-save-new">{ft('pkSaveNew')}</Button>}
+                <Button onClick={() => save.mutate({ asNew: false })} disabled={!design || stale || save.isPending || saveConflict} data-testid="button-save">
+                  {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}{save.isPending ? ft('pkSaving') : ft('pkSave')}
+                </Button>
+              </div>
+            </div>
+            {(!design || stale) && <p className="mt-2 text-xs text-muted-foreground">{ft('pkSaveNeedsValid')}</p>}
+            {save.error && <div className="mt-2"><FormAlert message={saveConflict ? ft('pkSaveConflict') : (save.error instanceof AuthError && extraErrorText(save.error.code, lang)) || errorMessage(save.error, t)} /></div>}
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{ft('pkNonProduction')}</p>
+          </div>
+          <SavedConcepts activeId={saved?.id ?? null} opening={opening} onOpen={openSaved} tplLabel={tplLabel}
+            onLoadRevision={({ design: d }) => { loadDesign(d); validate.mutate(d); }} />
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
             <p className="font-medium text-amber-900">{ft('pkConceptNote')}</p>
             {!!templates.data?.limitations.length && (

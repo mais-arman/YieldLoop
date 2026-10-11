@@ -146,7 +146,7 @@ class MaterialTests(TransactionTestCase):
 
     def test_unit_material_first_issue_and_category(self):
         self.assertEqual(self.add(kind="good").json()["code"], "issue_required")
-        for extra in [{"unit": "g"}, {"kind": "rework"}, {"kind": "other"}, {"material_id": 987654321}]:
+        for extra in [{"unit": "g"}, {"kind": "other"}, {"material_id": 987654321}]:
             self.assertIn(self.add(**extra).status_code, [400, 404])
         self.record()
         other = Material.objects.create(name="Other", specification="Other", created_by=self.users["manager"])
@@ -255,7 +255,7 @@ class MaterialTests(TransactionTestCase):
         entry = MaterialEntry.objects.first()
         # Bypass the immutable ORM only to prove database checks in an isolated test.
         from django.db import connection
-        for column, value in [("quantity", "-1"), ("unit", "g"), ("kind", "rework")]:
+        for column, value in [("quantity", "-1"), ("unit", "g"), ("kind", "unknown")]:
             with self.assertRaises(IntegrityError), transaction.atomic(), connection.cursor() as cursor:
                 cursor.execute(f'UPDATE materials_materialentry SET "{column}" = %s WHERE id = %s', [value, entry.pk])
 

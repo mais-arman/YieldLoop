@@ -16,4 +16,5 @@ export const PackagingProposalTemplate = {
   tray: 'tray',
   sleeve: 'sleeve',
   lid_box: 'lid_box',
+  flat_box: 'flat_box',
 } as const;

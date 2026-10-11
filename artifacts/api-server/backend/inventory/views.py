@@ -1,4 +1,4 @@
-from accounts.security import Conflict, ReadyAccount
+from accounts.security import ReadyAccount
 from accounts.serializers import StrictSerializer
 from accounts.views import ProtectedView
 from django.db.models import Q
@@ -66,6 +66,9 @@ class InventoryDetail(ProtectedView):
         result = services.lot_data(lot, request.user)
         # Foundation history is bounded: exactly one addition and at most one void.
         result["history"] = [services.event_data(e) for e in lot.events.select_related("actor")]
+        from .movements import balances
+        result["reservations"] = [{"job_id": pk, "quantity": format(q, ".3f")}
+                                  for pk, q in balances(lot)["jobs"].items() if q > 0]
         return Response(result)
 
 
@@ -83,6 +86,31 @@ class BlockedReuse(ProtectedView):
         if action not in ("reserve", "release", "consume"):
             raise NotFound()
         require_editor(request.user)
-        if not services.lots(request.user).filter(pk=pk).exists():
-            raise NotFound()
-        raise Conflict(code="reuse_policy_required")
+        from .movements import move
+        return Response(move(request, pk, action, checked(MovementInput, request.data)))
+
+
+class MovementInput(VoidInput):
+    from decimal import Decimal
+    job_id = serializers.IntegerField(min_value=1)
+    quantity = serializers.DecimalField(max_digits=15, decimal_places=3, min_value=Decimal(".001"))
+
+    def validate_quantity(self, value):
+        if not isinstance(self.initial_data.get("quantity"), str):
+            raise serializers.ValidationError("Send a decimal string.")
+        return value
+
+
+class MovementsView(ProtectedView):
+    permission_classes = (IsAuthenticated, ReadyAccount)
+
+    def get(self, request, pk):
+        from materials.serializers import PageInput
+
+        from .movements import movement_data
+        try:
+            lot = services.lots(request.user).get(pk=pk)
+        except OffcutLot.DoesNotExist:
+            raise NotFound() from None
+        return Response(paginate(lot.movements.select_related("actor"),
+                                checked(PageInput, request.query_params), movement_data))

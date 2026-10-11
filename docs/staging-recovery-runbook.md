@@ -1,5 +1,15 @@
 # Staging and recovery release gates
 
+## Integrated pilot scope note — 2026-10-11
+
+`docs/integrated-pilot.md` records the new development schema and isolated pilot
+verification. The migration changes include rework resolutions, stock movements/
+receiving issues and saved packaging revisions; include these in the next authorized
+recovery inventory. No recovery exercise or production access was performed during
+this pass. Prior local CHECK-equivalence evidence is preserved, but is not new
+restore evidence for the expanded schema. Offsite availability, cluster-loss,
+roles/ownership/grants and approved/demonstrated RPO/RTO remain **BLOCKED**.
+
 ## Safe staging design (not provisioned or deployed)
 
 Use the same reviewed commit/lockfiles as release: production-built React static

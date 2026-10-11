@@ -267,14 +267,138 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/InventoryLot"}
-  /v1/inventory/{id}/{action}:
+  /v1/inventory/{id}/reserve:
     post:
-      operationId: blockedInventoryReuse
+      operationId: reserveInventoryLot
       parameters:
         - {name: id, in: path, required: true, schema: {type: integer}}
-        - {name: action, in: path, required: true, schema: {type: string, enum: [reserve, release, consume]}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/InventoryMovementInput"}
       responses:
-        "409": {description: Reuse policy required; no mutation allowed}
+        "200":
+          description: Recorded movement (not physically verified)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryLot"}
+        "400": {description: Invalid input}
+        "409": {description: Revision conflict or ineligible}
+  /v1/inventory/{id}/release:
+    post:
+      operationId: releaseInventoryLot
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/InventoryMovementInput"}
+      responses:
+        "200":
+          description: Recorded movement (not physically verified)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryLot"}
+        "400": {description: Invalid input}
+        "409": {description: Revision conflict or ineligible}
+  /v1/inventory/{id}/consume:
+    post:
+      operationId: consumeInventoryLot
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/InventoryMovementInput"}
+      responses:
+        "200":
+          description: Recorded movement (not physically verified)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryLot"}
+        "400": {description: Invalid input}
+        "409": {description: Revision conflict or ineligible}
+  /v1/inventory/{id}/movements:
+    get:
+      operationId: listInventoryMovements
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: page_size, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          description: Paginated movements
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/InventoryMovementPage"}
+  /v1/packaging/designs:
+    get:
+      operationId: listPackagingDesigns
+      parameters:
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: page_size, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          description: Saved concept designs
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingDesignRecordPage"}
+    post:
+      operationId: createPackagingDesign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PackagingDesignSaveInput"}
+      responses:
+        "201":
+          description: Saved validated concept
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingDesignRecord"}
+  /v1/packaging/designs/{id}:
+    get:
+      operationId: getPackagingDesign
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Saved concept
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingDesignRecord"}
+    put:
+      operationId: updatePackagingDesign
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PackagingDesignUpdateInput"}
+      responses:
+        "200":
+          description: New revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingDesignRecord"}
+        "409": {description: Revision conflict}
+  /v1/packaging/designs/{id}/history:
+    get:
+      operationId: getPackagingDesignHistory
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: page_size, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          description: Revision history
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingDesignHistoryPage"}
   /v1/materials:
     get:
       operationId: listMaterials
@@ -712,7 +836,7 @@ components:
       additionalProperties: false
       required: [template, name, parameters, state]
       properties:
-        template: {type: string, enum: [tray, sleeve, lid_box]}
+        template: {type: string, enum: [tray, sleeve, lid_box, flat_box]}
         name: {type: string, minLength: 1, maxLength: 160}
         parameters: {type: object, additionalProperties: {type: string}}
         state: {type: string, enum: [assembled, open]}
@@ -734,7 +858,7 @@ components:
       type: object
       required: [template, name, parameters, missing, assumptions, valid, production_validated]
       properties:
-        template: {type: [string, "null"], enum: [tray, sleeve, lid_box, null]}
+        template: {type: [string, "null"], enum: [tray, sleeve, lid_box, flat_box, null]}
         name: {type: string}
         parameters: {type: object, additionalProperties: {type: string}}
         missing: {type: array, items: {type: string}}
@@ -928,12 +1052,13 @@ components:
         results: {type: array, items: {$ref: "#/components/schemas/CuttingHistory"}}
     ReportMeasures:
       type: object
-      required: [issued, good, scrap, offcut, accounted, variance, yield_rate, scrap_rate, offcut_rate]
+      required: [issued, good, scrap, offcut, pending_rework, accounted, variance, yield_rate, scrap_rate, offcut_rate]
       properties:
         issued: {type: string}
         good: {type: string}
         scrap: {type: string}
         offcut: {type: string}
+        pending_rework: {type: string}
         accounted: {type: string}
         variance: {type: string}
         yield_rate: {type: [string, "null"]}
@@ -1074,14 +1199,25 @@ components:
         source_status: {$ref: "#/components/schemas/JobStatus"}
         source_voided: {type: boolean}
         compatibility: {type: string, enum: [unverified]}
-        reuse_blocked_reason: {type: string, enum: [policy_not_defined]}
+        reuse_blocked_reason: {type: [string, "null"]}
+        reserved: {type: string}
+        available_to_reserve: {type: string}
+        reservations:
+          type: array
+          items:
+            type: object
+            required: [job_id, quantity]
+            properties:
+              job_id: {type: integer}
+              quantity: {type: string}
         created_at: {type: string, format: date-time}
         permissions:
           type: object
-          required: [void, reserve, consume]
+          required: [void, reserve, release, consume]
           properties:
             void: {type: boolean}
             reserve: {type: boolean}
+            release: {type: boolean}
             consume: {type: boolean}
         history: {type: array, items: {$ref: "#/components/schemas/InventoryEvent"}}
     InventoryPage:
@@ -1127,7 +1263,8 @@ components:
         revision: {type: integer, minimum: 0}
         job_revision: {type: integer, minimum: 1}
         material_id: {type: integer, minimum: 1}
-        kind: {type: string, enum: [issue, good, scrap, offcut]}
+        kind: {type: string, enum: [issue, good, scrap, offcut, rework]}
+        resolve_rework_id: {type: integer, minimum: 1}
         quantity: {type: string, description: Positive kg decimal with at most 12 integer and 3 fractional digits}
         unit: {type: string, enum: [kg]}
         note: {type: string, maxLength: 1000}
@@ -1147,8 +1284,10 @@ components:
       properties:
         id: {type: integer}
         material_id: {type: integer}
-        kind: {type: string, enum: [issue, good, scrap, offcut]}
+        kind: {type: string, enum: [issue, good, scrap, offcut, rework]}
         quantity: {type: string}
+        pending_rework: {type: [string, "null"]}
+        resolves_rework_id: {type: [integer, "null"]}
         unit: {type: string, enum: [kg]}
         note: {type: string}
         scrap_reason: {type: string}
@@ -1204,17 +1343,101 @@ components:
             results: {type: array, items: {$ref: "#/components/schemas/MaterialEntry"}}
     MaterialSummary:
       type: object
-      required: [issued, good, scrap, offcut, accounted, variance, yield_rate, scrap_rate, created_at]
+      required: [issued, good, scrap, offcut, pending_rework, accounted, variance, yield_rate, scrap_rate, created_at]
       properties:
         issued: {type: string}
         good: {type: string}
         scrap: {type: string}
         offcut: {type: string}
+        pending_rework: {type: string}
         accounted: {type: string}
         variance: {type: string}
         yield_rate: {type: [string, "null"]}
         scrap_rate: {type: [string, "null"]}
         created_at: {type: string, format: date-time}
+    InventoryMovementInput:
+      type: object
+      additionalProperties: false
+      required: [job_id, quantity, reason, request_id, revision]
+      properties:
+        job_id: {type: integer, minimum: 1}
+        quantity: {type: string}
+        reason: {type: string, minLength: 1, maxLength: 1000}
+        request_id: {type: string, format: uuid}
+        revision: {type: integer, minimum: 0}
+    InventoryMovement:
+      type: object
+      required: [id, action, quantity, job_id, reason, actor, created_at, issue_entry_id]
+      properties:
+        id: {type: integer}
+        action: {type: string, enum: [reserve, release, consume]}
+        quantity: {type: string}
+        job_id: {type: integer}
+        reason: {type: string}
+        actor: {type: string}
+        created_at: {type: string, format: date-time}
+        issue_entry_id: {type: [integer, "null"]}
+    InventoryMovementPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/InventoryMovement"}}
+    PackagingDesignSaveInput:
+      type: object
+      additionalProperties: false
+      required: [design, reason, request_id]
+      properties:
+        design: {$ref: "#/components/schemas/PackagingDesign"}
+        reason: {type: string, maxLength: 1000}
+        request_id: {type: string, format: uuid}
+    PackagingDesignUpdateInput:
+      type: object
+      additionalProperties: false
+      required: [design, reason, request_id, revision]
+      properties:
+        design: {$ref: "#/components/schemas/PackagingDesign"}
+        reason: {type: string, maxLength: 1000}
+        request_id: {type: string, format: uuid}
+        revision: {type: integer, minimum: 1}
+    PackagingDesignRecord:
+      type: object
+      required: [id, revision, design, updated_at]
+      properties:
+        id: {type: integer}
+        revision: {type: integer}
+        design: {$ref: "#/components/schemas/PackagingDesign"}
+        updated_at: {type: string, format: date-time}
+    PackagingDesignRecordPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/PackagingDesignRecord"}}
+    PackagingDesignHistoryEntry:
+      type: object
+      required: [revision, design, reason, actor, created_at]
+      properties:
+        revision: {type: integer}
+        design: {$ref: "#/components/schemas/PackagingDesign"}
+        reason: {type: string}
+        actor: {type: string}
+        created_at: {type: string, format: date-time}
+    PackagingDesignHistoryPage:
+      type: object
+      required: [count, page, page_size, total_pages, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        total_pages: {type: integer}
+        results: {type: array, items: {$ref: "#/components/schemas/PackagingDesignHistoryEntry"}}
     MaterialClosing:
       type: object
       required: [can_close, reason]

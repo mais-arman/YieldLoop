@@ -11,6 +11,7 @@ export interface MaterialSummary {
   good: string;
   scrap: string;
   offcut: string;
+  pending_rework: string;
   accounted: string;
   variance: string;
   /** @nullable */

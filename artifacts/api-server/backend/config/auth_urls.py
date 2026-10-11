@@ -1,4 +1,5 @@
 from accounts import views
+from assistance.designs import DesignHistoryView, DesignsView, DesignView
 from assistance.views import (
     AnalyzeView,
     EvidenceView,
@@ -9,7 +10,13 @@ from assistance.views import (
 )
 from cutting.views import EvaluateView, HistoryView, PlansView, PlanView
 from django.urls import path
-from inventory.views import BlockedReuse, InventoryDetail, InventoryView, InventoryVoid
+from inventory.views import (
+    BlockedReuse,
+    InventoryDetail,
+    InventoryView,
+    InventoryVoid,
+    MovementsView,
+)
 from jobs.views import JobsView, JobView
 from materials.views import EntriesView, JobMaterialsView, MaterialsView, VoidView
 from reports.comparison import ComparisonView, MachinesView
@@ -18,6 +25,10 @@ from reports.views import OverviewView
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
+    path("api/v1/packaging/designs", DesignsView.as_view()),
+    path("api/v1/packaging/designs/<int:pk>", DesignView.as_view()),
+    path("api/v1/packaging/designs/<int:pk>/history", DesignHistoryView.as_view()),
+    path("api/v1/inventory/<int:pk>/movements", MovementsView.as_view()),
     path("api/v1/jobs/machines", MachinesView.as_view()),
     path("api/v1/reports/comparison", ComparisonView.as_view()),
     path("api/v1/assistance/status", StatusView.as_view()),

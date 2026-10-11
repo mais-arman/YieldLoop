@@ -13,12 +13,13 @@ LABELS = {
     "clearance": ("Lid clearance per side", "خلوص الغطاء لكل جانب"),
 }
 TYPES = {"tray": ("Open tray", "صينية مفتوحة"), "sleeve": ("Open-ended sleeve", "غلاف مفتوح الطرفين"),
-         "lid_box": ("Box with separate lid", "علبة بغطاء منفصل")}
+         "lid_box": ("Box with separate lid", "علبة بغطاء منفصل"),
+         "flat_box": ("Flat box with lid", "علبة مسطحة بغطاء")}
 BOUNDS = {k: ("0.1", "20") if k in ("thickness", "clearance") else ("1", "5000") for k in LABELS}
 
 
 def keys(template):
-    return ["length", "width", "height", "thickness"] + (["lid_height", "clearance"] if template == "lid_box" else [])
+    return ["length", "width", "height", "thickness"] + (["lid_height", "clearance"] if template in ("lid_box", "flat_box") else [])
 
 
 def invalid(fields):
@@ -64,6 +65,8 @@ def validate(data):
         invalid(errors)
     if 4 * numbers["thickness"] > min(numbers[k] for k in ("length", "width", "height")):
         invalid({"thickness": "too_thick"})
-    if template == "lid_box" and numbers["lid_height"] > numbers["height"]:
+    if template in ("lid_box", "flat_box") and numbers["lid_height"] > numbers["height"]:
         invalid({"lid_height": "exceeds_height"})
+    if template == "flat_box" and numbers["height"] > min(numbers["length"], numbers["width"]):
+        invalid({"height": "flat_height_exceeds_base"})
     return {"template": template, "name": data["name"].strip(), "parameters": normalized, "state": data["state"]}

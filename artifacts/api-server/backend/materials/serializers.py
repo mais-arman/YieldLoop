@@ -18,6 +18,7 @@ class RevisionInput(StrictSerializer):
 
 
 class EntryInput(RevisionInput):
+    resolve_rework_id = serializers.IntegerField(min_value=1, required=False)
     scrap_reason = serializers.CharField(max_length=160, allow_blank=True, default="")
     material_id = serializers.IntegerField(min_value=1)
     kind = serializers.ChoiceField(choices=MaterialEntry.Kind.choices)
@@ -27,6 +28,9 @@ class EntryInput(RevisionInput):
     request_id = serializers.UUIDField()
 
     def validate(self, values):
+        if "resolve_rework_id" in values and (values["kind"] not in ("good", "scrap") or
+                (values["kind"] == "scrap" and not values["scrap_reason"].strip())):
+            raise serializers.ValidationError("Resolve rework to good or scrap with a scrap reason.", code="invalid_rework_resolution")
         if values["kind"] != "scrap" and values["scrap_reason"]:
             raise serializers.ValidationError("Only scrap can have a scrap reason.", code="scrap_reason_kind")
         return values
@@ -58,6 +62,8 @@ def material_data(material):
 def entry_data(entry):
     void = getattr(entry, "void", None)
     return {
+        "pending_rework": format(pending_rework(entry), ".3f") if entry.kind == "rework" else None,
+        "resolves_rework_id": getattr(getattr(entry, "rework_resolution", None), "source_id", None),
         "id": entry.pk, "material_id": entry.material_id, "kind": entry.kind,
         "quantity": format(entry.quantity, ".3f"), "unit": entry.unit, "note": entry.note,
         "scrap_reason": entry.scrap_reason,
@@ -68,3 +74,11 @@ def entry_data(entry):
             "created_by": {"id": void.created_by_id, "username": void.created_by.username},
         } if void else None,
     }
+
+
+def pending_rework(entry):
+    from django.db.models import Sum
+
+    from .models import ReworkResolution
+    return entry.quantity - (ReworkResolution.objects.filter(
+        source=entry, output__void__isnull=True).aggregate(q=Sum("output__quantity"))["q"] or Decimal(0))

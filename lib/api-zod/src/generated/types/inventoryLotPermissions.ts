@@ -9,5 +9,6 @@
 export type InventoryLotPermissions = {
   void: boolean;
   reserve: boolean;
+  release: boolean;
   consume: boolean;
 };

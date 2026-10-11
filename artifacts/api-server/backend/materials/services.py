@@ -46,6 +46,8 @@ def closing(job, completing=False):
         reason = "material_incomplete"
     elif summary.variance != 0:
         reason = "material_unbalanced"
+    elif summary.pending_rework != 0:
+        reason = "rework_pending"
     return {"can_close": reason is None, "reason": reason}
 
 
@@ -66,7 +68,7 @@ def state(job, actor, values=None):
     if snapshot:
         summary = {
             key: format(getattr(snapshot, key), ".3f") if getattr(snapshot, key) is not None else None
-            for key in ("issued", "good", "scrap", "offcut", "accounted", "variance", "yield_rate", "scrap_rate")
+            for key in ("issued", "good", "scrap", "offcut", "pending_rework", "accounted", "variance", "yield_rate", "scrap_rate")
         }
         summary["created_at"] = snapshot.created_at.isoformat()
     return {
@@ -118,10 +120,23 @@ def mutate(request, pk, values, entry_id=None):
                     domain_error("issue_required")
                 if MaterialEntry.objects.filter(job=job, request_id=values["request_id"]).exists():
                     raise Conflict(code="duplicate_record")
+                source = None
+                if "resolve_rework_id" in values:
+                    from .serializers import pending_rework
+                    try:
+                        source = MaterialEntry.objects.get(pk=values["resolve_rework_id"], job=job,
+                                                           kind="rework", void__isnull=True)
+                    except MaterialEntry.DoesNotExist:
+                        raise NotFound() from None
+                    if values["quantity"] > pending_rework(source):
+                        domain_error("rework_exceeded")
                 entry = MaterialEntry.objects.create(
                     job=job, material=material, created_by=actor,
                     **{key: values[key] for key in ("kind", "quantity", "unit", "note", "request_id", "scrap_reason")},
                 )
+                if source:
+                    from .models import ReworkResolution
+                    ReworkResolution.objects.create(source=source, output=entry)
             else:
                 try:
                     entry = MaterialEntry.objects.get(pk=entry_id, job=job)
@@ -129,6 +144,11 @@ def mutate(request, pk, values, entry_id=None):
                     raise NotFound() from None
                 if MaterialVoid.objects.filter(entry=entry).exists():
                     raise Conflict(code="already_voided")
+                if entry.resolutions.filter(output__void__isnull=True).exists():
+                    raise Conflict(code="rework_has_resolutions")
+                from inventory.models import StockMovement
+                if StockMovement.objects.filter(issue=entry).exists():
+                    raise Conflict(code="inventory_consumption_protected")
                 # Preserve inventory provenance: explicitly void the inventory lot first.
                 from inventory.models import InventoryEvent, OffcutLot
                 lot = OffcutLot.objects.filter(source=entry).first()

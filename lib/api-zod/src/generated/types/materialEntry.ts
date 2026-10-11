@@ -15,6 +15,10 @@ export interface MaterialEntry {
   material_id: number;
   kind: MaterialEntryKind;
   quantity: string;
+  /** @nullable */
+  pending_rework?: string | null;
+  /** @nullable */
+  resolves_rework_id?: number | null;
   unit: MaterialEntryUnit;
   note: string;
   scrap_reason: string;

@@ -105,8 +105,9 @@ class InventoryTests(TransactionTestCase):
 
     def test_roles_and_cancelled_source(self):
         source = self.offcut()
-        self.assertEqual(self.register(source, client=self.operator).status_code, 403)
-        lot = self.register(source, client=self.supervisor).json()["id"]
+        registered = self.register(source, client=self.operator)
+        self.assertEqual(registered.status_code, 201)
+        lot = registered.json()["id"]
         self.assertEqual(self.operator.get(f"/api/v1/inventory/{lot}").status_code, 200)
         self.assertEqual(self.correct(lot, client=self.operator).status_code, 403)
         self.assertEqual(self.correct(lot, client=self.supervisor).status_code, 200)
@@ -120,7 +121,7 @@ class InventoryTests(TransactionTestCase):
         self.job.save()
         self.assertEqual(self.register(source).status_code, 409)
 
-    def test_reuse_and_partial_quantities_always_blocked(self):
+    def test_legacy_incomplete_movement_requests_rejected(self):
         lot = self.register().json()["id"]
         before = self.current()
         for action in ("reserve", "consume", "release"):
@@ -129,7 +130,7 @@ class InventoryTests(TransactionTestCase):
                     response = client.post(f"/api/v1/inventory/{lot}/{action}",
                                            {"quantity": qty, "target_job_id": self.job.pk},
                                            content_type="application/json")
-                    self.assertEqual(response.status_code, 403 if client == self.operator else 409)
+                    self.assertEqual(response.status_code, 403 if client == self.operator else 400)
         self.assertEqual(self.current(), before)
         self.assertEqual(InventoryEvent.objects.count(), 1)
         self.assertEqual(self.manager.get(f"/api/v1/inventory/{lot}").json()["remaining"], "0.123")

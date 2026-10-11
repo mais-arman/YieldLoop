@@ -36,10 +36,13 @@ import type {
   GetCuttingHistoryParams,
   GetJobComparisonParams,
   GetJobMaterialsParams,
+  GetPackagingDesignHistoryParams,
   GetReportOverviewParams,
   HealthStatus,
   InventoryInput,
   InventoryLot,
+  InventoryMovementInput,
+  InventoryMovementPage,
   InventoryPage,
   InventoryVoidInput,
   JobComparison,
@@ -48,8 +51,10 @@ import type {
   JobPage,
   JobUpdate,
   ListCuttingPlansParams,
+  ListInventoryMovementsParams,
   ListInventoryParams,
   ListMaterialsParams,
+  ListPackagingDesignsParams,
   ListProductionJobsParams,
   Material,
   MaterialEntryInput,
@@ -60,6 +65,11 @@ import type {
   ModifyEmployeeBody,
   PackagingCatalogue,
   PackagingDesign,
+  PackagingDesignHistoryPage,
+  PackagingDesignRecord,
+  PackagingDesignRecordPage,
+  PackagingDesignSaveInput,
+  PackagingDesignUpdateInput,
   PackagingPrompt,
   PackagingProposal,
   PackagingValidation,
@@ -1449,24 +1459,37 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getVoidInventoryLotMutationOptions(options));
     }
 
-export const getBlockedInventoryReuseUrl = (id: number,
-    action: 'reserve' | 'release' | 'consume',) => {
+export const getReserveInventoryLotUrl = (id: number,) => {
 
 
 
 
-  return `/api/v1/inventory/${id}/${action}`
+  return `/api/v1/inventory/${id}/reserve`
 }
 
-export const blockedInventoryReuse = async (id: number,
-    action: 'reserve' | 'release' | 'consume', options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+export const reserveInventoryLot = async (id: number,
+    inventoryMovementInput: InventoryMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryLot> => {
 
-  return customFetch<unknown>(getBlockedInventoryReuseUrl(id,action),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryLot>(getReserveInventoryLotUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventoryMovementInput)
   }
 );}
 
@@ -1474,13 +1497,13 @@ export const blockedInventoryReuse = async (id: number,
 
 
 
-export const getBlockedInventoryReuseMutationKey = () => ['blockedInventoryReuse'] as const;
+export const getReserveInventoryLotMutationKey = () => ['reserveInventoryLot'] as const;
 
-export const getBlockedInventoryReuseMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof blockedInventoryReuse>>, TError,BlockedInventoryReuseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof blockedInventoryReuse>>, TError,BlockedInventoryReuseMutationVariables, TContext> => {
+export const getReserveInventoryLotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reserveInventoryLot>>, TError,ReserveInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reserveInventoryLot>>, TError,ReserveInventoryLotMutationVariables, TContext> => {
 
-const mutationKey = getBlockedInventoryReuseMutationKey();
+const mutationKey = getReserveInventoryLotMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1490,10 +1513,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof blockedInventoryReuse>>, BlockedInventoryReuseMutationVariables> = (props) => {
-          const {id,action} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reserveInventoryLot>>, ReserveInventoryLotMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  blockedInventoryReuse(id,action,requestOptions)
+          return  reserveInventoryLot(id,data,requestOptions)
         }
 
 
@@ -1503,21 +1526,667 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type BlockedInventoryReuseMutationResult = NonNullable<Awaited<ReturnType<typeof blockedInventoryReuse>>>
+    export type ReserveInventoryLotMutationResult = NonNullable<Awaited<ReturnType<typeof reserveInventoryLot>>>
+    export type ReserveInventoryLotMutationBody = BodyType<InventoryMovementInput>
+    export type ReserveInventoryLotMutationError = ErrorType<void>
+    export type ReserveInventoryLotMutationVariables = {id: number;data: BodyType<InventoryMovementInput>}
 
-    export type BlockedInventoryReuseMutationError = ErrorType<void>
-    export type BlockedInventoryReuseMutationVariables = {id: number;action: 'reserve' | 'release' | 'consume'}
-
-    export const useBlockedInventoryReuse = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof blockedInventoryReuse>>, TError,BlockedInventoryReuseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+    export const useReserveInventoryLot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reserveInventoryLot>>, TError,ReserveInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof blockedInventoryReuse>>,
+        Awaited<ReturnType<typeof reserveInventoryLot>>,
         TError,
-        BlockedInventoryReuseMutationVariables,
+        ReserveInventoryLotMutationVariables,
         TContext
       > => {
-      return useMutation(getBlockedInventoryReuseMutationOptions(options));
+      return useMutation(getReserveInventoryLotMutationOptions(options));
     }
+
+export const getReleaseInventoryLotUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/inventory/${id}/release`
+}
+
+export const releaseInventoryLot = async (id: number,
+    inventoryMovementInput: InventoryMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryLot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryLot>(getReleaseInventoryLotUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventoryMovementInput)
+  }
+);}
+
+
+
+
+
+export const getReleaseInventoryLotMutationKey = () => ['releaseInventoryLot'] as const;
+
+export const getReleaseInventoryLotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseInventoryLot>>, TError,ReleaseInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof releaseInventoryLot>>, TError,ReleaseInventoryLotMutationVariables, TContext> => {
+
+const mutationKey = getReleaseInventoryLotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof releaseInventoryLot>>, ReleaseInventoryLotMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  releaseInventoryLot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReleaseInventoryLotMutationResult = NonNullable<Awaited<ReturnType<typeof releaseInventoryLot>>>
+    export type ReleaseInventoryLotMutationBody = BodyType<InventoryMovementInput>
+    export type ReleaseInventoryLotMutationError = ErrorType<void>
+    export type ReleaseInventoryLotMutationVariables = {id: number;data: BodyType<InventoryMovementInput>}
+
+    export const useReleaseInventoryLot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseInventoryLot>>, TError,ReleaseInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof releaseInventoryLot>>,
+        TError,
+        ReleaseInventoryLotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReleaseInventoryLotMutationOptions(options));
+    }
+
+export const getConsumeInventoryLotUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/inventory/${id}/consume`
+}
+
+export const consumeInventoryLot = async (id: number,
+    inventoryMovementInput: InventoryMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryLot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryLot>(getConsumeInventoryLotUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventoryMovementInput)
+  }
+);}
+
+
+
+
+
+export const getConsumeInventoryLotMutationKey = () => ['consumeInventoryLot'] as const;
+
+export const getConsumeInventoryLotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consumeInventoryLot>>, TError,ConsumeInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof consumeInventoryLot>>, TError,ConsumeInventoryLotMutationVariables, TContext> => {
+
+const mutationKey = getConsumeInventoryLotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof consumeInventoryLot>>, ConsumeInventoryLotMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  consumeInventoryLot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConsumeInventoryLotMutationResult = NonNullable<Awaited<ReturnType<typeof consumeInventoryLot>>>
+    export type ConsumeInventoryLotMutationBody = BodyType<InventoryMovementInput>
+    export type ConsumeInventoryLotMutationError = ErrorType<void>
+    export type ConsumeInventoryLotMutationVariables = {id: number;data: BodyType<InventoryMovementInput>}
+
+    export const useConsumeInventoryLot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consumeInventoryLot>>, TError,ConsumeInventoryLotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof consumeInventoryLot>>,
+        TError,
+        ConsumeInventoryLotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConsumeInventoryLotMutationOptions(options));
+    }
+
+export const getListInventoryMovementsUrl = (id: number,
+    params?: ListInventoryMovementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/inventory/${id}/movements?${stringifiedParams}` : `/api/v1/inventory/${id}/movements`
+}
+
+export const listInventoryMovements = async (id: number,
+    params?: ListInventoryMovementsParams, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovementPage> => {
+
+  return customFetch<InventoryMovementPage>(getListInventoryMovementsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInventoryMovementsQueryKey = (id: number,
+    params?: ListInventoryMovementsParams,) => {
+    return [
+    `/api/v1/inventory/${id}/movements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListInventoryMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<unknown>>(id: number,
+    params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryMovementsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventoryMovements>>> = ({ signal }) => listInventoryMovements(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInventoryMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryMovements>>>
+export type ListInventoryMovementsQueryError = ErrorType<unknown>
+
+
+
+export function useListInventoryMovements<TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<unknown>>(
+ id: number,
+    params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInventoryMovementsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPackagingDesignsUrl = (params?: ListPackagingDesignsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/packaging/designs?${stringifiedParams}` : `/api/v1/packaging/designs`
+}
+
+export const listPackagingDesigns = async (params?: ListPackagingDesignsParams, options?: Parameters<typeof customFetch>[1]): Promise<PackagingDesignRecordPage> => {
+
+  return customFetch<PackagingDesignRecordPage>(getListPackagingDesignsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPackagingDesignsQueryKey = (params?: ListPackagingDesignsParams,) => {
+    return [
+    `/api/v1/packaging/designs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPackagingDesignsQueryOptions = <TData = Awaited<ReturnType<typeof listPackagingDesigns>>, TError = ErrorType<unknown>>(params?: ListPackagingDesignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPackagingDesigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPackagingDesignsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPackagingDesigns>>> = ({ signal }) => listPackagingDesigns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPackagingDesigns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPackagingDesignsQueryResult = NonNullable<Awaited<ReturnType<typeof listPackagingDesigns>>>
+export type ListPackagingDesignsQueryError = ErrorType<unknown>
+
+
+
+export function useListPackagingDesigns<TData = Awaited<ReturnType<typeof listPackagingDesigns>>, TError = ErrorType<unknown>>(
+ params?: ListPackagingDesignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPackagingDesigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPackagingDesignsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePackagingDesignUrl = () => {
+
+
+
+
+  return `/api/v1/packaging/designs`
+}
+
+export const createPackagingDesign = async (packagingDesignSaveInput: PackagingDesignSaveInput, options?: Parameters<typeof customFetch>[1]): Promise<PackagingDesignRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PackagingDesignRecord>(getCreatePackagingDesignUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(packagingDesignSaveInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePackagingDesignMutationKey = () => ['createPackagingDesign'] as const;
+
+export const getCreatePackagingDesignMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPackagingDesign>>, TError,CreatePackagingDesignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPackagingDesign>>, TError,CreatePackagingDesignMutationVariables, TContext> => {
+
+const mutationKey = getCreatePackagingDesignMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPackagingDesign>>, CreatePackagingDesignMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPackagingDesign(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePackagingDesignMutationResult = NonNullable<Awaited<ReturnType<typeof createPackagingDesign>>>
+    export type CreatePackagingDesignMutationBody = BodyType<PackagingDesignSaveInput>
+    export type CreatePackagingDesignMutationError = ErrorType<unknown>
+    export type CreatePackagingDesignMutationVariables = {data: BodyType<PackagingDesignSaveInput>}
+
+    export const useCreatePackagingDesign = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPackagingDesign>>, TError,CreatePackagingDesignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPackagingDesign>>,
+        TError,
+        CreatePackagingDesignMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePackagingDesignMutationOptions(options));
+    }
+
+export const getGetPackagingDesignUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/packaging/designs/${id}`
+}
+
+export const getPackagingDesign = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<PackagingDesignRecord> => {
+
+  return customFetch<PackagingDesignRecord>(getGetPackagingDesignUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPackagingDesignQueryKey = (id: number,) => {
+    return [
+    `/api/v1/packaging/designs/${id}`
+    ] as const;
+    }
+
+
+export const getGetPackagingDesignQueryOptions = <TData = Awaited<ReturnType<typeof getPackagingDesign>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPackagingDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPackagingDesignQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPackagingDesign>>> = ({ signal }) => getPackagingDesign(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPackagingDesign>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPackagingDesignQueryResult = NonNullable<Awaited<ReturnType<typeof getPackagingDesign>>>
+export type GetPackagingDesignQueryError = ErrorType<unknown>
+
+
+
+export function useGetPackagingDesign<TData = Awaited<ReturnType<typeof getPackagingDesign>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPackagingDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPackagingDesignQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePackagingDesignUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/packaging/designs/${id}`
+}
+
+export const updatePackagingDesign = async (id: number,
+    packagingDesignUpdateInput: PackagingDesignUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<PackagingDesignRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PackagingDesignRecord>(getUpdatePackagingDesignUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(packagingDesignUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdatePackagingDesignMutationKey = () => ['updatePackagingDesign'] as const;
+
+export const getUpdatePackagingDesignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePackagingDesign>>, TError,UpdatePackagingDesignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePackagingDesign>>, TError,UpdatePackagingDesignMutationVariables, TContext> => {
+
+const mutationKey = getUpdatePackagingDesignMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePackagingDesign>>, UpdatePackagingDesignMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePackagingDesign(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePackagingDesignMutationResult = NonNullable<Awaited<ReturnType<typeof updatePackagingDesign>>>
+    export type UpdatePackagingDesignMutationBody = BodyType<PackagingDesignUpdateInput>
+    export type UpdatePackagingDesignMutationError = ErrorType<void>
+    export type UpdatePackagingDesignMutationVariables = {id: number;data: BodyType<PackagingDesignUpdateInput>}
+
+    export const useUpdatePackagingDesign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePackagingDesign>>, TError,UpdatePackagingDesignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePackagingDesign>>,
+        TError,
+        UpdatePackagingDesignMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdatePackagingDesignMutationOptions(options));
+    }
+
+export const getGetPackagingDesignHistoryUrl = (id: number,
+    params?: GetPackagingDesignHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/packaging/designs/${id}/history?${stringifiedParams}` : `/api/v1/packaging/designs/${id}/history`
+}
+
+export const getPackagingDesignHistory = async (id: number,
+    params?: GetPackagingDesignHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<PackagingDesignHistoryPage> => {
+
+  return customFetch<PackagingDesignHistoryPage>(getGetPackagingDesignHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPackagingDesignHistoryQueryKey = (id: number,
+    params?: GetPackagingDesignHistoryParams,) => {
+    return [
+    `/api/v1/packaging/designs/${id}/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPackagingDesignHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getPackagingDesignHistory>>, TError = ErrorType<unknown>>(id: number,
+    params?: GetPackagingDesignHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPackagingDesignHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPackagingDesignHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPackagingDesignHistory>>> = ({ signal }) => getPackagingDesignHistory(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPackagingDesignHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPackagingDesignHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getPackagingDesignHistory>>>
+export type GetPackagingDesignHistoryQueryError = ErrorType<unknown>
+
+
+
+export function useGetPackagingDesignHistory<TData = Awaited<ReturnType<typeof getPackagingDesignHistory>>, TError = ErrorType<unknown>>(
+ id: number,
+    params?: GetPackagingDesignHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPackagingDesignHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPackagingDesignHistoryQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListMaterialsUrl = (params?: ListMaterialsParams,) => {
   const normalizedParams = new URLSearchParams();

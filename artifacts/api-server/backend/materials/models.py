@@ -48,6 +48,7 @@ class MaterialEntry(ImmutableRecord):
         GOOD = "good", "Good output"
         SCRAP = "scrap", "Scrap"
         OFFCUT = "offcut", "Reusable offcuts"
+        REWORK = "rework", "Pending rework"
 
     job = models.ForeignKey("jobs.ProductionJob", on_delete=models.PROTECT, related_name="material_entries")
     material = models.ForeignKey(Material, on_delete=models.PROTECT)
@@ -67,7 +68,7 @@ class MaterialEntry(ImmutableRecord):
             models.UniqueConstraint(fields=["job", "request_id"], name="entry_request_unique"),
             models.CheckConstraint(condition=models.Q(quantity__gt=0), name="entry_positive_qty"),
             models.CheckConstraint(condition=models.Q(unit="kg"), name="entry_kg_only"),
-            models.CheckConstraint(condition=models.Q(kind__in=["issue", "good", "scrap", "offcut"]), name="entry_valid_kind"),
+            models.CheckConstraint(condition=models.Q(kind__in=["issue", "good", "scrap", "offcut", "rework"]), name="entry_valid_kind"),
             models.CheckConstraint(condition=models.Q(kind="scrap") | models.Q(scrap_reason=""), name="entry_scrap_reason_kind"),
         )
 
@@ -101,6 +102,7 @@ class Reconciliation(ImmutableRecord):
     good = models.DecimalField(max_digits=24, decimal_places=3)
     scrap = models.DecimalField(max_digits=24, decimal_places=3)
     offcut = models.DecimalField(max_digits=24, decimal_places=3)
+    pending_rework = models.DecimalField(max_digits=24, decimal_places=3, default=0)
     accounted = models.DecimalField(max_digits=24, decimal_places=3)
     variance = models.DecimalField(max_digits=24, decimal_places=3)
     yield_rate = models.DecimalField(max_digits=28, decimal_places=3, null=True, blank=True)
@@ -112,6 +114,13 @@ class Reconciliation(ImmutableRecord):
             models.UniqueConstraint(fields=["job", "revision"], name="reconciliation_revision_unique"),
             models.CheckConstraint(condition=models.Q(revision__gte=1), name="reconciliation_positive_revision"),
             models.CheckConstraint(condition=models.Q(action__in=["record", "void"]), name="reconciliation_action"),
-            models.CheckConstraint(condition=models.Q(accounted=models.F("good") + models.F("scrap") + models.F("offcut")), name="reconciliation_accounted"),
+            models.CheckConstraint(condition=models.Q(pending_rework__gte=0), name="reconciliation_pending_nonnegative"),
+            models.CheckConstraint(condition=models.Q(accounted=models.F("good") + models.F("scrap") + models.F("offcut") + models.F("pending_rework")), name="reconciliation_accounted"),
             models.CheckConstraint(condition=models.Q(variance=models.F("issued") - models.F("accounted")), name="reconciliation_variance"),
         )
+
+
+class ReworkResolution(ImmutableRecord):
+    """An output consumes pending disposition; voiding output restores pending."""
+    source = models.ForeignKey(MaterialEntry, on_delete=models.PROTECT, related_name="resolutions")
+    output = models.OneToOneField(MaterialEntry, on_delete=models.PROTECT, related_name="rework_resolution")

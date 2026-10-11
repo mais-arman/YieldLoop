@@ -52,7 +52,8 @@ class CoreTests(TransactionTestCase):
     def test_comparison_sources_categories_and_permissions(self):
         a, b = self.seed()
         url = f"/api/v1/reports/comparison?left={a.pk}&right={b.pk}"
-        for client in (self.manager, self.supervisor, self.operator):
+        self.assertEqual(self.operator.get(url).status_code, 403)
+        for client in (self.manager, self.supervisor):
             result = client.get(url)
             self.assertEqual(result.status_code, 200)
             data = result.json()
@@ -67,7 +68,7 @@ class CoreTests(TransactionTestCase):
         self.assertFalse(self.manager.get(url).json()["same_machine"])
         a.status = "draft"
         a.save()
-        self.assertEqual(self.operator.get(url).status_code, 404)
+        self.assertEqual(self.operator.get(url).status_code, 403)
         self.assertEqual(self.manager.get(f"/api/v1/reports/comparison?left={a.pk}&right={a.pk}").status_code, 400)
 
     def test_closing_all_roles_and_immutable_completed_jobs(self):

@@ -11,7 +11,7 @@ audits, cutting safeguards and development database protections remain authorita
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- Do not apply migrations or run Drizzle schema pushes without separate approval.
+- Apply Django migrations only with explicit approval and verified development/test targets. Never run Drizzle schema pushes.
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
@@ -65,6 +65,12 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 
 ## Gotchas
 
+- The integrated pilot brief supersedes earlier foundation-only scope: backend
+  Reports/Comparison now exclude Operators; Operators may register authorized
+  offcuts; Supervisors/Managers reserve/release/consume recorded stock with linked
+  receiving-job issues. Rework is a pending disposition with traceable resolution.
+  See docs/integrated-pilot.md. No production write enablement or deployment.
+
 - Root README describes production configuration gates. Do not publish as production-ready.
 - The connection is intentionally read-only in Phase 1.
 - Never commit credentials or log database exception details.
@@ -74,7 +80,8 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
   open drafts/edit open-job notes. Operators see Open jobs only and, with explicit
   user approval, record/void production and close exactly balanced Open jobs.
   Material catalogue selection is available to all ready roles; catalogue creation
-  and job creation remain Manager-only. Inventory mutations remain Supervisor/Manager.
+  and job creation remain Manager-only. Inventory movements remain Supervisor/Manager;
+  Operators may register offcuts from their authorized Open jobs.
   Completed and cancelled jobs are read-only; cancellation remains Manager-only.
 
 ## Pointers

@@ -66,7 +66,7 @@ class ReportTests(TransactionTestCase):
         lot = self.lot()
         before = self.report(material_id=self.material.pk)
         expected = {"issued": "1200.000", "good": "900.000", "scrap": "240.000", "offcut": "60.000",
-                    "accounted": "1200.000", "variance": "0.000", "yield_rate": "75.000",
+                    "pending_rework": "0.000", "accounted": "1200.000", "variance": "0.000", "yield_rate": "75.000",
                     "scrap_rate": "20.000", "offcut_rate": "5.000"}
         self.assertEqual(before["production"], expected)
         row = before["jobs"]["results"][0]["reconciliation"]
@@ -151,19 +151,16 @@ class ReportTests(TransactionTestCase):
         self.new_job("draft")
         cancelled = self.new_job("cancelled")
         ProductionJob.objects.filter(pk=self.job.pk).update(status="cancelled")
-        operator = self.report(self.operator)
-        self.assertEqual(operator["job_count"], 0)
-        self.assertEqual(operator["lots"]["count"], 0)
-        self.assertEqual(operator["inventory"]["available"]["count"], 0)
-        self.assertEqual(self.operator.get("/api/v1/reports/overview", {"material_id": self.material.pk}).status_code, 404)
-        self.assertEqual(self.report(self.operator, status="cancelled")["job_count"], 0)
+        for params in ({}, {"material_id": self.material.pk}, {"status": "cancelled"}):
+            self.assertEqual(self.operator.get("/api/v1/reports/overview", params).status_code, 403)
         for client in (self.manager, self.supervisor):
             result = self.report(client)
             self.assertEqual(result["job_counts"], {"draft": 1, "open": 0, "cancelled": 2, "completed": 0})
             self.assertEqual(result["lots"]["count"], 1)
             self.assertIn(cancelled.pk, [row["id"] for row in result["jobs"]["results"]])
         ProductionJob.objects.filter(pk=self.job.pk).update(status="open")
-        allowed = self.report(self.operator, material_id=self.material.pk)
+        self.assertEqual(self.operator.get("/api/v1/reports/overview", {"material_id": self.material.pk}).status_code, 403)
+        allowed = self.report(self.supervisor, material_id=self.material.pk)
         self.assertEqual(allowed["job_count"], 1)
         for row in allowed["jobs"]["results"]:
             self.assertEqual(self.operator.get(f"/api/v1/jobs/{row['id']}").status_code, 200)

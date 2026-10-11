@@ -58,7 +58,7 @@ const S = {
     attVariance: 'Unaccounted material {v} kg', attNegVariance: 'Accounted exceeds issued by {v} kg', attUnmeasured: 'No reconciliation yet',
     allClear: 'Nothing flagged in these jobs.', allClearSub: 'Every listed job is reconciled with zero variance.',
     recent: 'Jobs in this cohort', viewAll: 'All jobs', openJob: 'Open job', openCutting: 'Cutting Studio',
-    colIssued: 'Issued', colGood: 'Good', colScrap: 'Scrap', colOffcut: 'Offcut', colVariance: 'Variance', colYield: 'Yield', colActions: '',
+    colIssued: 'Issued', colGood: 'Good', colScrap: 'Scrap', colOffcut: 'Offcut', colRework: 'Rework', colVariance: 'Variance', colYield: 'Yield', colActions: '',
     unitsNote: 'All quantities in kg. Variance is unaccounted material, never scrap. Rates show Unavailable when nothing was issued.',
   },
   ar: {
@@ -96,7 +96,7 @@ const S = {
     attVariance: 'مادة غير محتسبة {v} كغ', attNegVariance: 'المحتسب يزيد على المصروف بمقدار {v} كغ', attUnmeasured: 'لا توجد تسوية بعد',
     allClear: 'لا شيء مُعلَّم في هذه الأوامر.', allClearSub: 'كل أمر مدرج مُسوّى بفرق صفري.',
     recent: 'أوامر هذه المجموعة', viewAll: 'كل الأوامر', openJob: 'فتح الأمر', openCutting: 'استوديو القص',
-    colIssued: 'المصروف', colGood: 'الجيد', colScrap: 'الهالك', colOffcut: 'القصاصات', colVariance: 'الفرق', colYield: 'المردود', colActions: '',
+    colIssued: 'المصروف', colGood: 'الجيد', colScrap: 'الهالك', colOffcut: 'القصاصات', colRework: 'إعادة تشغيل', colVariance: 'الفرق', colYield: 'المردود', colActions: '',
     unitsNote: 'كل الكميات بالكيلوغرام. الفرق مادة غير محتسبة وليس هالكًا. تظهر النسب غير متاحة عند عدم صرف أي مادة.',
   },
 };
@@ -104,8 +104,8 @@ type SKey = keyof typeof S.en;
 
 
 const MEASURE_LABEL: Record<Lang, Record<string, string>> = {
-  en: { issued: 'Issued', good: 'Good', scrap: 'Scrap', offcut: 'Offcut', accounted: 'Accounted', variance: 'Variance', yield_rate: 'Yield', scrap_rate: 'Scrap rate', offcut_rate: 'Offcut rate' },
-  ar: { issued: 'المصروف', good: 'الجيد', scrap: 'الهالك', offcut: 'القصاصات', accounted: 'المحتسب', variance: 'الفرق', yield_rate: 'المردود', scrap_rate: 'نسبة الهالك', offcut_rate: 'نسبة القصاصات' },
+  en: { issued: 'Issued', good: 'Good', scrap: 'Scrap', offcut: 'Offcut', pending_rework: 'Pending rework', accounted: 'Accounted', variance: 'Variance', yield_rate: 'Yield', scrap_rate: 'Scrap rate', offcut_rate: 'Offcut rate' },
+  ar: { issued: 'المصروف', good: 'الجيد', scrap: 'الهالك', offcut: 'القصاصات', pending_rework: 'إعادة تشغيل معلّقة', accounted: 'المحتسب', variance: 'الفرق', yield_rate: 'المردود', scrap_rate: 'نسبة الهالك', offcut_rate: 'نسبة القصاصات' },
 };
 
 function useS() {
@@ -187,11 +187,12 @@ function MeasureGrid({ m, compact }: { m: ReportMeasures; compact?: boolean }) {
     </div>
   );
   return (
-    <dl className={cn('grid gap-2', compact ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3')}>
+    <dl className={cn('grid gap-2', compact ? 'grid-cols-3 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-3')}>
       {cell('issued', <Kg v={m.issued} />, true)}
       {cell('good', <Kg v={m.good} />)}
       {cell('scrap', <Kg v={m.scrap} />)}
       {cell('offcut', <Kg v={m.offcut} />)}
+      {cell('pending_rework', <Kg v={m.pending_rework ?? '0'} />)}
       {cell('accounted', <Kg v={m.accounted} />)}
       {cell('variance', <Signed v={m.variance} />)}
       {cell('yield_rate', <Pct v={m.yield_rate} />)}
@@ -367,7 +368,7 @@ function JobsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p
             <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
               <tr>
                 {(['colJob', 'colStatus', 'colCreated', 'colMaterial'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-start font-medium">{s(k)}</th>)}
-                {(['colIssued', 'colGood', 'colScrap', 'colOffcut', 'colVariance', 'colYield'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-end font-medium">{s(k)}</th>)}
+                {(['colIssued', 'colGood', 'colScrap', 'colOffcut', 'colRework', 'colVariance', 'colYield'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-end font-medium">{s(k)}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -390,6 +391,7 @@ function JobsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p
                         <td className={num}><Kg v={r.good} /></td>
                         <td className={num}><Kg v={r.scrap} /></td>
                         <td className={num}><Kg v={r.offcut} /></td>
+                        <td className={num}><Kg v={r.pending_rework ?? '0'} /></td>
                         <td className={num}><Signed v={r.variance} /></td>
                         <td className={num}><Pct v={r.yield_rate} /></td>
                       </>
@@ -537,7 +539,7 @@ const STATUS_COLOR: Record<string, string> = {
   open: 'hsl(var(--chart-1))', draft: 'hsl(var(--chart-5))', completed: 'hsl(var(--chart-2))', cancelled: 'hsl(var(--chart-4) / 0.7)',
 };
 const OUTPUT_COLOR: Record<OutputKey, string> = {
-  good: 'hsl(var(--chart-2))', scrap: 'hsl(var(--chart-4))', offcut: 'hsl(var(--chart-1))', variance: 'hsl(var(--chart-3))',
+  good: 'hsl(var(--chart-2))', scrap: 'hsl(var(--chart-4))', offcut: 'hsl(var(--chart-1))', pending_rework: 'hsl(280 40% 52%)', variance: 'hsl(var(--chart-3))',
 };
 
 function Help({ text }: { text: string }) {
@@ -610,7 +612,7 @@ function OutputChart({ data, onChoose }: { data: ReportOverview; onChoose: () =>
   const s = useS();
   const { dir } = useI18n();
   const rows = outputSlices(data.production);
-  const name: Record<OutputKey, string> = { good: ut('mGood'), scrap: ut('mScrap'), offcut: ut('mOffcut'), variance: ut('unaccounted') };
+  const name: Record<OutputKey, string> = { good: ut('mGood'), scrap: ut('mScrap'), offcut: ut('mOffcut'), pending_rework: ut('mRework'), variance: ut('unaccounted') };
   const p = data.production;
   return (
     <section className="yl-card min-w-0 p-5" aria-labelledby="h-output" data-testid="chart-material-output">
@@ -629,7 +631,7 @@ function OutputChart({ data, onChoose }: { data: ReportOverview; onChoose: () =>
           <Button size="sm" variant="outline" onClick={onChoose} data-testid="button-choose-material-chart">{ut('mChoose')}</Button>
         </div>
       ) : rows.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{ut('chOutputEmpty')}</p> : (
-        <div className="mt-3 h-48" role="img" aria-label={ut('chOutputSummary', { g: p.good, s: p.scrap, o: p.offcut, v: p.variance })}>
+        <div className="mt-3 h-48" role="img" aria-label={ut('chOutputSummary', { g: p.good, s: p.scrap, o: p.offcut, r: p.pending_rework ?? '0', v: p.variance })}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows.map((r) => ({ ...r, label: name[r.key] }))} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
               <CartesianGrid horizontal={false} stroke="hsl(var(--border))" />
@@ -742,6 +744,7 @@ function DashboardView({ user }: { user: Employee }) {
                 <Metric label={ut('mGood')} help={ut('hGood')} value={<KgValue v={data.production.good} />} />
                 <Metric label={ut('mScrap')} help={ut('hScrap')} value={<KgValue v={data.production.scrap} />} sub={data.production.scrap_rate != null ? <span dir="ltr">{data.production.scrap_rate}%</span> : undefined} />
                 <Metric label={ut('mOffcut')} help={ut('hOffcut')} value={<KgValue v={data.production.offcut} />} />
+                {Number(data.production.pending_rework ?? '0') > 0 && <Metric label={ut('mRework')} help={ut('hRework')} tone="warn" value={<KgValue v={data.production.pending_rework} />} />}
                 <Metric label={ut('mYield')} help={ut('hYield')} tone="good" value={<Pct v={data.production.yield_rate} />} />
               </>
             ) : (

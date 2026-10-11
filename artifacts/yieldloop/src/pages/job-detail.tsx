@@ -334,7 +334,7 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
 
       <div id="cutting" className={cn('scroll-mt-28', workFirst ? 'order-3' : 'order-2')}><CuttingLink jobId={job.id} /></div>
 
-      <div id="materials" className={cn('scroll-mt-28', workFirst ? 'order-1' : 'order-3')}><MaterialsSection job={job} canManageInventory={user.role !== 'cutting_operator'} /></div>
+      <div id="materials" className={cn('scroll-mt-28', workFirst ? 'order-1' : 'order-3')}><MaterialsSection job={job} /></div>
 
       {job.status === 'open' && (
         <div className="order-2"><ClosePanel jobId={job.id} dirty={dirty} busy={close.isPending || save.isPending || transition.isPending || reloading || stale} error={close.error} onClose={() => setConfirm('completed')} /></div>

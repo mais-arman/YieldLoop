@@ -54,6 +54,12 @@ class ManagerOnly(ReadyAccount):
         return request.user.role == User.Role.MANAGER
 
 
+class ReportingAccess(ReadyAccount):
+    def has_permission(self, request, view):
+        super().has_permission(request, view)
+        return request.user.role in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR)
+
+
 class Conflict(APIException):
     status_code = 409
     default_code = "conflict"

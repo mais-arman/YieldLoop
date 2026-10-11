@@ -1,8 +1,7 @@
 import { Pager } from '@/components/pager';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, ClipboardList, Plus, RotateCw, Scale, Scissors, Search } from 'lucide-react';
-import { useReportOverview } from '@/lib/reports';
+import { ArrowRight, ClipboardList, Plus, RotateCw, Scale, Scissors, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,7 +53,6 @@ export default function JobsPage({ user }: { user: Employee }) {
         )}
       </div>
 
-      {isOperator && <OpenReconciliation />}
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1 sm:max-w-sm">
@@ -160,45 +158,5 @@ export default function JobsPage({ user }: { user: Employee }) {
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * Operator reconciliation strip: one bounded, server-scoped report request
- * (first page of Open jobs, latest reconciliation each). No per-job requests.
- */
-function OpenReconciliation() {
-  const ut = useUt();
-  const q = useReportOverview({ status: 'open', page_size: 10 });
-  if (q.isPending) return <Skeleton className="mt-6 h-20 w-full rounded-lg" />;
-  if (q.isError || !q.data) return null;
-  const rows = q.data.jobs.results.flatMap((j): { job: typeof j; kind: 'unmeasured' | 'variance'; v: string }[] => {
-    const r = j.reconciliation;
-    if (!r) return [{ job: j, kind: 'unmeasured', v: '' }];
-    if (Number(r.variance) !== 0) return [{ job: j, kind: 'variance', v: r.variance }];
-    return [];
-  });
-  return (
-    <section className="mt-6 rounded-lg border bg-card" aria-labelledby="h-op-rec" data-testid="panel-open-reconciliation">
-      <header className="flex items-center gap-2 px-4 py-3">
-        {rows.length ? <AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" aria-hidden /> : <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" aria-hidden />}
-        <h2 id="h-op-rec" className="text-sm font-semibold">{rows.length ? ut('opRecTitle') : ut('opRecClear')}</h2>
-        {rows.length > 0 && <span className="font-mono text-xs text-muted-foreground">{rows.length}</span>}
-      </header>
-      {rows.length > 0 && (
-        <ul className="divide-y border-t">
-          {rows.map(({ job, kind, v }) => (
-            <li key={job.id}>
-              <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/40" data-testid={`link-op-rec-${job.id}`}>
-                <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(var(--amber))]')} aria-hidden />
-                <JobNumber value={jobLabel(job)} />
-                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{kind === 'unmeasured' ? ut('opRecUnmeasured') : ut('opRecVariance', { v })}</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

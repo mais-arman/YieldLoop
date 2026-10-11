@@ -23,12 +23,13 @@ import {
 import { useI18n, type MsgKey } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { scrapReasonText, useKt } from '@/lib/core';
+import { useFt } from '@/lib/feature-i18n';
 import { MaterialPicker } from './material-picker';
 import { RegisterOffcutDialog } from './register-offcut-dialog';
-import { isConflict, isUncertain, isZero, matErrorMessage, matFieldErrors, newRequestId, quantityError, signed } from './mat-utils';
+import { cmpDec, isConflict, isUncertain, isZero, matErrorMessage, matFieldErrors, newRequestId, quantityError, signed } from './mat-utils';
 
 type Kind = MaterialEntryInput['kind'];
-const KINDS: Kind[] = ['issue', 'good', 'scrap', 'offcut'];
+const KINDS: Kind[] = ['issue', 'good', 'scrap', 'offcut', 'rework'];
 type Refetch = () => Promise<{ data?: MaterialState; isError?: boolean }>;
 
 function Qty({ v, className }: { v: string; className?: string }) {
@@ -53,6 +54,7 @@ export function MaterialsSection({ job, canManageInventory = true }: { job: Prod
   const [formOpen, setFormOpen] = useState(false);
   const [voiding, setVoiding] = useState<MaterialEntry | null>(null);
   const [registering, setRegistering] = useState<MaterialEntry | null>(null);
+  const [resolving, setResolving] = useState<MaterialEntry | null>(null);
 
   // Job status/revision changed elsewhere: re-read material state (form inputs are preserved separately).
   const firstJobRev = useRef(true);
@@ -99,12 +101,15 @@ export function MaterialsSection({ job, canManageInventory = true }: { job: Prod
               {job.status === 'completed' ? kt('matReadOnlyCompleted') : job.status === 'cancelled' ? t('matReadOnlyCancelled') : job.status === 'draft' ? t('matReadOnlyDraft') : t('matReadOnlyOpen')}
             </p>
           )}
-          <Entries s={s} canVoid={s.permissions.record && !formOpen} onVoid={setVoiding} canRegister={canManageInventory && s.permissions.record && job.status === 'open' && !formOpen} onRegister={setRegistering} page={page} setPage={setPage} busy={q.isFetching || formOpen || !!voiding || !!registering} />
+          <Entries s={s} canVoid={s.permissions.record && !formOpen} onVoid={setVoiding} canRegister={canManageInventory && s.permissions.record && job.status === 'open' && !formOpen} onRegister={setRegistering} onResolve={setResolving} page={page} setPage={setPage} busy={q.isFetching || formOpen || !!voiding || !!registering || !!resolving} />
         </div>
       ) : null}
 
       {voiding && s && (
         <VoidDialog entry={voiding} state={s} jobId={job.id} refetch={refetch} onClose={() => setVoiding(null)} />
+      )}
+      {resolving && s && (
+        <ResolveDialog entry={resolving} state={s} jobId={job.id} refetch={refetch} onClose={() => setResolving(null)} />
       )}
       {registering && (
         <RegisterOffcutDialog entry={registering} jobId={job.id} onClose={() => setRegistering(null)} />
@@ -142,10 +147,12 @@ const KIND_TONE: Record<Kind, { chip: string; bar: string }> = {
   good: { chip: 'bg-[hsl(160_84%_30%/0.12)] text-[hsl(160_84%_22%)]', bar: 'bg-[hsl(160_70%_36%)]' },
   scrap: { chip: 'bg-destructive/10 text-destructive', bar: 'bg-destructive/80' },
   offcut: { chip: 'bg-[hsl(200_70%_45%/0.12)] text-[hsl(200_70%_30%)]', bar: 'bg-[hsl(200_65%_48%)]' },
+  rework: { chip: 'bg-[hsl(280_45%_45%/0.12)] text-[hsl(280_45%_32%)]', bar: 'bg-[hsl(280_40%_52%)]' },
 };
 
 function Summary({ s }: { s: MaterialState }) {
   const { t } = useI18n();
+  const ft = useFt();
   const fmt = useFormatDate();
   const sum = s.summary;
   if (!sum) return <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground" data-testid="text-no-summary">{t('matNoSummary')}</p>;
@@ -156,7 +163,9 @@ function Summary({ s }: { s: MaterialState }) {
   // Display-only proportions of issued; never written back. Variance stays its own segment.
   const issued = Number(sum.issued);
   const share = (v: string) => (issued > 0 ? Math.max(0, Math.min(100, (Number(v) / issued) * 100)) : 0);
-  const outputs: [Kind, MsgKey, string][] = [['good', 'matGood', sum.good], ['scrap', 'matScrap', sum.scrap], ['offcut', 'matOffcut', sum.offcut]];
+  const pending = sum.pending_rework ?? '0';
+  const hasPending = !isZero(pending);
+  const outputs: [Kind, string, string][] = [['good', t('matGood'), sum.good], ['scrap', t('matScrap'), sum.scrap], ['offcut', t('matOffcut'), sum.offcut], ['rework', ft('rwPending'), pending]];
   const kg = <span className="text-xs text-muted-foreground">{t('matUnitKg')}</span>;
   return (
     <div className="flex flex-col gap-3" data-testid="panel-summary">
@@ -174,10 +183,10 @@ function Summary({ s }: { s: MaterialState }) {
               {outputs.map(([k, , v]) => <span key={k} className={KIND_TONE[k].bar} style={{ width: `${share(v)}%` }} />)}
             </div>
           )}
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
             {outputs.map(([k, label, v]) => (
               <div key={k}>
-                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className={cn('h-2 w-2 rounded-full', KIND_TONE[k].bar)} aria-hidden />{t(label)}</dt>
+                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className={cn('h-2 w-2 rounded-full', KIND_TONE[k].bar)} aria-hidden />{label}</dt>
                 <dd className="mt-0.5 flex items-baseline gap-1" data-testid={`text-sum-${k}`}><Qty v={v} className="text-lg font-semibold" />{kg}</dd>
               </div>
             ))}
@@ -192,6 +201,9 @@ function Summary({ s }: { s: MaterialState }) {
           </dl>
         </div>
       </div>
+      {hasPending && (
+        <p className="flex items-start gap-2 rounded-md border border-[hsl(280_40%_52%/0.35)] bg-[hsl(280_40%_52%/0.06)] px-3 py-2 text-xs" role="status" data-testid="text-pending-rework"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(280_45%_40%)]" aria-hidden /><span><span className="font-medium">{ft('rwPending')}: <Qty v={pending} /> {t('matUnitKg')}.</span> {ft('rwPendingHint')} {ft('rwBlocksClose')}</span></p>
+      )}
       {zero ? (
         <p className="flex items-start gap-2 text-xs text-muted-foreground" data-testid="text-balanced"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{t('matBalanced')}</p>
       ) : (
@@ -217,6 +229,7 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
   const [note, setNote] = useState('');
   const [scrapReason, setScrapReason] = useState('');
   const kt = useKt();
+  const ft = useFt();
   const [touched, setTouched] = useState(false);
   const [reloading, setReloading] = useState(false);
   const reqId = useRef(newRequestId());
@@ -321,7 +334,7 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
 
       <fieldset className="flex flex-col gap-1.5" disabled={busy}>
         <legend className="mb-1.5 text-sm font-medium">{t('matKind')}</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="radiogroup" aria-label={t('matKind')}>
           {KINDS.map((k) => {
             const locked = firstEntry && k !== 'issue';
             const sel = (firstEntry ? 'issue' : kind) === k;
@@ -335,6 +348,7 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
           })}
         </div>
         {firstEntry && <p className="text-xs text-muted-foreground">{t('matFirstIssue')}</p>}
+        {!firstEntry && kind === 'rework' && <p className="text-xs text-muted-foreground" data-testid="text-rework-hint">{ft('rwKindHint')}</p>}
         <FieldError msg={fe.kind} />
       </fieldset>
 
@@ -376,8 +390,9 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
   );
 }
 
-function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, busy }: { s: MaterialState; canVoid: boolean; onVoid: (e: MaterialEntry) => void; canRegister: boolean; onRegister: (e: MaterialEntry) => void; page: number; setPage: (p: number) => void; busy: boolean }) {
+function Entries({ s, canVoid, onVoid, canRegister, onRegister, onResolve, page, setPage, busy }: { s: MaterialState; canVoid: boolean; onVoid: (e: MaterialEntry) => void; canRegister: boolean; onRegister: (e: MaterialEntry) => void; onResolve: (e: MaterialEntry) => void; page: number; setPage: (p: number) => void; busy: boolean }) {
   const kt = useKt();
+  const ft = useFt();
   const { t } = useI18n();
   const fmt = useFormatDate();
   const e = s.entries;
@@ -393,10 +408,12 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
         <div className="flex flex-col gap-4">
         {([['issue', e.results.filter((x) => x.kind === 'issue')], ['output', e.results.filter((x) => x.kind !== 'issue')]] as const).filter(([, list]) => list.length > 0).map(([grp, list]) => (
         <div key={grp} className="flex flex-col gap-1.5" data-testid={`group-entries-${grp}`}>
-        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{grp === 'issue' ? t('kind_issue') : `${t('kind_good')} · ${t('kind_scrap')} · ${t('kind_offcut')}`}</h4>
+        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{grp === 'issue' ? t('kind_issue') : `${t('kind_good')} · ${t('kind_scrap')} · ${t('kind_offcut')} · ${t('kind_rework')}`}</h4>
         <ul className="divide-y rounded-md border">
           {list.map((en) => {
             const v = en.void;
+            const pend = en.kind === 'rework' ? en.pending_rework ?? null : null;
+            const hasRes = pend !== null && cmpDec(pend, en.quantity) < 0;
             return (
               <li key={en.id} className={cn('flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:gap-4', v && 'bg-muted/30')} data-testid={`row-entry-${en.id}`}>
                 <div className="flex items-center gap-3 sm:w-48 sm:shrink-0">
@@ -409,6 +426,10 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
                     <p className={cn('mt-1 text-xs', !en.scrap_reason?.trim() && 'italic text-muted-foreground')} data-testid={`text-entry-scrap-reason-${en.id}`}>
                       <span className="font-medium not-italic text-foreground">{kt('scrapReason')}:</span> {scrapReasonText(en.scrap_reason, kt('unspecified'))}
                     </p>
+                  )}
+                  {en.resolves_rework_id != null && <p className="mt-1 font-medium text-[hsl(280_45%_32%)]" data-testid={`text-entry-resolves-${en.id}`}>{ft('rwResolves', { id: en.resolves_rework_id })}</p>}
+                  {pend !== null && !v && (
+                    <p className="mt-1" data-testid={`text-entry-pending-${en.id}`}>{isZero(pend) ? <span className="text-muted-foreground">{ft('rwResolved')}</span> : <><span className="text-muted-foreground">{ft('rwOutstanding')}:</span> <Qty v={pend} className="font-semibold" /> {t('matUnitKg')}</>}</p>
                   )}
                   {en.note && <p className={cn('mt-1 whitespace-pre-wrap break-words text-sm', v && 'text-muted-foreground line-through')}>{en.note}</p>}
                   {v && (
@@ -424,7 +445,11 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
                 {canRegister && en.kind === 'offcut' && (
                   <Button variant="outline" size="sm" onClick={() => onRegister(en)} disabled={busy} data-testid={`button-register-${en.id}`}>{t('invRegister')}</Button>
                 )}
-                {canVoid && (
+                {canVoid && pend !== null && !isZero(pend) && (
+                  <Button variant="outline" size="sm" onClick={() => onResolve(en)} disabled={busy} data-testid={`button-resolve-${en.id}`}>{ft('rwResolve')}</Button>
+                )}
+                {canVoid && hasRes && <span className="self-center text-[11px] text-muted-foreground" data-testid={`text-void-blocked-${en.id}`}>{ft('rwHasResolutions')}</span>}
+                {canVoid && !hasRes && (
                   <Button variant="ghost" size="sm" className="self-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => onVoid(en)} data-testid={`button-void-${en.id}`}>{t('matVoid')}</Button>
                 )}
                 </div>
@@ -507,6 +532,110 @@ function VoidDialog({ entry, state, jobId, refetch, onClose }: { entry: Material
             onClick={(ev) => { ev.preventDefault(); setTouched(true); if (!reason.trim() || busy || drift || conflict) return; m.mutate(); }}
             data-testid="button-confirm-void">
             {m.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}{m.isPending ? t('matVoiding') : t('matConfirmVoid')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function ResolveDialog({ entry, state, jobId, refetch, onClose }: { entry: MaterialEntry; state: MaterialState; jobId: number; refetch: Refetch; onClose: () => void }) {
+  const { t } = useI18n();
+  const ft = useFt();
+  const kt = useKt();
+  const { toast } = useToast();
+  const apply = useApplyState(jobId);
+  const base = useRef({ revision: state.revision, job_revision: state.job_revision });
+  const reqId = useRef(newRequestId());
+  const [outcome, setOutcome] = useState<'good' | 'scrap'>('good');
+  const [quantity, setQuantity] = useState(entry.pending_rework ?? '');
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [touched, setTouched] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [, force] = useState(0);
+  const pending = entry.pending_rework ?? '0';
+  const m = useMutation({
+    mutationFn: () => recordMaterialEntry(jobId, {
+      ...base.current, material_id: entry.material_id, kind: outcome, quantity: quantity.trim(), unit: 'kg', resolve_rework_id: entry.id,
+      ...(note.trim() ? { note: note.trim() } : {}), ...(outcome === 'scrap' ? { scrap_reason: reason.trim() } : {}), request_id: reqId.current,
+    }),
+    onSuccess: (s) => { apply(s); toast({ title: ft('rwDone') }); onClose(); },
+    onError: async (err) => {
+      if (err instanceof AuthError && err.code === 'duplicate_record') { const r = await refetch(); if (r.data) apply(r.data); onClose(); return; }
+      if (err instanceof AuthError) reqId.current = newRequestId();
+    },
+  });
+  const drift = state.revision !== base.current.revision || state.job_revision !== base.current.job_revision;
+  const conflict = isConflict(m.error);
+  const fe = matFieldErrors(m.error, t);
+  const fmtErr = quantityError(quantity, t);
+  const qErr = touched ? fmtErr ?? (cmpDec(quantity, pending) > 0 ? ft('rwExceeds', { v: pending }) : undefined) : undefined;
+  const rErr = touched && outcome === 'scrap' && !reason.trim() ? ft('rwScrapReasonReq') : reason.length > 160 ? kt('scrapReasonTooLong') : fe.scrap_reason;
+  const invalid = !!fmtErr || cmpDec(quantity || '0', pending) > 0 || (outcome === 'scrap' && (!reason.trim() || reason.length > 160)) || note.length > 1000;
+  const busy = m.isPending || reloading;
+  const loadLatest = async () => {
+    setReloading(true);
+    try { const r = await refetch(); if (r.data && !r.isError) { base.current = { revision: r.data.revision, job_revision: r.data.job_revision }; m.reset(); force((n) => n + 1); } }
+    finally { setReloading(false); }
+  };
+  return (
+    <AlertDialog open onOpenChange={(o) => { if (!o && !m.isPending) onClose(); }}>
+      <AlertDialogContent data-testid="dialog-resolve-rework">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{ft('rwResolveTitle', { id: entry.id })}</AlertDialogTitle>
+          <AlertDialogDescription>{ft('rwResolveDesc')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">{ft('rwOutstanding')}</span>
+          <span><Qty v={pending} className="font-semibold" /> <span className="text-xs text-muted-foreground">{t('matUnitKg')}</span></span>
+        </div>
+        {(drift || conflict) && (
+          <div className="rounded-md border border-[hsl(38_92%_50%/0.4)] bg-[hsl(38_92%_50%/0.08)] p-3" role="alert" data-testid="alert-resolve-stale">
+            <p className="text-sm font-semibold">{conflict ? matErrorMessage(m.error, t) : t('matDrift')}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t('matStaleDesc')}</p>
+            <Button type="button" size="sm" variant="outline" className="mt-2" onClick={loadLatest} disabled={reloading} data-testid="button-resolve-load-latest">
+              {reloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <RotateCw className="h-3.5 w-3.5" aria-hidden />}{t('loadLatest')}
+            </Button>
+          </div>
+        )}
+        {m.error && !conflict && !Object.keys(fe).length && <FormAlert message={matErrorMessage(m.error, t)} testId="error-resolve" />}
+        <fieldset className="flex flex-col gap-1.5" disabled={busy}>
+          <legend className="mb-1.5 text-sm font-medium">{ft('rwOutcome')}</legend>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={ft('rwOutcome')}>
+            {(['good', 'scrap'] as const).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={outcome === k} onClick={() => setOutcome(k)}
+                className={cn('rounded-md border px-3 py-2 text-sm font-medium transition-colors', outcome === k ? (k === 'good' ? 'border-[hsl(160_70%_36%)] bg-[hsl(160_84%_30%/0.1)] text-[hsl(160_84%_22%)]' : 'border-destructive bg-destructive/10 text-destructive') : 'hover:bg-muted/60')}
+                data-testid={`radio-outcome-${k}`}>{k === 'good' ? ft('rwGood') : ft('rwScrap')}</button>
+            ))}
+          </div>
+        </fieldset>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rw-qty">{t('matQuantity')}</Label>
+          <div className="relative max-w-xs">
+            <Input id="rw-qty" inputMode="decimal" dir="ltr" autoComplete="off" value={quantity} disabled={busy} onChange={(e) => setQuantity(e.target.value)} onBlur={() => setTouched(true)}
+              aria-invalid={!!(qErr || fe.quantity)} className="pe-10 font-mono" data-testid="input-resolve-quantity" />
+            <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{t('matUnitKg')}</span>
+          </div>
+          <FieldError msg={qErr ?? fe.quantity ?? fe.resolve_rework_id} />
+        </div>
+        {outcome === 'scrap' && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="rw-reason">{kt('scrapReason')}</Label>
+            <Input id="rw-reason" maxLength={200} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} onBlur={() => setTouched(true)} aria-invalid={!!rErr} data-testid="input-resolve-scrap-reason" />
+            <FieldError msg={rErr} />
+          </div>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rw-note">{t('matNote')} <span className="font-normal text-muted-foreground">({t('optional')})</span></Label>
+          <Textarea id="rw-note" rows={2} value={note} disabled={busy} onChange={(e) => setNote(e.target.value)} data-testid="input-resolve-note" />
+          <FieldError msg={note.length > 1000 ? t('noteTooLong') : fe.note ?? fe.non_field_errors} />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={m.isPending}>{t('cancel')}</AlertDialogCancel>
+          <AlertDialogAction disabled={busy || drift || conflict} data-testid="button-confirm-resolve"
+            onClick={(ev) => { ev.preventDefault(); setTouched(true); if (invalid || busy || drift || conflict) return; m.mutate(); }}>
+            {m.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}{m.isPending ? t('matRecording') : ft('rwResolve')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

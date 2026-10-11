@@ -14,4 +14,5 @@ export const MaterialEntryInputKind = {
   good: 'good',
   scrap: 'scrap',
   offcut: 'offcut',
+  rework: 'rework',
 } as const;

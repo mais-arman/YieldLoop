@@ -1,7 +1,7 @@
 """Authorized same-machine comparison from immutable recorded reconciliation."""
 from decimal import Decimal
 
-from accounts.security import ReadyAccount
+from accounts.security import ReadyAccount, ReportingAccess
 from accounts.serializers import StrictSerializer
 from accounts.views import ProtectedView
 from django.db import transaction
@@ -41,7 +41,7 @@ def source(job, actor):
 
 
 class ComparisonView(ProtectedView):
-    permission_classes = (IsAuthenticated, ReadyAccount)
+    permission_classes = (IsAuthenticated, ReportingAccess)
 
     @transaction.atomic
     def get(self, request):
@@ -54,7 +54,7 @@ class ComparisonView(ProtectedView):
         differences = None
         if same and comparable and left["summary"] and right["summary"]:
             differences = {}
-            for key in ("issued", "good", "scrap", "offcut", "variance", "yield_rate", "scrap_rate"):
+            for key in ("issued", "good", "scrap", "offcut", "pending_rework", "variance", "yield_rate", "scrap_rate"):
                 a, b = left["summary"][key], right["summary"][key]
                 differences[key] = format(Decimal(a) - Decimal(b), ".3f") if a is not None and b is not None else None
         return Response({"same_machine": same, "comparable_material": comparable,

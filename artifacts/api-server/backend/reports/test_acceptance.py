@@ -136,7 +136,7 @@ class MVPAcceptanceTests(TransactionTestCase):
         self.assertEqual(final["inventory"]["voided"]["original_quantity"], "60.000")
         self.assertEqual(self.overview(page_size=1)["jobs"]["results"][0]["id"], self.job.pk)
         self.assertEqual(self.overview(status="draft")["job_count"], 0)
-        self.assertEqual(self.overview(self.operator)["production"], final["production"])
+        self.assertEqual(self.operator.get("/api/v1/reports/overview").status_code, 403)
         self.job.refresh_from_db()
         cancelled = self.manager.patch(f"/api/v1/jobs/{self.job.pk}",
                                        {"revision": self.job.revision, "status": "cancelled"},
@@ -151,7 +151,7 @@ class MVPAcceptanceTests(TransactionTestCase):
         self.open_job()
         for client in (self.operator,):
             self.assertEqual(self.add(client=client).status_code, 201)
-            self.assertEqual(self.register(source=999, client=client).status_code, 403)
+            self.assertEqual(self.register(source=999, client=client).status_code, 404)
         self.record(quantity="100")
         source = self.record("offcut", "10")["entries"]["results"][0]["id"]
         other = ProductionJob.objects.create(title="Other source", status="open", created_by=self.users["manager"])

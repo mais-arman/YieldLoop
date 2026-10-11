@@ -11,7 +11,7 @@ export function jobStatusSlices(counts: ReportOverviewJobCounts): { slices: Stat
   return { slices, total: slices.reduce((a, s) => a + s.count, 0) };
 }
 
-export type OutputKey = 'good' | 'scrap' | 'offcut' | 'variance';
+export type OutputKey = 'good' | 'scrap' | 'offcut' | 'pending_rework' | 'variance';
 export type OutputSlice = { key: OutputKey; value: number; raw: string };
 
 /**
@@ -23,6 +23,9 @@ export function outputSlices(production: ReportMeasures | null): OutputSlice[] |
   if (!production) return null;
   if (!(Number(production.issued) > 0)) return [];
   const rows: OutputSlice[] = (['good', 'scrap', 'offcut'] as const).map((key) => ({ key, value: Number(production[key]) || 0, raw: production[key] }));
+  // Pending rework is accounted but neither good nor scrap; only drawn when present.
+  const pr = production.pending_rework ?? '0';
+  if (Number(pr) > 0) rows.push({ key: 'pending_rework', value: Number(pr), raw: pr });
   const v = Number(production.variance);
   if (v > 0) rows.push({ key: 'variance', value: v, raw: production.variance });
   return rows;

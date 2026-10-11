@@ -4,3 +4,4 @@
 - [Advisory and packaging boundaries](advisory-and-packaging-boundaries.md) — no unproven AI causes; 3D concepts are not validated manufacturing dielines.
 - [WebGL browser verification](webgl-browser-verification.md) — disabled WebGL and offscreen crops can create false rendering failures; verify interactions separately.
 - [Core challenge boundaries](core-challenge-boundaries.md) — approved Operator recording/closing, honest unspecified demo data, and optional 3D scope.
+- [Non-destructive test isolation](non-destructive-test-isolation.md) — real PostgreSQL concurrency without database reset/truncate; isolated schemas and fail-closed identity checks.

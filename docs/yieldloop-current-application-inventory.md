@@ -1,5 +1,10 @@
 # YieldLoop — current application inventory
 
+> Historical audit snapshot before the integrated pilot changes. For subsequently
+> implemented rework, stock movements, backend role restrictions and packaging
+> persistence, see `docs/integrated-pilot.md`; the findings below are not a claim
+> that those features remain missing.
+
 Audit date: 2026-10-11. Read-only audit; only this report is written.
 
 ## 1. Executive summary

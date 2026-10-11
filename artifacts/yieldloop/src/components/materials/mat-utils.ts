@@ -1,6 +1,8 @@
 import { AuthError } from '@/lib/auth';
 import type { MsgKey } from '@/lib/i18n';
 import { jobErrorMessage } from '@/components/job-ui';
+import { extraErrorText } from '@/lib/feature-i18n';
+const lang = () => (document.documentElement.lang === 'ar' ? 'ar' : 'en');
 
 type T = (k: MsgKey, v?: Record<string, string | number>) => string;
 
@@ -26,7 +28,7 @@ export const signed = (s: string) => (s.startsWith('-') || s.startsWith('+') || 
 export function matErrorMessage(err: unknown, t: T): string {
   if (err instanceof AuthError && MAT_CODES.has(err.code)) return t(`mat_err_${err.code}` as MsgKey);
   if (!(err instanceof AuthError)) return t('err_network');
-  return jobErrorMessage(err, t);
+  return extraErrorText(err.code, lang()) ?? jobErrorMessage(err, t);
 }
 
 export function matFieldErrors(err: unknown, t: T): Record<string, string> {
@@ -37,6 +39,8 @@ export function matFieldErrors(err: unknown, t: T): Record<string, string> {
     const label = FIELDS.has(name) ? t(`field_${name}` as MsgKey) : name;
     const mc = codes.find((c) => MAT_CODES.has(c));
     if (mc) { out[name] = t(`mat_err_${mc}` as MsgKey); continue; }
+    const x2 = codes.map((x) => extraErrorText(x, lang())).find(Boolean);
+    if (x2) { out[name] = x2; continue; }
     const c = codes.find((x) => FE.has(x));
     out[name] = c ? t(`fe_${c}` as MsgKey, { field: label }) : t('fieldInvalid', { field: label });
   }
@@ -51,5 +55,15 @@ const INV_CODES = new Set(['inventory_conflict', 'already_registered', 'invalid_
 export function invErrorMessage(err: unknown, t: T): string {
   if (err instanceof AuthError && INV_CODES.has(err.code)) return t(`inv_err_${err.code}` as MsgKey);
   if (!(err instanceof AuthError)) return t('err_network');
-  return jobErrorMessage(err, t);
+  return extraErrorText(err.code, lang()) ?? jobErrorMessage(err, t);
 }
+
+/** Exact decimal compare on kg strings (<=3 decimals) via BigInt thousandths; no float math. */
+export function milli(s: string): bigint {
+  const v = s.trim().replace(/^\+/, '');
+  const neg = v.startsWith('-');
+  const [i, f = ''] = v.replace(/^-/, '').split('.');
+  const n = BigInt(i || '0') * 1000n + BigInt((f + '000').slice(0, 3));
+  return neg ? -n : n;
+}
+export const cmpDec = (a: string, b: string) => { const x = milli(a), y = milli(b); return x === y ? 0 : x < y ? -1 : 1; };

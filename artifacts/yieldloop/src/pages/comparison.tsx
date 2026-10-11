@@ -12,7 +12,7 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 type Side = JobComparison['left'];
-const QTY = ['issued', 'good', 'scrap', 'offcut', 'variance'] as const;
+const QTY = ['issued', 'good', 'scrap', 'offcut', 'pending_rework', 'variance'] as const;
 const RATE = ['yield_rate', 'scrap_rate'] as const;
 
 function parseId(v: string | null): number | null {
@@ -163,9 +163,9 @@ function Result({ c, kt }: { c: JobComparison; kt: Kt }) {
             {QTY.map((k) => (
               <tr key={k} data-testid={`row-cmp-${k}`}>
                 <th scope="row" className="px-3 py-2 text-start font-medium">{kt(k)}</th>
-                <Val v={c.left.summary?.[k]} unit={kt('kg')} />
-                <Val v={c.right.summary?.[k]} unit={kt('kg')} />
-                <Diff v={d ? d[k] : null} unit={kt('kg')} testId={k} />
+                <Val v={c.left.summary?.[k] ?? null} unit={kt('kg')} />
+                <Val v={c.right.summary?.[k] ?? null} unit={kt('kg')} />
+                <Diff v={d ? d[k] ?? null : null} unit={kt('kg')} testId={k} />
               </tr>
             ))}
             {RATE.map((k) => (

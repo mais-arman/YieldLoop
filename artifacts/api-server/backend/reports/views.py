@@ -3,7 +3,7 @@ from datetime import datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal, localcontext
 from zoneinfo import ZoneInfo
 
-from accounts.security import ReadyAccount
+from accounts.security import ReportingAccess
 from accounts.serializers import StrictSerializer
 from accounts.views import ProtectedView
 from django.db import connection, transaction
@@ -20,7 +20,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-FIELDS = ("issued", "good", "scrap", "offcut", "accounted", "variance")
+FIELDS = ("issued", "good", "scrap", "offcut", "pending_rework", "accounted", "variance")
 
 
 class ReportInput(StrictSerializer):
@@ -102,6 +102,11 @@ def overview(actor, filters):
                 "original_quantity": decimal_text(aggregate["quantity"]) if material is not None else None,
                 "remaining": ("0.000" if is_void else decimal_text(aggregate["quantity"])) if material is not None else None,
             }
+            if material is not None and not is_void:
+                from inventory.models import StockMovement
+                consumed = StockMovement.objects.filter(lot__in=inventory.filter(is_void=False),
+                                                        action="consume").aggregate(q=Sum("quantity"))["q"] or Decimal(0)
+                inventory_states[state]["remaining"] = decimal_text((aggregate["quantity"] or Decimal(0)) - consumed)
 
         # Page jobs first, then fetch snapshots in one bounded query (no N+1).
         def job_row(job):
@@ -135,7 +140,7 @@ def overview(actor, filters):
 
 
 class OverviewView(ProtectedView):
-    permission_classes = (IsAuthenticated, ReadyAccount)
+    permission_classes = (IsAuthenticated, ReportingAccess)
 
     def get(self, request):
         return Response(overview(request.user, checked(ReportInput, request.query_params)))

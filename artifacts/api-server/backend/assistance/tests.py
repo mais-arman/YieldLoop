@@ -18,14 +18,14 @@ from . import packaging, provider
 
 def concept(template="tray", **parameters):
     params = {"length": "300", "width": "200", "height": "80", "thickness": "2"}
-    if template == "lid_box":
+    if template in ("lid_box", "flat_box"):
         params.update(lid_height="20", clearance="0.5")
     return {"template": template, "name": "Concept", "parameters": {**params, **parameters}, "state": "assembled"}
 
 
 class PackagingValidationTests(SimpleTestCase):
     def test_catalogue_and_all_templates(self):
-        self.assertEqual(len(packaging.catalogue()["templates"]), 3)
+        self.assertEqual(len(packaging.catalogue()["templates"]), 4)
         for name in packaging.TYPES:
             self.assertEqual(packaging.validate(concept(name))["template"], name)
 
@@ -71,6 +71,14 @@ class ProviderTests(SimpleTestCase):
             with self.assertRaises(provider.ProviderError) as error:
                 provider.complete("JSON", {})
             self.assertNotIn("sensitive", str(error.exception))
+
+    @patch.dict("os.environ", {"YIELDLOOP_AI_API_KEY": "unit-test-not-a-credential"}, clear=True)
+    def test_provider_timeout_is_controlled(self):
+        with patch("assistance.provider.urlopen", side_effect=TimeoutError("private transport detail")) as call:
+            with self.assertRaises(provider.ProviderError) as error:
+                provider.complete("JSON", {})
+            self.assertEqual(call.call_args.kwargs["timeout"], 35)
+            self.assertNotIn("private", str(error.exception))
 
     @patch.dict("os.environ", {"YIELDLOOP_AI_API_KEY": "unit-test-not-a-credential"}, clear=True)
     def test_malformed_truncated_oversize_and_success(self):

@@ -259,6 +259,7 @@ export const PackagingDesignTemplate = {
   tray: 'tray',
   sleeve: 'sleeve',
   lid_box: 'lid_box',
+  flat_box: 'flat_box',
 } as const;
 
 export type PackagingDesignParameters = {[key: string]: string};
@@ -315,6 +316,7 @@ export const PackagingProposalTemplate = {
   tray: 'tray',
   sleeve: 'sleeve',
   lid_box: 'lid_box',
+  flat_box: 'flat_box',
 } as const;
 
 export type PackagingProposalParameters = {[key: string]: string};
@@ -480,6 +482,7 @@ export interface ReportMeasures {
   good: string;
   scrap: string;
   offcut: string;
+  pending_rework: string;
   accounted: string;
   variance: string;
   /** @nullable */
@@ -612,13 +615,6 @@ export const InventoryLotCompatibility = {
   unverified: 'unverified',
 } as const;
 
-export type InventoryLotReuseBlockedReason = typeof InventoryLotReuseBlockedReason[keyof typeof InventoryLotReuseBlockedReason];
-
-
-export const InventoryLotReuseBlockedReason = {
-  policy_not_defined: 'policy_not_defined',
-} as const;
-
 export type InventoryEventAction = typeof InventoryEventAction[keyof typeof InventoryEventAction];
 
 
@@ -635,9 +631,15 @@ export interface InventoryEvent {
   created_at: string;
 }
 
+export type InventoryLotReservationsItem = {
+  job_id: number;
+  quantity: string;
+};
+
 export type InventoryLotPermissions = {
   void: boolean;
   reserve: boolean;
+  release: boolean;
   consume: boolean;
 };
 
@@ -658,7 +660,11 @@ export interface InventoryLot {
   source_status: JobStatus;
   source_voided: boolean;
   compatibility: InventoryLotCompatibility;
-  reuse_blocked_reason: InventoryLotReuseBlockedReason;
+  /** @nullable */
+  reuse_blocked_reason: string | null;
+  reserved?: string;
+  available_to_reserve?: string;
+  reservations?: InventoryLotReservationsItem[];
   created_at: string;
   permissions: InventoryLotPermissions;
   history?: InventoryEvent[];
@@ -769,6 +775,7 @@ export const MaterialEntryInputKind = {
   good: 'good',
   scrap: 'scrap',
   offcut: 'offcut',
+  rework: 'rework',
 } as const;
 
 export type MaterialEntryInputUnit = typeof MaterialEntryInputUnit[keyof typeof MaterialEntryInputUnit];
@@ -786,6 +793,8 @@ export interface MaterialEntryInput {
   /** @minimum 1 */
   material_id: number;
   kind: MaterialEntryInputKind;
+  /** @minimum 1 */
+  resolve_rework_id?: number;
   /** Positive kg decimal with at most 12 integer and 3 fractional digits */
   quantity: string;
   unit: MaterialEntryInputUnit;
@@ -816,6 +825,7 @@ export const MaterialEntryKind = {
   good: 'good',
   scrap: 'scrap',
   offcut: 'offcut',
+  rework: 'rework',
 } as const;
 
 export type MaterialEntryUnit = typeof MaterialEntryUnit[keyof typeof MaterialEntryUnit];
@@ -849,6 +859,10 @@ export interface MaterialEntry {
   material_id: number;
   kind: MaterialEntryKind;
   quantity: string;
+  /** @nullable */
+  pending_rework?: string | null;
+  /** @nullable */
+  resolves_rework_id?: number | null;
   unit: MaterialEntryUnit;
   note: string;
   scrap_reason: string;
@@ -876,6 +890,7 @@ export interface MaterialSummary {
   good: string;
   scrap: string;
   offcut: string;
+  pending_rework: string;
   accounted: string;
   variance: string;
   /** @nullable */
@@ -900,6 +915,96 @@ export interface MaterialState {
   closing: MaterialClosing;
   permissions: MaterialStatePermissions;
   entries: MaterialStateEntries;
+}
+
+export interface InventoryMovementInput {
+  /** @minimum 1 */
+  job_id: number;
+  quantity: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+  request_id: string;
+  /** @minimum 0 */
+  revision: number;
+}
+
+export type InventoryMovementAction = typeof InventoryMovementAction[keyof typeof InventoryMovementAction];
+
+
+export const InventoryMovementAction = {
+  reserve: 'reserve',
+  release: 'release',
+  consume: 'consume',
+} as const;
+
+export interface InventoryMovement {
+  id: number;
+  action: InventoryMovementAction;
+  quantity: string;
+  job_id: number;
+  reason: string;
+  actor: string;
+  created_at: string;
+  /** @nullable */
+  issue_entry_id: number | null;
+}
+
+export interface InventoryMovementPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: InventoryMovement[];
+}
+
+export interface PackagingDesignSaveInput {
+  design: PackagingDesign;
+  /** @maxLength 1000 */
+  reason: string;
+  request_id: string;
+}
+
+export interface PackagingDesignUpdateInput {
+  design: PackagingDesign;
+  /** @maxLength 1000 */
+  reason: string;
+  request_id: string;
+  /** @minimum 1 */
+  revision: number;
+}
+
+export interface PackagingDesignRecord {
+  id: number;
+  revision: number;
+  design: PackagingDesign;
+  updated_at: string;
+}
+
+export interface PackagingDesignRecordPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: PackagingDesignRecord[];
+}
+
+export interface PackagingDesignHistoryEntry {
+  revision: number;
+  design: PackagingDesign;
+  reason: string;
+  actor: string;
+  created_at: string;
+}
+
+export interface PackagingDesignHistoryPage {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: PackagingDesignHistoryEntry[];
 }
 
 export interface JobMachines {
@@ -1115,6 +1220,21 @@ export const ListInventoryState = {
   available: 'available',
   voided: 'voided',
 } as const;
+
+export type ListInventoryMovementsParams = {
+page?: number;
+page_size?: number;
+};
+
+export type ListPackagingDesignsParams = {
+page?: number;
+page_size?: number;
+};
+
+export type GetPackagingDesignHistoryParams = {
+page?: number;
+page_size?: number;
+};
 
 export type ListMaterialsParams = {
 /**

@@ -8,7 +8,7 @@
 import type { InventoryEvent } from './inventoryEvent';
 import type { InventoryLotCompatibility } from './inventoryLotCompatibility';
 import type { InventoryLotPermissions } from './inventoryLotPermissions';
-import type { InventoryLotReuseBlockedReason } from './inventoryLotReuseBlockedReason';
+import type { InventoryLotReservationsItem } from './inventoryLotReservationsItem';
 import type { InventoryLotState } from './inventoryLotState';
 import type { InventoryLotUnit } from './inventoryLotUnit';
 import type { JobStatus } from './jobStatus';
@@ -30,7 +30,11 @@ export interface InventoryLot {
   source_status: JobStatus;
   source_voided: boolean;
   compatibility: InventoryLotCompatibility;
-  reuse_blocked_reason: InventoryLotReuseBlockedReason;
+  /** @nullable */
+  reuse_blocked_reason: string | null;
+  reserved?: string;
+  available_to_reserve?: string;
+  reservations?: InventoryLotReservationsItem[];
   created_at: Date;
   permissions: InventoryLotPermissions;
   history?: InventoryEvent[];

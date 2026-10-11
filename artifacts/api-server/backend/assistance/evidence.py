@@ -21,7 +21,7 @@ def collect(user, job_id, include_notes=False):
     plans = CuttingPlan.objects.filter(job=job)[:5]
     cutting = [{"plan_id": p.pk, "revision": p.revision, "name": p.name,
                 "scenarios": [scenario_data(s) for s in p.scenarios]} for p in plans]
-    limitations = ["no_proven_cause", "weight_not_geometry", "offcut_not_consumable"]
+    limitations = ["no_proven_cause", "weight_not_geometry", "offcut_physical_suitability_unverified"]
     if material["entries"]["count"] > 100:
         limitations.append("entries_truncated")
     if CuttingPlan.objects.filter(job=job).count() > 5:

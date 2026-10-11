@@ -16,6 +16,8 @@ export interface MaterialEntryInput {
   /** @minimum 1 */
   material_id: number;
   kind: MaterialEntryInputKind;
+  /** @minimum 1 */
+  resolve_rework_id?: number;
   /** Positive kg decimal with at most 12 integer and 3 fractional digits */
   quantity: string;
   unit: MaterialEntryInputUnit;

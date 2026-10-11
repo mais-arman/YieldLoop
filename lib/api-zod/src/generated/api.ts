@@ -321,7 +321,7 @@ export const validatePackagingConceptBodyNameMax = 160;
 
 
 export const ValidatePackagingConceptBody = zod.object({
-  "template": zod.enum(['tray', 'sleeve', 'lid_box']),
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
   "name": zod.string().min(1).max(validatePackagingConceptBodyNameMax),
   "parameters": zod.record(zod.string(), zod.string()),
   "state": zod.enum(['assembled', 'open'])
@@ -334,7 +334,7 @@ export const validatePackagingConceptResponseDesignNameMax = 160;
 export const ValidatePackagingConceptResponse = zod.object({
   "valid": zod.literal(true),
   "design": zod.object({
-  "template": zod.enum(['tray', 'sleeve', 'lid_box']),
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
   "name": zod.string().min(1).max(validatePackagingConceptResponseDesignNameMax),
   "parameters": zod.record(zod.string(), zod.string()),
   "state": zod.enum(['assembled', 'open'])
@@ -353,7 +353,7 @@ export const ProposePackagingConceptBody = zod.object({
 })
 
 export const ProposePackagingConceptResponse = zod.object({
-  "template": zod.union([zod.literal('tray'),zod.literal('sleeve'),zod.literal('lid_box'),zod.literal(null)]).nullable(),
+  "template": zod.union([zod.literal('tray'),zod.literal('sleeve'),zod.literal('lid_box'),zod.literal('flat_box'),zod.literal(null)]).nullable(),
   "name": zod.string(),
   "parameters": zod.record(zod.string(), zod.string()),
   "missing": zod.array(zod.string()),
@@ -1208,6 +1208,7 @@ export const GetReportOverviewResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),
@@ -1246,6 +1247,7 @@ export const GetReportOverviewResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),
@@ -1283,11 +1285,18 @@ export const GetReportOverviewResponse = zod.object({
   "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
   "source_voided": zod.boolean(),
   "compatibility": zod.enum(['unverified']),
-  "reuse_blocked_reason": zod.enum(['policy_not_defined']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
   "created_at": zod.coerce.date(),
   "permissions": zod.object({
   "void": zod.boolean(),
   "reserve": zod.boolean(),
+  "release": zod.boolean(),
   "consume": zod.boolean()
 }),
   "history": zod.array(zod.object({
@@ -1332,11 +1341,18 @@ export const ListInventoryResponse = zod.object({
   "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
   "source_voided": zod.boolean(),
   "compatibility": zod.enum(['unverified']),
-  "reuse_blocked_reason": zod.enum(['policy_not_defined']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
   "created_at": zod.coerce.date(),
   "permissions": zod.object({
   "void": zod.boolean(),
   "reserve": zod.boolean(),
+  "release": zod.boolean(),
   "consume": zod.boolean()
 }),
   "history": zod.array(zod.object({
@@ -1378,11 +1394,18 @@ export const RegisterOffcutResponse = zod.object({
   "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
   "source_voided": zod.boolean(),
   "compatibility": zod.enum(['unverified']),
-  "reuse_blocked_reason": zod.enum(['policy_not_defined']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
   "created_at": zod.coerce.date(),
   "permissions": zod.object({
   "void": zod.boolean(),
   "reserve": zod.boolean(),
+  "release": zod.boolean(),
   "consume": zod.boolean()
 }),
   "history": zod.array(zod.object({
@@ -1416,11 +1439,18 @@ export const GetInventoryLotResponse = zod.object({
   "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
   "source_voided": zod.boolean(),
   "compatibility": zod.enum(['unverified']),
-  "reuse_blocked_reason": zod.enum(['policy_not_defined']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
   "created_at": zod.coerce.date(),
   "permissions": zod.object({
   "void": zod.boolean(),
   "reserve": zod.boolean(),
+  "release": zod.boolean(),
   "consume": zod.boolean()
 }),
   "history": zod.array(zod.object({
@@ -1464,11 +1494,18 @@ export const VoidInventoryLotResponse = zod.object({
   "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
   "source_voided": zod.boolean(),
   "compatibility": zod.enum(['unverified']),
-  "reuse_blocked_reason": zod.enum(['policy_not_defined']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
   "created_at": zod.coerce.date(),
   "permissions": zod.object({
   "void": zod.boolean(),
   "reserve": zod.boolean(),
+  "release": zod.boolean(),
   "consume": zod.boolean()
 }),
   "history": zod.array(zod.object({
@@ -1481,12 +1518,367 @@ export const VoidInventoryLotResponse = zod.object({
 })
 
 
-export const BlockedInventoryReuseParams = zod.object({
-  "id": zod.coerce.number().int(),
-  "action": zod.enum(['reserve', 'release', 'consume'])
+export const ReserveInventoryLotParams = zod.object({
+  "id": zod.coerce.number().int()
 })
 
-export const BlockedInventoryReuseResponse = zod.void()
+
+export const reserveInventoryLotBodyReasonMax = 1000;
+
+export const reserveInventoryLotBodyRevisionMin = 0;
+
+
+
+export const ReserveInventoryLotBody = zod.object({
+  "job_id": zod.number().int().min(1),
+  "quantity": zod.string(),
+  "reason": zod.string().min(1).max(reserveInventoryLotBodyReasonMax),
+  "request_id": zod.string().uuid(),
+  "revision": zod.number().int().min(reserveInventoryLotBodyRevisionMin)
+})
+
+export const ReserveInventoryLotResponse = zod.object({
+  "id": zod.number().int(),
+  "source_job_id": zod.number().int(),
+  "source_job_number": zod.string(),
+  "source_entry_id": zod.number().int(),
+  "reconciliation_id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "material_name": zod.string(),
+  "specification": zod.string(),
+  "quantity": zod.string(),
+  "remaining": zod.string(),
+  "unit": zod.enum(['kg']),
+  "state": zod.enum(['available', 'voided']),
+  "revision": zod.number().int(),
+  "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
+  "source_voided": zod.boolean(),
+  "compatibility": zod.enum(['unverified']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
+  "created_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "void": zod.boolean(),
+  "reserve": zod.boolean(),
+  "release": zod.boolean(),
+  "consume": zod.boolean()
+}),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "action": zod.enum(['addition', 'void']),
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "created_at": zod.coerce.date()
+})).optional()
+})
+
+
+export const ReleaseInventoryLotParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const releaseInventoryLotBodyReasonMax = 1000;
+
+export const releaseInventoryLotBodyRevisionMin = 0;
+
+
+
+export const ReleaseInventoryLotBody = zod.object({
+  "job_id": zod.number().int().min(1),
+  "quantity": zod.string(),
+  "reason": zod.string().min(1).max(releaseInventoryLotBodyReasonMax),
+  "request_id": zod.string().uuid(),
+  "revision": zod.number().int().min(releaseInventoryLotBodyRevisionMin)
+})
+
+export const ReleaseInventoryLotResponse = zod.object({
+  "id": zod.number().int(),
+  "source_job_id": zod.number().int(),
+  "source_job_number": zod.string(),
+  "source_entry_id": zod.number().int(),
+  "reconciliation_id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "material_name": zod.string(),
+  "specification": zod.string(),
+  "quantity": zod.string(),
+  "remaining": zod.string(),
+  "unit": zod.enum(['kg']),
+  "state": zod.enum(['available', 'voided']),
+  "revision": zod.number().int(),
+  "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
+  "source_voided": zod.boolean(),
+  "compatibility": zod.enum(['unverified']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
+  "created_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "void": zod.boolean(),
+  "reserve": zod.boolean(),
+  "release": zod.boolean(),
+  "consume": zod.boolean()
+}),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "action": zod.enum(['addition', 'void']),
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "created_at": zod.coerce.date()
+})).optional()
+})
+
+
+export const ConsumeInventoryLotParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const consumeInventoryLotBodyReasonMax = 1000;
+
+export const consumeInventoryLotBodyRevisionMin = 0;
+
+
+
+export const ConsumeInventoryLotBody = zod.object({
+  "job_id": zod.number().int().min(1),
+  "quantity": zod.string(),
+  "reason": zod.string().min(1).max(consumeInventoryLotBodyReasonMax),
+  "request_id": zod.string().uuid(),
+  "revision": zod.number().int().min(consumeInventoryLotBodyRevisionMin)
+})
+
+export const ConsumeInventoryLotResponse = zod.object({
+  "id": zod.number().int(),
+  "source_job_id": zod.number().int(),
+  "source_job_number": zod.string(),
+  "source_entry_id": zod.number().int(),
+  "reconciliation_id": zod.number().int(),
+  "material_id": zod.number().int(),
+  "material_name": zod.string(),
+  "specification": zod.string(),
+  "quantity": zod.string(),
+  "remaining": zod.string(),
+  "unit": zod.enum(['kg']),
+  "state": zod.enum(['available', 'voided']),
+  "revision": zod.number().int(),
+  "source_status": zod.enum(['draft', 'open', 'completed', 'cancelled']),
+  "source_voided": zod.boolean(),
+  "compatibility": zod.enum(['unverified']),
+  "reuse_blocked_reason": zod.string().nullable(),
+  "reserved": zod.string().optional(),
+  "available_to_reserve": zod.string().optional(),
+  "reservations": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "quantity": zod.string()
+})).optional(),
+  "created_at": zod.coerce.date(),
+  "permissions": zod.object({
+  "void": zod.boolean(),
+  "reserve": zod.boolean(),
+  "release": zod.boolean(),
+  "consume": zod.boolean()
+}),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "action": zod.enum(['addition', 'void']),
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "created_at": zod.coerce.date()
+})).optional()
+})
+
+
+export const ListInventoryMovementsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListInventoryMovementsQueryParams = zod.object({
+  "page": zod.coerce.number().int().optional(),
+  "page_size": zod.coerce.number().int().optional()
+})
+
+export const ListInventoryMovementsResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "action": zod.enum(['reserve', 'release', 'consume']),
+  "quantity": zod.string(),
+  "job_id": zod.number().int(),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "created_at": zod.coerce.date(),
+  "issue_entry_id": zod.number().int().nullable()
+}))
+})
+
+
+export const ListPackagingDesignsQueryParams = zod.object({
+  "page": zod.coerce.number().int().optional(),
+  "page_size": zod.coerce.number().int().optional()
+})
+
+export const listPackagingDesignsResponseResultsItemDesignNameMax = 160;
+
+
+
+export const ListPackagingDesignsResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "id": zod.number().int(),
+  "revision": zod.number().int(),
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(listPackagingDesignsResponseResultsItemDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "updated_at": zod.coerce.date()
+}))
+})
+
+
+export const createPackagingDesignBodyDesignNameMax = 160;
+
+export const createPackagingDesignBodyReasonMax = 1000;
+
+
+
+export const CreatePackagingDesignBody = zod.object({
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(createPackagingDesignBodyDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "reason": zod.string().max(createPackagingDesignBodyReasonMax),
+  "request_id": zod.string().uuid()
+})
+
+export const createPackagingDesignResponseDesignNameMax = 160;
+
+
+
+export const CreatePackagingDesignResponse = zod.object({
+  "id": zod.number().int(),
+  "revision": zod.number().int(),
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(createPackagingDesignResponseDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const GetPackagingDesignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const getPackagingDesignResponseDesignNameMax = 160;
+
+
+
+export const GetPackagingDesignResponse = zod.object({
+  "id": zod.number().int(),
+  "revision": zod.number().int(),
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(getPackagingDesignResponseDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const UpdatePackagingDesignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updatePackagingDesignBodyDesignNameMax = 160;
+
+export const updatePackagingDesignBodyReasonMax = 1000;
+
+
+
+
+export const UpdatePackagingDesignBody = zod.object({
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(updatePackagingDesignBodyDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "reason": zod.string().max(updatePackagingDesignBodyReasonMax),
+  "request_id": zod.string().uuid(),
+  "revision": zod.number().int().min(1)
+})
+
+export const updatePackagingDesignResponseDesignNameMax = 160;
+
+
+
+export const UpdatePackagingDesignResponse = zod.object({
+  "id": zod.number().int(),
+  "revision": zod.number().int(),
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(updatePackagingDesignResponseDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const GetPackagingDesignHistoryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetPackagingDesignHistoryQueryParams = zod.object({
+  "page": zod.coerce.number().int().optional(),
+  "page_size": zod.coerce.number().int().optional()
+})
+
+export const getPackagingDesignHistoryResponseResultsItemDesignNameMax = 160;
+
+
+
+export const GetPackagingDesignHistoryResponse = zod.object({
+  "count": zod.number().int(),
+  "page": zod.number().int(),
+  "page_size": zod.number().int(),
+  "total_pages": zod.number().int(),
+  "results": zod.array(zod.object({
+  "revision": zod.number().int(),
+  "design": zod.object({
+  "template": zod.enum(['tray', 'sleeve', 'lid_box', 'flat_box']),
+  "name": zod.string().min(1).max(getPackagingDesignHistoryResponseResultsItemDesignNameMax),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "state": zod.enum(['assembled', 'open'])
+}),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "created_at": zod.coerce.date()
+}))
+})
 
 
 
@@ -1571,6 +1963,7 @@ export const GetJobMaterialsResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),
@@ -1593,8 +1986,10 @@ export const GetJobMaterialsResponse = zod.object({
   "results": zod.array(zod.object({
   "id": zod.number().int(),
   "material_id": zod.number().int(),
-  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut', 'rework']),
   "quantity": zod.string(),
+  "pending_rework": zod.string().nullish(),
+  "resolves_rework_id": zod.number().int().nullish(),
   "unit": zod.enum(['kg']),
   "note": zod.string(),
   "scrap_reason": zod.string(),
@@ -1627,6 +2022,7 @@ export const recordMaterialEntryBodyRevisionMin = 0;
 
 
 
+
 export const recordMaterialEntryBodyNoteMax = 1000;
 
 export const recordMaterialEntryBodyScrapReasonDefault = ``;
@@ -1638,7 +2034,8 @@ export const RecordMaterialEntryBody = zod.object({
   "revision": zod.number().int().min(recordMaterialEntryBodyRevisionMin),
   "job_revision": zod.number().int().min(1),
   "material_id": zod.number().int().min(1),
-  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut', 'rework']),
+  "resolve_rework_id": zod.number().int().min(1).optional(),
   "quantity": zod.string().describe('Positive kg decimal with at most 12 integer and 3 fractional digits'),
   "unit": zod.enum(['kg']),
   "note": zod.string().max(recordMaterialEntryBodyNoteMax).optional(),
@@ -1662,6 +2059,7 @@ export const RecordMaterialEntryResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),
@@ -1684,8 +2082,10 @@ export const RecordMaterialEntryResponse = zod.object({
   "results": zod.array(zod.object({
   "id": zod.number().int(),
   "material_id": zod.number().int(),
-  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut', 'rework']),
   "quantity": zod.string(),
+  "pending_rework": zod.string().nullish(),
+  "resolves_rework_id": zod.number().int().nullish(),
   "unit": zod.enum(['kg']),
   "note": zod.string(),
   "scrap_reason": zod.string(),
@@ -1744,6 +2144,7 @@ export const VoidMaterialEntryResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),
@@ -1766,8 +2167,10 @@ export const VoidMaterialEntryResponse = zod.object({
   "results": zod.array(zod.object({
   "id": zod.number().int(),
   "material_id": zod.number().int(),
-  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut']),
+  "kind": zod.enum(['issue', 'good', 'scrap', 'offcut', 'rework']),
   "quantity": zod.string(),
+  "pending_rework": zod.string().nullish(),
+  "resolves_rework_id": zod.number().int().nullish(),
   "unit": zod.enum(['kg']),
   "note": zod.string(),
   "scrap_reason": zod.string(),
@@ -1931,6 +2334,7 @@ export const GetJobComparisonResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),
@@ -1981,6 +2385,7 @@ export const GetJobComparisonResponse = zod.object({
   "good": zod.string(),
   "scrap": zod.string(),
   "offcut": zod.string(),
+  "pending_rework": zod.string(),
   "accounted": zod.string(),
   "variance": zod.string(),
   "yield_rate": zod.string().nullable(),

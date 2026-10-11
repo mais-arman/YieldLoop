@@ -6,6 +6,18 @@ production migrations, inventory consumption or accounting-policy changes.
 
 ## Release-gate remediation — current status
 
+### Integrated pilot follow-on (2026-10-11)
+
+See `docs/integrated-pilot.md` for the implemented backend role restrictions,
+pending rework, partial offcut movements/receiving-job issues, packaging persistence,
+development migration fingerprints, exact staged test results and browser evidence.
+This supersedes foundation-only inventory and no-rework assumptions **in development**;
+it does not authorize production consumption or change the production write guard.
+IK-202/IK-203 remain unchanged. Live 3D redraw lacks reliable visual verification;
+consumed-stock reversal remains unsupported. Overall release is still **NOT READY**:
+independent/offsite backup, cluster-loss exercise, real role/grant/ownership restore
+and approved/demonstrated RPO/RTO evidence remain blocked.
+
 ### Original challenge completion follow-on (2026-10-11)
 
 See `docs/core-completion.md` for exact development seed/read-back, role approval,
