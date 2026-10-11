@@ -20,6 +20,7 @@ import {
 } from './model';
 import { useCt } from './cutting-i18n';
 import { cn } from '@/lib/utils';
+import { trimDecimal } from '@/lib/display-format';
 
 export function PlanEditor({ jobId, planId, writable, canCreateMaterial, onSaved, onDirty }: {
   jobId: number; planId: number | null; writable: boolean; canCreateMaterial: boolean;
@@ -154,6 +155,7 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
               if (allValid && name.trim()) { setSaveOpen(true); return; }
               const invalid = drafts.findIndex(d => !validateForm(d.form).input || !d.name.trim());
               if (invalid >= 0) setView(invalid);
+              window.dispatchEvent(new Event('yl-reveal-invalid'));
               requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]:not(:disabled)')?.focus());
             }} disabled={save.isPending || (!dirty && plan !== null)} data-testid="button-save-plan">
               <Save className="h-4 w-4" aria-hidden />{ct('save')}
@@ -184,7 +186,7 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
             className={cn('flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors', activeIdx === i ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
             data-testid={`tab-scenario-${i}`}>
             <span className="max-w-[10rem] truncate">{d.name || `${ct('scenario')} ${i + 1}`}</span>
-            {currentResult(d)?.utilization && <span className="font-mono text-[11px] opacity-80">{currentResult(d)!.utilization}%</span>}
+            {currentResult(d)?.utilization && <span className="font-mono text-[11px] opacity-80">{trimDecimal(currentResult(d)!.utilization!)}%</span>}
           </button>
         ))}
         {drafts.length >= 2 && (

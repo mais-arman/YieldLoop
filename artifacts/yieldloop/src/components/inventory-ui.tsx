@@ -22,15 +22,23 @@ export function Kg({ v, className }: { v: string; className?: string }) {
 
 export function ReuseBlockedNotice({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
+  if (compact) {
+    return (
+      <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground" data-testid="notice-reuse-blocked">
+        <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(32_81%_35%)]" aria-hidden />{t('invAvailableHint')}
+      </p>
+    );
+  }
   return (
-    <div className="rounded-md border border-[hsl(38_92%_50%/0.4)] bg-[hsl(38_92%_50%/0.08)] p-3" data-testid="notice-reuse-blocked">
-      <p className="flex items-start gap-2 text-sm font-medium"><ShieldOff className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(32_81%_29%)]" aria-hidden />{compact ? t('invAvailableHint') : t('invFoundation')}</p>
-      {!compact && (
-        <div className="mt-2 flex flex-wrap gap-1.5 ps-6 text-xs">
-          <span className="rounded bg-card px-1.5 py-0.5 font-medium" data-testid="text-compat-unverified">{t('invCompat')}</span>
-          <span className="rounded bg-card px-1.5 py-0.5 font-medium" data-testid="text-policy-missing">{t('invPolicy')}</span>
-        </div>
-      )}
-    </div>
+    <details className="group text-sm text-muted-foreground [&_summary::-webkit-details-marker]:hidden" data-testid="notice-reuse-blocked">
+      <summary className="flex cursor-pointer list-none items-start gap-2 leading-relaxed">
+        <ShieldOff className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(32_81%_35%)]" aria-hidden />
+        <span className="flex-1">{t('invFoundation')}</span>
+      </summary>
+      <div className="mt-2 flex flex-wrap gap-1.5 ps-6 text-xs">
+        <span className="rounded border bg-card px-1.5 py-0.5 font-medium" data-testid="text-compat-unverified">{t('invCompat')}</span>
+        <span className="rounded border bg-card px-1.5 py-0.5 font-medium" data-testid="text-policy-missing">{t('invPolicy')}</span>
+      </div>
+    </details>
   );
 }

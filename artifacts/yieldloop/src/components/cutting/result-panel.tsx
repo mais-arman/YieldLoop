@@ -2,21 +2,22 @@ import { AlertTriangle, CheckCircle2, Loader2, RotateCw, XCircle } from 'lucide-
 import { Button } from '@/components/ui/button';
 import type { CuttingInput, CuttingResult } from '@/lib/cutting';
 import { useCt } from './cutting-i18n';
+import { readableDecimal, trimDecimal } from '@/lib/display-format';
 
 export function Metrics({ result, input }: { result: CuttingResult; input: CuttingInput | null }) {
   const ct = useCt();
   const rows: [string, string, boolean?][] = [
-    [ct('m_utilization'), result.utilization === null ? ct('na') : `${result.utilization} %`, true],
+    [ct('m_utilization'), result.utilization === null ? ct('na') : `${trimDecimal(result.utilization)} %`, true],
     [ct('m_boards_used'), String(result.board_count), true],
     [ct('m_boards_supplied'), String(result.available_boards)],
     [ct('m_placed'), String(result.placed_count), true],
     [ct('m_unplaced'), String(result.unplaced_count), true],
-    [ct('m_required_area'), `${result.required_area} mm²`],
-    [ct('m_placed_area'), `${result.placed_area} mm²`],
-    [ct('m_board_area'), `${result.board_area} mm²`],
-    [ct('m_used_board_area'), `${result.used_board_area} mm²`],
-    [ct('m_unused_area'), `${result.unused_area} mm²`],
-    [ct('m_available_area'), `${result.available_area} mm²`],
+    [ct('m_required_area'), `${readableDecimal(result.required_area)} mm²`],
+    [ct('m_placed_area'), `${readableDecimal(result.placed_area)} mm²`],
+    [ct('m_board_area'), `${readableDecimal(result.board_area)} mm²`],
+    [ct('m_used_board_area'), `${readableDecimal(result.used_board_area)} mm²`],
+    [ct('m_unused_area'), `${readableDecimal(result.unused_area)} mm²`],
+    [ct('m_available_area'), `${readableDecimal(result.available_area)} mm²`],
   ];
   const label = (k: string) => input?.pieces.find((p) => p.key === k)?.label ?? k;
   return (

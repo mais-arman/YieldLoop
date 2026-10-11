@@ -8,8 +8,8 @@ import { FormAlert } from '@/components/brand';
 import { PasswordInput } from '@/components/password-input';
 import { SignOutButton } from '@/components/app-shell';
 import { AuthError, changePassword, type Employee } from '@/lib/auth';
-import { useI18n } from '@/lib/i18n';
-import { endSession, errorMessage, fieldErrors, ME_KEY } from '@/lib/session';
+import { useI18n, type MsgKey } from '@/lib/i18n';
+import { displayName, endSession, errorMessage, fieldErrors, initials, ME_KEY } from '@/lib/session';
 
 function ExpiredNotice() {
   const { t } = useI18n();
@@ -63,14 +63,21 @@ export default function PasswordPage({ user }: { user: Employee }) {
   };
 
   return (
-    <div className="grid gap-8 md:grid-cols-[1fr_1.2fr] animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-[1fr_1.2fr] animate-in fade-in slide-in-from-bottom-1 duration-500">
       <div>
         <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground" aria-hidden>
           <KeyRound className="h-5 w-5" />
         </span>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight" data-testid="text-page-title">{forced ? t('pwdRequiredTitle') : t('pwdTitle')}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{forced ? t('pwdRequiredDesc') : ''} {t('pwdSubtitle')}</p>
-        {forced && <div className="mt-6"><SignOutButton variant="outline" /></div>}
+        <div className="mt-6 flex items-center gap-3 rounded-lg border bg-card p-4" data-testid="panel-account">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary" aria-hidden>{initials(user)}</span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{displayName(user)}</p>
+            <p className="truncate text-xs text-muted-foreground"><span dir="ltr" className="font-mono">{user.username}</span> · {t(`role_${user.role}` as MsgKey)}</p>
+          </div>
+        </div>
+        {forced && <div className="mt-4"><SignOutButton variant="outline" /></div>}
       </div>
       <form onSubmit={submit} noValidate className="flex flex-col gap-4 rounded-lg border bg-card p-6" data-testid="form-password">
         {(local || m.error) && <FormAlert message={local ?? errorMessage(m.error, t)} testId="error-password" />}

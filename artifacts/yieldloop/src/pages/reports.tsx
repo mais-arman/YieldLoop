@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
-import { AlertTriangle, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Info, RotateCw, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, Info, RotateCw, Scissors, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +42,17 @@ const S = {
     pageOf: 'Page {p} of {n} · {c} total', prev: 'Previous page', next: 'Next page',
     defs: 'Definitions', defsHint: 'What every number means',
     viewing: 'Showing {status} · {material}',
+    dashTitle2: 'Today on the floor', dashSub2: 'What needs a decision now. Full figures live in Reports.',
+    showFilters: 'Filters', hideFilters: 'Hide filters', activeFilters: '{n} active',
+    kJobs: 'Jobs in cohort', kOpen: '{n} open · {d} draft', kMeasured: 'Reconciled', kMeasuredSub: '{n} awaiting reconciliation',
+    kYield: 'Yield', kVariance: 'Net variance', kLots: 'Available offcut lots', kLotsSub: 'Registered only, not approved for reuse',
+    needMaterial: 'Select a material', needMaterialSub: 'Totals are only shown for one material',
+    attention: 'Needs attention', attentionScope: 'Checked across the first {n} jobs of this cohort. Open Reports for the rest.',
+    attVariance: 'Unaccounted material {v} kg', attNegVariance: 'Accounted exceeds issued by {v} kg', attUnmeasured: 'No reconciliation yet',
+    allClear: 'Nothing flagged in these jobs.', allClearSub: 'Every listed job is reconciled with zero variance.',
+    recent: 'Jobs in this cohort', viewAll: 'All jobs', openJob: 'Open job', openCutting: 'Cutting Studio',
+    colIssued: 'Issued', colGood: 'Good', colScrap: 'Scrap', colOffcut: 'Offcut', colVariance: 'Variance', colYield: 'Yield', colActions: '',
+    unitsNote: 'All quantities in kg. Variance is unaccounted material, never scrap. Rates show Unavailable when nothing was issued.',
   },
   ar: {
     dashTitle: 'لوحة المواد', dashSub: 'أرصدة المواد الحالية لمجموعة من أوامر الإنتاج. القيم مسجّلة فعليًا وليست مستنتجة.',
@@ -69,6 +80,17 @@ const S = {
     pageOf: 'الصفحة {p} من {n} · الإجمالي {c}', prev: 'الصفحة السابقة', next: 'الصفحة التالية',
     defs: 'التعريفات', defsHint: 'معنى كل رقم',
     viewing: 'عرض {status} · {material}',
+    dashTitle2: 'اليوم في الورشة', dashSub2: 'ما يحتاج قرارًا الآن. الأرقام الكاملة في التقارير.',
+    showFilters: 'عوامل التصفية', hideFilters: 'إخفاء عوامل التصفية', activeFilters: '{n} نشطة',
+    kJobs: 'الأوامر في المجموعة', kOpen: '{n} مفتوحة · {d} مسودة', kMeasured: 'مُسوّاة', kMeasuredSub: '{n} بانتظار التسوية',
+    kYield: 'المردود', kVariance: 'صافي الفرق', kLots: 'دفعات قصاصات متاحة', kLotsSub: 'مسجّلة فقط وغير معتمدة لإعادة الاستخدام',
+    needMaterial: 'اختر مادة', needMaterialSub: 'تُعرض الإجماليات لمادة واحدة فقط',
+    attention: 'يحتاج انتباهًا', attentionScope: 'فُحص أول {n} أمر في هذه المجموعة. افتح التقارير للبقية.',
+    attVariance: 'مادة غير محتسبة {v} كغ', attNegVariance: 'المحتسب يزيد على المصروف بمقدار {v} كغ', attUnmeasured: 'لا توجد تسوية بعد',
+    allClear: 'لا شيء مُعلَّم في هذه الأوامر.', allClearSub: 'كل أمر مدرج مُسوّى بفرق صفري.',
+    recent: 'أوامر هذه المجموعة', viewAll: 'كل الأوامر', openJob: 'فتح الأمر', openCutting: 'استوديو القص',
+    colIssued: 'المصروف', colGood: 'الجيد', colScrap: 'الهالك', colOffcut: 'القصاصات', colVariance: 'الفرق', colYield: 'المردود', colActions: '',
+    unitsNote: 'كل الكميات بالكيلوغرام. الفرق مادة غير محتسبة وليس هالكًا. تظهر النسب غير متاحة عند عدم صرف أي مادة.',
   },
 };
 type SKey = keyof typeof S.en;
@@ -412,34 +434,61 @@ function Summary({ data }: { data: ReportOverview }) {
 }
 
 /* ---------- drilldowns ---------- */
+function scrollReportTable(event: KeyboardEvent<HTMLDivElement>) {
+  if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  event.currentTarget.scrollBy({ left: event.key === 'ArrowLeft' ? -160 : 160, behavior: 'instant' });
+}
+
 function JobsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p: number) => void; fetching: boolean }) {
   const s = useS();
   const fmt = useFormatDate();
   const j = data.jobs;
+  const num = 'px-3 py-2 text-end';
   return (
     <section aria-labelledby="h-jobs-list" className="space-y-3">
-      <h2 id="h-jobs-list" className="text-lg font-semibold">{s('jobsTable')}</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="h-jobs-list" className="text-lg font-semibold">{s('jobsTable')}</h2>
+        <p className="text-xs text-muted-foreground">{s('unitsNote')}</p>
+      </div>
       {j.results.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{s('emptyTitle')}</p> : (
-        <ul className="space-y-2">
-          {j.results.map((job) => {
-            const r = job.reconciliation;
-            return (
-              <li key={job.id} className="rounded-lg border bg-card p-3 sm:p-4" data-testid={`row-report-job-${job.id}`}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <Link href={`/jobs/${job.id}`} className="font-medium hover:text-primary hover:underline"><JobNumber value={job.job_number} className="me-2 text-foreground" />{job.title}</Link>
-                    <p className="text-xs text-muted-foreground">{s('colCreated')} {fmt(job.created_at)}{r && <> · {r.material_name} · {r.specification}</>}</p>
-                  </div>
-                  <StatusBadge status={job.status} />
-                </div>
-                <div className="mt-2 border-t pt-2">
-                  {r ? <><MeasureGrid m={r} compact /><p className="mt-1 text-[11px] text-muted-foreground">{s('snapshot', { id: r.id, rev: r.revision, time: fmt(r.created_at) })}</p></>
-                    : <p className="text-sm text-muted-foreground">{s('unmeasured')} · {s('noData')}</p>}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="overflow-x-auto rounded-lg border bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring" tabIndex={0} role="region" aria-labelledby="h-jobs-list" onKeyDown={scrollReportTable}>
+          <table className="w-full min-w-[980px] text-sm">
+            <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+              <tr>
+                {(['colJob', 'colStatus', 'colCreated', 'colMaterial'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-start font-medium">{s(k)}</th>)}
+                {(['colIssued', 'colGood', 'colScrap', 'colOffcut', 'colVariance', 'colYield'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-end font-medium">{s(k)}</th>)}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {j.results.map((job) => {
+                const r = job.reconciliation;
+                return (
+                  <tr key={job.id} className="align-top hover:bg-muted/30" data-testid={`row-report-job-${job.id}`}>
+                    <td className="px-3 py-2">
+                      <Link href={`/jobs/${job.id}`} className="font-medium hover:text-primary hover:underline"><JobNumber value={job.job_number} className="me-2 text-foreground" />{job.title}</Link>
+                      {r && <div className="mt-0.5 text-[11px] text-muted-foreground">{s('snapshot', { id: r.id, rev: r.revision, time: fmt(r.created_at) })}</div>}
+                    </td>
+                    <td className="px-3 py-2"><StatusBadge status={job.status} /></td>
+                    <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{fmt(job.created_at)}</td>
+                    <td className="px-3 py-2">{r ? <><div className="font-medium">{r.material_name}</div><div className="text-xs text-muted-foreground">{r.specification}</div></> : <span className="text-xs text-muted-foreground">{s('unmeasured')}</span>}</td>
+                    {r ? (
+                      <>
+                        <td className={num}><Kg v={r.issued} /></td>
+                        <td className={num}><Kg v={r.good} /></td>
+                        <td className={num}><Kg v={r.scrap} /></td>
+                        <td className={num}><Kg v={r.offcut} /></td>
+                        <td className={num}><Signed v={r.variance} /></td>
+                        <td className={num}><Pct v={r.yield_rate} /></td>
+                      </>
+                    ) : <td colSpan={6} className="px-3 py-2 text-end text-xs text-muted-foreground">{s('noData')}</td>}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
       <Pager page={j.page} total={j.total_pages} count={j.count} onPage={onPage} disabled={fetching} testId="jobs" />
     </section>
@@ -454,7 +503,7 @@ function LotsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p
     <section aria-labelledby="h-lots" className="space-y-3">
       <h2 id="h-lots" className="text-lg font-semibold">{s('lotsTable')}</h2>
       {l.results.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{s('emptyLots')}</p> : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <div className="overflow-x-auto rounded-lg border bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring" tabIndex={0} role="region" aria-labelledby="h-lots" onKeyDown={scrollReportTable}>
           <table className="w-full min-w-[560px] text-sm">
             <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
               <tr>{(['colLot', 'colSource', 'colMaterial', 'original', 'remaining', 'colState'] as const).map((k) => <th key={k} scope="col" className="px-3 py-2 text-start font-medium">{s(k)}</th>)}</tr>
@@ -567,5 +616,147 @@ function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
   );
 }
 
-export function DashboardPage() { return <ReportView path="/dashboard" detailed={false} />; }
+function Kpi({ label, value, sub, testId, tone }: { label: string; value: ReactNode; sub?: ReactNode; testId?: string; tone?: 'warn' }) {
+  return (
+    <div className={cn('flex flex-col gap-1 rounded-lg border bg-card px-4 py-3', tone === 'warn' && 'border-[hsl(38_92%_50%/0.4)] bg-[hsl(38_92%_50%/0.06)]')} data-testid={testId}>
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-2xl font-semibold leading-tight">{value}</span>
+      {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
+    </div>
+  );
+}
+
+function DashboardView() {
+  const s = useS();
+  const { t } = useI18n();
+  const path = '/dashboard';
+  const { applied, go } = useReportState(path);
+  const params = useMemo(() => ({ ...toParams({ ...applied, job_page: 1, lot_page: 1 }), page_size: 10 }), [applied]);
+  const q = useReportOverview(params);
+  const fields = serverFieldErrors(q.error);
+  const active = [applied.start_date, applied.end_date, applied.status, applied.material_id].filter(Boolean).length;
+  const [open, setOpen] = useState(Object.keys(fields).length > 0);
+  useEffect(() => { if (Object.keys(fields).length) setOpen(true); }, [q.error]);
+  const data = q.data;
+  const qs = toQuery(applied, false);
+
+  const attention = useMemo(() => (data?.jobs.results ?? []).flatMap((j): { job: ReportOverview['jobs']['results'][number]; kind: 'unmeasured' | 'var' | 'neg'; v: string }[] => {
+    const r = j.reconciliation;
+    if (!r) return j.status === 'cancelled' ? [] : [{ job: j, kind: 'unmeasured', v: '' }];
+    if (Number(r.variance) !== 0) return [{ job: j, kind: r.variance.startsWith('-') ? 'neg' : 'var', v: r.variance.replace(/^-/, '') }];
+    return [];
+  }), [data]);
+
+  return (
+    <div className="space-y-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{s('dashTitle2')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{s('dashSub2')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="button-toggle-filters">
+            <Filter className="h-3.5 w-3.5" aria-hidden />{open ? s('hideFilters') : s('showFilters')}
+            {active > 0 && <span className="rounded bg-primary/10 px-1.5 text-[11px] text-primary">{s('activeFilters', { n: active })}</span>}
+          </Button>
+          <Link href={`/reports?${qs}`} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm font-medium hover:border-primary/40" data-testid="link-to-report">
+            <FileText className="h-4 w-4 text-primary" aria-hidden />{s('openReport')}<ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+          </Link>
+        </div>
+      </header>
+      {open && <FilterBar applied={applied} go={go} serverFields={fields} />}
+      {q.isPending ? (
+        <div className="space-y-4" aria-busy><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24" />)}</div><div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-64" /><Skeleton className="h-64" /></div></div>
+      ) : q.isError || !data ? (
+        <ReportError error={q.error} retry={() => q.refetch()} clear={() => go(EMPTY)} />
+      ) : (
+        <>
+          <Freshness data={data} refetch={() => q.refetch()} fetching={q.isFetching} />
+          {data.job_count === 0 ? (
+            <div className="rounded-lg border border-dashed bg-card px-6 py-10 text-center" data-testid="panel-report-empty">
+              <h2 className="font-semibold">{s('emptyTitle')}</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{s('emptyDesc')}</p>
+              <div className="mt-4 flex justify-center gap-2">
+                {active > 0 && <Button size="sm" variant="outline" onClick={() => go(EMPTY)}>{s('clearFilters')}</Button>}
+                <Link href="/jobs" className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted">{s('viewAll')}</Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Kpi label={s('kJobs')} testId="text-job-count" value={<span dir="ltr" className="font-mono tabular-nums">{data.job_count}</span>} sub={s('kOpen', { n: data.job_counts.open, d: data.job_counts.draft })} />
+                <Kpi label={s('kMeasured')} tone={data.unmeasured_jobs > 0 ? 'warn' : undefined}
+                  value={<span dir="ltr" className="font-mono tabular-nums"><span data-testid="text-measured">{data.measured_jobs}</span><span className="text-base text-muted-foreground"> / {data.job_count}</span></span>}
+                  sub={<span data-testid="text-unmeasured">{s('kMeasuredSub', { n: data.unmeasured_jobs })}</span>} />
+                {data.production ? (
+                  <>
+                    <Kpi label={s('kYield')} value={<Pct v={data.production.yield_rate} />} sub={data.material ? `${data.material.name} · ${s('colIssued')} ${data.production.issued} kg` : undefined} />
+                    <Kpi label={s('kVariance')} tone={Number(data.production.variance) !== 0 ? 'warn' : undefined} value={<Signed v={data.production.variance} />} sub={s('defsHint')} />
+                  </>
+                ) : (
+                  <button type="button" onClick={() => setOpen(true)} className="flex flex-col items-start gap-1 rounded-lg border border-dashed bg-card px-4 py-3 text-start hover:border-primary/40 lg:col-span-1" data-testid="text-select-material">
+                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s('kYield')} · {s('kVariance')}</span>
+                    <span className="text-base font-semibold text-primary">{s('needMaterial')}</span>
+                    <span className="text-xs text-muted-foreground">{s('needMaterialSub')}</span>
+                  </button>
+                )}
+                <Kpi label={s('kLots')} value={<Link href="/inventory" className="font-mono tabular-nums hover:text-primary" dir="ltr">{data.inventory.available.count}</Link>} sub={s('kLotsSub')} />
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+                <section className="min-w-0 rounded-lg border bg-card" aria-labelledby="h-att" data-testid="panel-attention">
+                  <header className="border-b px-4 py-3">
+                    <h2 id="h-att" className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-[hsl(32_81%_40%)]" aria-hidden />{s('attention')}<span className="font-mono text-xs text-muted-foreground">{attention.length}</span></h2>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{s('attentionScope', { n: data.jobs.results.length })}</p>
+                  </header>
+                  {attention.length === 0 ? (
+                    <div className="px-4 py-8 text-center"><p className="text-sm font-medium">{s('allClear')}</p><p className="mt-1 text-xs text-muted-foreground">{s('allClearSub')}</p></div>
+                  ) : (
+                    <ul className="divide-y">
+                      {attention.map(({ job, kind, v }) => (
+                        <li key={job.id}>
+                          <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40" data-testid={`link-attention-${job.id}`}>
+                            <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(38_92%_50%)]')} aria-hidden />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium"><JobNumber value={job.job_number} className="me-2" />{job.title}</span>
+                              <span className="block text-xs text-muted-foreground">{kind === 'unmeasured' ? s('attUnmeasured') : kind === 'neg' ? s('attNegVariance', { v }) : s('attVariance', { v })}{job.reconciliation && ` · ${job.reconciliation.material_name}`}</span>
+                            </span>
+                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+                <section className="min-w-0 rounded-lg border bg-card" aria-labelledby="h-recent" data-testid="panel-recent-jobs">
+                  <header className="flex items-center justify-between border-b px-4 py-3">
+                    <h2 id="h-recent" className="text-sm font-semibold">{s('recent')}</h2>
+                    <Link href="/jobs" className="text-xs font-medium text-primary hover:underline" data-testid="link-all-jobs">{s('viewAll')}</Link>
+                  </header>
+                  <ul className="divide-y">
+                    {data.jobs.results.slice(0, 8).map((job) => (
+                      <li key={job.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1 hover:text-primary" data-testid={`link-recent-${job.id}`}>
+                          <span className="block truncate text-sm font-medium"><JobNumber value={job.job_number} className="me-2" />{job.title}</span>
+                          <span className="block text-xs text-muted-foreground">{t(`status_${job.status}`)}</span>
+                        </Link>
+                        <StatusBadge status={job.status} />
+                        <Link href={`/jobs/${job.id}/cutting`} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted" aria-label={`${s('openCutting')} ${job.job_number}`} data-testid={`link-recent-cutting-${job.id}`}>
+                          <Scissors className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">{s('openCutting')}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+            </>
+          )}
+        </>
+      )}
+      <Definitions />
+    </div>
+  );
+}
+
+export function DashboardPage() { return <DashboardView />; }
 export function ReportsPage() { return <ReportView path="/reports" detailed />; }

@@ -191,6 +191,7 @@ function EmployeeRow({ e, self, onReset, onDeactivate }: { e: Employee; self: bo
     },
     onError: (err) => toast({ variant: 'destructive', title: errorMessage(err, t) }),
   });
+  const [pendingRole, setPendingRole] = useState<Role | null>(null);
   return (
     <li className={cn('grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-[1.6fr_1.2fr_0.9fr_1fr_auto] md:items-center md:gap-4', !e.is_active && 'bg-muted/40')} data-testid={`row-employee-${e.id}`}>
       <div className="flex min-w-0 items-center gap-3">
@@ -204,7 +205,7 @@ function EmployeeRow({ e, self, onReset, onDeactivate }: { e: Employee; self: bo
         </div>
       </div>
       <div>
-        <Select value={e.role} disabled={self || m.isPending} onValueChange={(v) => m.mutate({ role: v as Role })}>
+        <Select value={e.role} disabled={self || m.isPending} onValueChange={(v) => { if (v !== e.role) setPendingRole(v as Role); }}>
           <SelectTrigger className="h-9" aria-label={t('colRole')} data-testid={`select-role-${e.id}`}><SelectValue /></SelectTrigger>
           <SelectContent>
             {ROLES.map((r) => <SelectItem key={r} value={r}>{t(`role_${r}` as MsgKey)}</SelectItem>)}
@@ -228,6 +229,20 @@ function EmployeeRow({ e, self, onReset, onDeactivate }: { e: Employee; self: bo
           {t('resetPassword')}
         </Button>
       </div>
+      <AlertDialog open={pendingRole !== null} onOpenChange={(o) => { if (!o) setPendingRole(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('colRole')}: {displayName(e)}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(`role_${e.role}` as MsgKey)} → {pendingRole ? t(`role_${pendingRole}` as MsgKey) : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid={`button-cancel-role-${e.id}`}>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction data-testid={`button-confirm-role-${e.id}`} onClick={() => { if (pendingRole) m.mutate({ role: pendingRole }); setPendingRole(null); }}>{t('colRole')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </li>
   );
 }
@@ -252,12 +267,17 @@ export default function EmployeesPage({ user }: { user: Employee }) {
     onError: (err) => { toast({ variant: 'destructive', title: errorMessage(err, t) }); setDeact(null); },
   });
 
+  const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all');
+  const counts = useMemo(() => {
+    const all = q.data ?? [];
+    return { active: all.filter((x) => x.is_active).length, inactive: all.filter((x) => !x.is_active).length, temp: all.filter((x) => x.is_active && (x.must_change_password || x.temporary_password_expired)).length };
+  }, [q.data]);
   const list = useMemo(() => {
-    const all = [...(q.data ?? [])].sort((a, b) => Number(b.is_active) - Number(a.is_active) || a.username.localeCompare(b.username));
+    const all = [...(q.data ?? [])].filter((e) => roleFilter === 'all' || e.role === roleFilter).sort((a, b) => Number(b.is_active) - Number(a.is_active) || a.username.localeCompare(b.username));
     const s = query.trim().toLowerCase();
     if (!s) return all;
     return all.filter((e) => `${e.username} ${e.first_name} ${e.last_name}`.toLowerCase().includes(s));
-  }, [q.data, query]);
+  }, [q.data, query, roleFilter]);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-1 duration-500">
@@ -272,9 +292,25 @@ export default function EmployeesPage({ user }: { user: Employee }) {
         </Button>
       </div>
 
-      <div className="relative mt-8 max-w-sm">
-        <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input className="ps-9" placeholder={t('searchEmployees')} aria-label={t('searchEmployees')} value={query} onChange={(e) => setQuery(e.target.value)} data-testid="input-search-employees" />
+      {q.data && (
+        <dl className="mt-6 flex flex-wrap gap-2 text-sm" data-testid="panel-employee-counts">
+          <div className="flex items-baseline gap-2 rounded-md border bg-card px-3 py-1.5"><dt className="text-muted-foreground">{t('active')}</dt><dd className="font-mono font-semibold">{counts.active}</dd></div>
+          <div className="flex items-baseline gap-2 rounded-md border bg-card px-3 py-1.5"><dt className="text-muted-foreground">{t('inactive')}</dt><dd className="font-mono font-semibold">{counts.inactive}</dd></div>
+          <div className={cn('flex items-baseline gap-2 rounded-md border px-3 py-1.5', counts.temp > 0 ? 'border-[hsl(38_92%_50%/0.4)] bg-[hsl(38_92%_50%/0.08)]' : 'bg-card')}><dt className="text-muted-foreground">{t('pwdTemporary')}</dt><dd className="font-mono font-semibold">{counts.temp}</dd></div>
+        </dl>
+      )}
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1 sm:max-w-sm">
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input className="ps-9" placeholder={t('searchEmployees')} aria-label={t('searchEmployees')} value={query} onChange={(e) => setQuery(e.target.value)} data-testid="input-search-employees" />
+        </div>
+        <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | 'all')}>
+          <SelectTrigger className="sm:w-52" aria-label={t('colRole')} data-testid="select-role-filter"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('colRole')}: *</SelectItem>
+            {ROLES.map((r) => <SelectItem key={r} value={r}>{t(`role_${r}` as MsgKey)}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border bg-card">

@@ -82,7 +82,7 @@ export function MaterialsSection({ job }: { job: ProductionJob }) {
         </div>
       ) : s ? (
         <div className="flex flex-col gap-6 p-5 sm:p-6">
-          <MaterialHeader s={s} />
+          <MaterialHeader s={s} onStart={s.permissions.record && !formOpen && !s.material ? () => setFormOpen(true) : undefined} />
           <Summary s={s} />
           {s.permissions.record || formOpen ? (
             formOpen ? (
@@ -110,13 +110,14 @@ export function MaterialsSection({ job }: { job: ProductionJob }) {
   );
 }
 
-function MaterialHeader({ s }: { s: MaterialState }) {
+function MaterialHeader({ s, onStart }: { s: MaterialState; onStart?: () => void }) {
   const { t } = useI18n();
   if (!s.material) {
     return (
       <div className="flex items-start gap-3 rounded-md border border-dashed p-4" data-testid="panel-no-material">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground" aria-hidden><Package className="h-4 w-4" /></span>
-        <div><p className="text-sm font-medium">{t('matNoMaterial')}</p><p className="mt-0.5 text-xs text-muted-foreground">{t('matNoMaterialDesc')}</p></div>
+        <div className="flex-1"><p className="text-sm font-medium">{t('matNoMaterial')}</p><p className="mt-0.5 text-xs text-muted-foreground">{t('matNoMaterialDesc')}</p>
+          {onStart && <Button size="sm" className="mt-3" onClick={onStart} data-testid="button-record-first-issue"><Plus className="h-3.5 w-3.5" aria-hidden />{t('kind_issue')}</Button>}</div>
       </div>
     );
   }
@@ -133,42 +134,66 @@ function MaterialHeader({ s }: { s: MaterialState }) {
   );
 }
 
+const KIND_TONE: Record<Kind, { chip: string; bar: string }> = {
+  issue: { chip: 'bg-primary/10 text-primary', bar: 'bg-primary' },
+  good: { chip: 'bg-[hsl(160_84%_30%/0.12)] text-[hsl(160_84%_22%)]', bar: 'bg-[hsl(160_70%_36%)]' },
+  scrap: { chip: 'bg-destructive/10 text-destructive', bar: 'bg-destructive/80' },
+  offcut: { chip: 'bg-[hsl(200_70%_45%/0.12)] text-[hsl(200_70%_30%)]', bar: 'bg-[hsl(200_65%_48%)]' },
+};
+
 function Summary({ s }: { s: MaterialState }) {
   const { t } = useI18n();
   const fmt = useFormatDate();
   const sum = s.summary;
-  if (!sum) return <p className="text-sm text-muted-foreground" data-testid="text-no-summary">{t('matNoSummary')}</p>;
+  if (!sum) return <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground" data-testid="text-no-summary">{t('matNoSummary')}</p>;
   const zero = isZero(sum.variance);
-  const negative = sum.variance.trim().startsWith('-');
-  const cells: [MsgKey, string, string][] = [
-    ['matIssued', sum.issued, 'issued'], ['matGood', sum.good, 'good'], ['matScrap', sum.scrap, 'scrap'],
-    ['matOffcut', sum.offcut, 'offcut'], ['matAccounted', sum.accounted, 'accounted'],
-  ];
   const rate = (v: string | null, id: string) => v === null
     ? <span className="text-sm text-muted-foreground" data-testid={`text-${id}`}>{t('matNA')}</span>
-    : <Qty v={`${v}%`} className="text-lg font-semibold" />;
+    : <Qty v={`${v}%`} className="text-base font-semibold" />;
+  // Display-only proportions of issued; never written back. Variance stays its own segment.
+  const issued = Number(sum.issued);
+  const share = (v: string) => (issued > 0 ? Math.max(0, Math.min(100, (Number(v) / issued) * 100)) : 0);
+  const outputs: [Kind, MsgKey, string][] = [['good', 'matGood', sum.good], ['scrap', 'matScrap', sum.scrap], ['offcut', 'matOffcut', sum.offcut]];
+  const kg = <span className="text-xs text-muted-foreground">{t('matUnitKg')}</span>;
   return (
     <div className="flex flex-col gap-3" data-testid="panel-summary">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('matSummary')}</h3>
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border sm:grid-cols-3 lg:grid-cols-4">
-        {cells.map(([k, v, id]) => (
-          <div key={id} className="bg-card p-3">
-            <dt className="text-xs text-muted-foreground">{t(k)}</dt>
-            <dd className="mt-0.5 flex items-baseline gap-1" data-testid={`text-sum-${id}`}><Qty v={v} className="text-lg font-semibold" /><span className="text-xs text-muted-foreground">{t('matUnitKg')}</span></dd>
-          </div>
-        ))}
-        <div className={cn('bg-card p-3', !zero && 'bg-[hsl(38_92%_50%/0.07)]')}>
-          <dt className="text-xs text-muted-foreground">{t('matVariance')}</dt>
-          <dd className="mt-0.5 flex items-baseline gap-1" data-testid="text-sum-variance"><Qty v={signed(sum.variance)} className={cn('text-lg font-semibold', !zero && 'text-[hsl(32_81%_29%)]')} /><span className="text-xs text-muted-foreground">{t('matUnitKg')}</span></dd>
+      <div className="grid gap-3 lg:grid-cols-[14rem_1fr]">
+        <div className="rounded-md border bg-primary/5 p-4">
+          <p className="text-xs text-muted-foreground">{t('matIssued')}</p>
+          <p className="mt-1 flex items-baseline gap-1" data-testid="text-sum-issued"><Qty v={sum.issued} className="text-2xl font-semibold" />{kg}</p>
+          <p className="mt-3 text-xs text-muted-foreground">{t('matAccounted')}</p>
+          <p className="flex items-baseline gap-1" data-testid="text-sum-accounted"><Qty v={sum.accounted} className="text-base font-semibold" />{kg}</p>
         </div>
-        <div className="bg-card p-3"><dt className="text-xs text-muted-foreground">{t('matYield')}</dt><dd className="mt-0.5" data-testid="text-sum-yield">{rate(sum.yield_rate, 'yield-na')}</dd></div>
-        <div className="bg-card p-3"><dt className="text-xs text-muted-foreground">{t('matScrapRate')}</dt><dd className="mt-0.5" data-testid="text-sum-scrap-rate">{rate(sum.scrap_rate, 'scrap-rate-na')}</dd></div>
-      </dl>
+        <div className="flex flex-col gap-3 rounded-md border p-4">
+          {issued > 0 && (
+            <div className="flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+              {outputs.map(([k, , v]) => <span key={k} className={KIND_TONE[k].bar} style={{ width: `${share(v)}%` }} />)}
+            </div>
+          )}
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {outputs.map(([k, label, v]) => (
+              <div key={k}>
+                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className={cn('h-2 w-2 rounded-full', KIND_TONE[k].bar)} aria-hidden />{t(label)}</dt>
+                <dd className="mt-0.5 flex items-baseline gap-1" data-testid={`text-sum-${k}`}><Qty v={v} className="text-lg font-semibold" />{kg}</dd>
+              </div>
+            ))}
+            <div className={cn('rounded-md px-2 py-1', !zero && 'bg-[hsl(38_92%_50%/0.1)]')}>
+              <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className="h-2 w-2 rounded-full border border-dashed border-[hsl(32_81%_35%)]" aria-hidden />{t('matVariance')}</dt>
+              <dd className="mt-0.5 flex items-baseline gap-1" data-testid="text-sum-variance"><Qty v={signed(sum.variance)} className={cn('text-lg font-semibold', !zero && 'text-[hsl(32_81%_29%)]')} />{kg}</dd>
+            </div>
+          </dl>
+          <dl className="flex flex-wrap gap-x-6 gap-y-1 border-t pt-2 text-xs">
+            <div className="flex items-baseline gap-2"><dt className="text-muted-foreground">{t('matYield')}</dt><dd data-testid="text-sum-yield">{rate(sum.yield_rate, 'yield-na')}</dd></div>
+            <div className="flex items-baseline gap-2"><dt className="text-muted-foreground">{t('matScrapRate')}</dt><dd data-testid="text-sum-scrap-rate">{rate(sum.scrap_rate, 'scrap-rate-na')}</dd></div>
+          </dl>
+        </div>
+      </div>
       {zero ? (
         <p className="flex items-start gap-2 text-xs text-muted-foreground" data-testid="text-balanced"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{t('matBalanced')}</p>
-      ) : negative || !zero ? (
-        <p className="flex items-start gap-2 text-xs text-muted-foreground" data-testid="text-variance-note"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{t('matVarianceNote')}</p>
-      ) : null}
+      ) : (
+        <p className="flex items-start gap-2 rounded-md border border-[hsl(38_92%_50%/0.35)] bg-[hsl(38_92%_50%/0.06)] px-3 py-2 text-xs text-foreground" data-testid="text-variance-note"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(32_81%_35%)]" aria-hidden />{t('matVarianceNote')}</p>
+      )}
       <details className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         <summary className="cursor-pointer font-medium text-foreground" data-testid="toggle-formulas">{t('matFormulas')}</summary>
         <ul className="mt-2 space-y-1"><li>{t('fAccounted')}</li><li>{t('fVariance')}</li><li>{t('fYield')}</li><li>{t('fScrap')}</li><li>{t('fNull')}</li></ul>
@@ -343,18 +368,22 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
     <div className="flex flex-col gap-3" data-testid="panel-entries">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('matEntries')}</h3>
-        <span className="text-xs text-muted-foreground" dir="ltr">{e.count}</span>
+        <span className="text-xs text-muted-foreground" dir="ltr">{e.count} · {t('matUnitKg')}</span>
       </div>
       {e.results.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground" data-testid="text-no-entries">{t('matNoEntries')}</p>
       ) : (
+        <div className="flex flex-col gap-4">
+        {([['issue', e.results.filter((x) => x.kind === 'issue')], ['output', e.results.filter((x) => x.kind !== 'issue')]] as const).filter(([, list]) => list.length > 0).map(([grp, list]) => (
+        <div key={grp} className="flex flex-col gap-1.5" data-testid={`group-entries-${grp}`}>
+        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{grp === 'issue' ? t('kind_issue') : `${t('kind_good')} · ${t('kind_scrap')} · ${t('kind_offcut')}`}</h4>
         <ul className="divide-y rounded-md border">
-          {e.results.map((en) => {
+          {list.map((en) => {
             const v = en.void;
             return (
               <li key={en.id} className={cn('flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:gap-4', v && 'bg-muted/30')} data-testid={`row-entry-${en.id}`}>
                 <div className="flex items-center gap-3 sm:w-48 sm:shrink-0">
-                  <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', en.kind === 'issue' ? 'bg-primary/10 text-primary' : en.kind === 'good' ? 'bg-[hsl(160_84%_30%/0.1)] text-[hsl(160_84%_24%)]' : 'bg-muted text-muted-foreground', v && 'opacity-60')}>{t(`kind_${en.kind}` as MsgKey)}</span>
+                  <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', KIND_TONE[en.kind].chip, v && 'opacity-60')}>{t(`kind_${en.kind}` as MsgKey)}</span>
                   <span className={cn('text-sm font-semibold', v && 'text-muted-foreground line-through')} data-testid={`text-entry-qty-${en.id}`}><Qty v={en.quantity} /> <span className="text-xs font-normal">{t('matUnitKg')}</span></span>
                 </div>
                 <div className="min-w-0 flex-1 text-xs">
@@ -382,6 +411,9 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
             );
           })}
         </ul>
+        </div>
+        ))}
+        </div>
       )}
       {e.total_pages > 1 && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">

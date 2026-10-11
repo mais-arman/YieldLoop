@@ -12,7 +12,6 @@ import { BrandMark, LangSwitch } from '@/components/brand';
 import NotFound from '@/pages/not-found';
 import ConnectivityPage from '@/pages/connectivity';
 import LoginPage from '@/pages/login';
-import HomePage from '@/pages/home';
 import EmployeesPage from '@/pages/employees';
 import PasswordPage from '@/pages/password';
 import JobsPage from '@/pages/jobs';
@@ -98,7 +97,7 @@ function Forbidden() {
       <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-destructive/10 text-destructive" aria-hidden><ShieldAlert className="h-5 w-5" /></span>
       <h1 className="mt-4 text-xl font-semibold" data-testid="text-page-title">{t('forbiddenTitle')}</h1>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t('forbiddenDesc')}</p>
-      <Link href="/" className="mt-6 inline-block text-sm font-medium text-primary hover:underline">{t('backHome')}</Link>
+      <Link href="/dashboard" className="mt-6 inline-block text-sm font-medium text-primary hover:underline">{t('backHome')}</Link>
     </section>
   );
 }
@@ -125,8 +124,8 @@ function Authed({ user }: { user: Employee }) {
   }
   return (
     <Switch>
-      <Route path="/login"><Redirect to="/" replace /></Route>
-      <Route path="/"><AppShell user={user}><HomePage user={user} /></AppShell></Route>
+      <Route path="/login"><Redirect to="/dashboard" replace /></Route>
+      <Route path="/"><Redirect to="/dashboard" replace /></Route>
       <Route path="/employees">
         <AppShell user={user}>{user.role === 'manager' ? <EmployeesPage user={user} /> : <Forbidden />}</AppShell>
       </Route>
@@ -135,7 +134,7 @@ function Authed({ user }: { user: Employee }) {
         <AppShell user={user}>{user.role === 'manager' ? <JobNewPage /> : <Forbidden />}</AppShell>
       </Route>
       <Route path="/jobs/:id/cutting">
-        {(params) => <AppShell user={user}><CuttingStudioPage key={params.id} id={Number(params.id)} user={user} /></AppShell>}
+        {(params) => <AppShell user={user} wide><CuttingStudioPage key={params.id} id={Number(params.id)} user={user} /></AppShell>}
       </Route>
       <Route path="/cutting"><AppShell user={user}><CuttingEntryPage /></AppShell></Route>
       <Route path="/jobs/:id">

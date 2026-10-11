@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ChevronLeft, ChevronRight, ClipboardList, Plus, RotateCw, Search } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, ClipboardList, Plus, RotateCw, Scissors, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,11 +9,14 @@ import { JOB_STATUSES, JobNumber, StatusBadge, jobErrorMessage, useFormatDate } 
 import type { Employee } from '@/lib/auth';
 import { useJobs, type JobStatus } from '@/lib/jobs';
 import { useI18n, type MsgKey } from '@/lib/i18n';
+import { useUt } from '@/lib/ui-i18n';
+import { cn } from '@/lib/utils';
 
 export default function JobsPage({ user }: { user: Employee }) {
   const { t } = useI18n();
   const [, navigate] = useLocation();
   const fmt = useFormatDate();
+  const ut = useUt();
   const isManager = user.role === 'manager';
   const isOperator = user.role === 'cutting_operator';
   const [page, setPage] = useState(1);
@@ -65,9 +68,6 @@ export default function JobsPage({ user }: { user: Employee }) {
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border bg-card">
-        <div className="hidden grid-cols-[1fr_auto_10rem_10rem] gap-4 border-b bg-muted/50 px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted-foreground md:grid">
-          <span>{t('colJob')}</span><span className="w-24">{t('colStatus')}</span><span>{t('colCreatedBy')}</span><span className="text-end">{t('colUpdated')}</span>
-        </div>
         {q.isPending ? (
           <ul className="divide-y" aria-busy>
             {[0, 1, 2, 3, 4].map((i) => (
@@ -104,22 +104,42 @@ export default function JobsPage({ user }: { user: Employee }) {
             )}
           </div>
         ) : (
-          <ul className={q.isFetching ? 'divide-y opacity-70 transition-opacity' : 'divide-y transition-opacity'}>
-            {(data?.results ?? []).map((j) => (
-              <li key={j.id}>
-                <Link href={`/jobs/${j.id}`} data-testid={`row-job-${j.id}`}
-                  className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none md:grid-cols-[1fr_auto_10rem_10rem]">
-                  <div className="min-w-0">
-                    <JobNumber value={j.job_number} />
-                    <div className={j.status === 'cancelled' ? 'truncate text-sm font-medium text-muted-foreground' : 'truncate text-sm font-medium'}>{j.title}</div>
-                  </div>
-                  <div className="md:w-24"><StatusBadge status={j.status} /></div>
-                  <div className="col-span-2 truncate text-xs text-muted-foreground md:col-span-1 md:text-sm" dir="ltr" style={{ textAlign: 'start' }}>{j.created_by.username}</div>
-                  <div className="hidden text-end text-xs text-muted-foreground md:block">{fmt(j.updated_at)}</div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <table className={cn('w-full text-sm transition-opacity xl:table-fixed', q.isFetching && 'opacity-70')}>
+            <thead className="hidden border-b bg-muted/50 text-xs font-medium uppercase tracking-wider text-muted-foreground xl:table-header-group">
+              <tr>
+                <th scope="col" className="px-4 py-2.5 text-start font-medium">{t('colJob')}</th>
+                <th scope="col" className="px-4 py-2.5 text-start font-medium">{t('colStatus')}</th>
+                <th scope="col" className="px-4 py-2.5 text-start font-medium">{t('colCreatedBy')}</th>
+                <th scope="col" className="px-4 py-2.5 text-start font-medium">{t('colUpdated')}</th>
+                <th scope="col" className="px-4 py-2.5 text-end font-medium"><span className="sr-only">{t('colActions')}</span></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {(data?.results ?? []).map((j) => (
+                <tr key={j.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-muted/40 xl:table-row xl:p-0">
+                  <td className="min-w-0 flex-1 basis-full xl:px-4 xl:py-3">
+                    <Link href={`/jobs/${j.id}`} data-testid={`row-job-${j.id}`} className="block min-w-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <JobNumber value={j.job_number} />
+                      <span className={cn('block truncate text-sm font-medium group-hover:text-primary', j.status === 'cancelled' && 'text-muted-foreground')}>{j.title}</span>
+                    </Link>
+                  </td>
+                  <td className="xl:px-4 xl:py-3"><StatusBadge status={j.status} /></td>
+                  <td className="truncate text-xs text-muted-foreground xl:px-4 xl:py-3 xl:text-sm" dir="ltr" style={{ textAlign: 'start' }}>{j.created_by.username}</td>
+                  <td className="text-xs text-muted-foreground xl:px-4 xl:py-3">{fmt(j.updated_at)}</td>
+                  <td className="ms-auto xl:px-4 xl:py-3">
+                    <div className="flex justify-end gap-1">
+                      <Link href={`/jobs/${j.id}/cutting`} className="inline-flex h-8 items-center gap-1.5 rounded-md border bg-card px-2.5 text-xs font-medium hover:border-primary/40 hover:text-primary" data-testid={`link-job-cutting-${j.id}`}>
+                        <Scissors className="h-3.5 w-3.5" aria-hidden />{ut('pageCutting')}
+                      </Link>
+                      <Link href={`/jobs/${j.id}`} aria-label={`${j.job_number}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" data-testid={`link-job-open-${j.id}`}>
+                        <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 

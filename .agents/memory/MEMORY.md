@@ -1,2 +1,3 @@
 - [Authentication regression checks](auth-regression-checks.md) — verify the first successful login after rejection, not just repeat login in an established browser.
 - [Recovery verification](recovery-verification.md) — PostgreSQL restore tooling and CHECK-expression text can differ; preserve fail-closed evidence requirements.
+- [Shared role experience](shared-role-experience.md) — all three roles share the same application experience; uniform navigation does not imply uniform write permissions.

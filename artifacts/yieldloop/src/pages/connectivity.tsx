@@ -1,3 +1,6 @@
+import { Link } from 'wouter';
+import { ArrowLeft } from 'lucide-react';
+import { useUt } from '@/lib/ui-i18n';
 import {
   databaseReadiness,
   healthCheck,
@@ -170,6 +173,7 @@ function CheckRow({ id, icon: Icon, title, desc, endpoint, view }: {
 
 export default function ConnectivityPage() {
   const { t, lang, setLang } = useI18n();
+  const ut = useUt();
   const api = useApiCheck();
   const db = useDbCheck();
   const busy = api.phase === 'checking' || db.phase === 'checking';
@@ -189,9 +193,13 @@ export default function ConnectivityPage() {
             </svg>
             <div className="leading-tight">
               <div className="text-sm font-semibold" dir="ltr">{t('brand')}</div>
-              <div className="text-xs text-muted-foreground">{t('phase')}</div>
+              <div className="text-xs text-muted-foreground">{ut('systemStatus')}</div>
             </div>
           </div>
+          <div className="flex items-center gap-1">
+          <Link href="/dashboard" className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" data-testid="link-back-app">
+            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />{ut('pageDashboard')}
+          </Link>
           <Button
             data-testid="button-switch-language"
             variant="ghost"
@@ -203,6 +211,7 @@ export default function ConnectivityPage() {
             <Languages className="h-4 w-4" aria-hidden />
             {t('switchLang')}
           </Button>
+          </div>
         </div>
       </header>
 

@@ -4,7 +4,7 @@ export type Lang = 'en' | 'ar';
 
 const en = {
   brand: 'YieldLoop',
-  phase: 'Phase 7 · Cutting Studio',
+  phase: 'Material accountability workspace',
   navDashboard: 'Dashboard',
   navReports: 'Reports',
   title: 'System connectivity',
@@ -239,7 +239,7 @@ const en = {
   notFoundTitle: 'Page not found',
   notFoundDesc: 'This address does not exist in YieldLoop.',
   matTitle: 'Materials & reconciliation',
-  matScope: 'Tracks one material per job, in kg only. Issued material is reconciled against good output, scrap and offcuts. Completion, rework, conversions and inventory are not part of this phase.',
+  matScope: 'Tracks one material per job, in kg only. Issued material is reconciled against good output, scrap and offcuts. Completion, rework and material conversions are recorded elsewhere.',
   matLoadError: 'Could not load material records.',
   matNoMaterial: 'No material assigned yet',
   matNoMaterialDesc: 'The first entry must be an issue. It pins the material to this job permanently.',
@@ -410,7 +410,7 @@ const en = {
 
 const ar: typeof en = {
   brand: 'YieldLoop',
-  phase: 'المرحلة 7 · استوديو القص',
+  phase: 'مساحة عمل لمحاسبة المواد',
   navDashboard: 'لوحة المتابعة',
   navReports: 'التقارير',
   title: 'اتصال النظام',
@@ -645,7 +645,7 @@ const ar: typeof en = {
   notFoundTitle: 'الصفحة غير موجودة',
   notFoundDesc: 'هذا العنوان غير موجود في YieldLoop.',
   matTitle: 'المواد والمطابقة',
-  matScope: 'يتتبع مادة واحدة لكل أمر بالكيلوغرام فقط. تُطابَق المادة المصروفة مع الإنتاج السليم والهالك والقصاصات. الإكمال وإعادة العمل والتحويلات والمخزون ليست ضمن هذه المرحلة.',
+  matScope: 'يتتبع مادة واحدة لكل أمر بالكيلوغرام فقط. تُطابَق المادة المصروفة مع الإنتاج السليم والهالك والقصاصات. يُسجَّل الإكمال وإعادة العمل وتحويل المواد في مواضع أخرى.',
   matLoadError: 'تعذّر تحميل سجلات المواد.',
   matNoMaterial: 'لم تُحدَّد مادة بعد',
   matNoMaterialDesc: 'يجب أن يكون أول قيد صرفًا، وهو يثبّت المادة لهذا الأمر نهائيًا.',

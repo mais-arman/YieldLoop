@@ -67,7 +67,7 @@ export default function LoginPage() {
           <div className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(160_84%_55%)]">{t('phase')}</div>
           <p className="mt-4 text-3xl font-semibold leading-snug">{t('signInSubtitle')}</p>
         </div>
-        <div className="relative font-mono text-xs text-[hsl(210_40%_96%/0.55)]" dir="ltr">/api/v1/auth</div>
+        <div aria-hidden />
       </aside>
 
       <div className="flex flex-col">

@@ -20,6 +20,7 @@ import { useI18n } from '@/lib/i18n';
 import { MaterialsSection } from '@/components/materials/materials-section';
 import { cn } from '@/lib/utils';
 import { useCt } from '@/components/cutting/cutting-i18n';
+import { useUt } from '@/lib/ui-i18n';
 
 function BackLink() {
   const { t } = useI18n();
@@ -45,7 +46,7 @@ export default function JobDetailPage({ id }: { id: number }) {
   }
   if (q.isPending) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4" aria-busy>
+      <div className="mx-auto max-w-6xl space-y-4" aria-busy>
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-8 w-72 max-w-full" />
         <Skeleton className="h-64 w-full" />
@@ -72,6 +73,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
   const { toast } = useToast();
   const qc = useQueryClient();
   const fmt = useFormatDate();
+  const ut = useUt();
   const [title, setTitle] = useState(job.title);
   const [notes, setNotes] = useState(job.notes ?? '');
   const base = useRef({ title: job.title, notes: job.notes ?? '', revision: job.revision });
@@ -147,18 +149,54 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
     save.mutate();
   };
 
+  useEffect(() => {
+    const h = window.location.hash.slice(1);
+    if (h === 'materials' || h === 'cutting') requestAnimationFrame(() => document.getElementById(h)?.scrollIntoView({ block: 'start' }));
+  }, []);
+
   const discard = () => { setTitle(base.current.title); setNotes(base.current.notes); save.reset(); };
 
   return (
-    <div className="mx-auto max-w-3xl animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="mx-auto max-w-6xl animate-in fade-in slide-in-from-bottom-1 duration-500">
       <BackLink />
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <JobNumber value={job.job_number} className="text-sm" />
-        <StatusBadge status={job.status} />
-      </div>
-      <h1 className={cn('mt-2 break-words text-2xl font-semibold tracking-tight', job.status === 'cancelled' && 'text-muted-foreground')} data-testid="text-page-title">{job.title}</h1>
+      <header className="mt-4 flex flex-col gap-4 rounded-lg border bg-card p-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <JobNumber value={job.job_number} className="text-sm" />
+            <StatusBadge status={job.status} />
+            <span className="text-xs text-muted-foreground">{t('updatedLabel')} {fmt(job.updated_at)}</span>
+          </div>
+          <h1 className={cn('mt-2 break-words text-2xl font-semibold tracking-tight', job.status === 'cancelled' && 'text-muted-foreground')} data-testid="text-page-title">{job.title}</h1>
+        </div>
+        <div className="flex flex-col gap-2 lg:items-end">
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/jobs/${job.id}/cutting`} className="inline-flex h-9 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover:border-primary/40 hover:text-primary" data-testid="link-header-cutting">
+              <Ruler className="h-4 w-4" aria-hidden />{ut('pageCutting')}
+            </Link>
+            {transitions.includes('open') && (
+              <Button onClick={() => setConfirm('open')} disabled={dirty || stale || reloading || save.isPending || transition.isPending} data-testid="button-open-job">
+                <PlayCircle className="h-4 w-4" aria-hidden />{t('openJob')}
+              </Button>
+            )}
+            {transitions.includes('cancelled') && (
+              <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setConfirm('cancelled')} disabled={dirty || stale || reloading || save.isPending || transition.isPending} data-testid="button-cancel-job">
+                <Ban className="h-4 w-4" aria-hidden />{t('cancelJob')}
+              </Button>
+            )}
+          </div>
+          {transitions.length > 0 && dirty && <p className="text-xs text-muted-foreground">{t('saveBeforeTransition')}</p>}
+          {transitions.length === 0 && <p className="text-xs text-muted-foreground">{job.status === 'cancelled' ? t('cancelledLocked') : t('noTransitions')}</p>}
+        </div>
+      </header>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-[1fr_16rem]">
+      <nav aria-label={t('jobDetails')} className="sticky top-14 z-10 -mx-1 mt-4 flex flex-wrap gap-1 bg-background/90 px-1 py-2 backdrop-blur">
+        {([['details', t('jobDetails')], ['cutting', ut('pageCutting')], ['materials', t('matTitle')]] as const).map(([id, label]) => (
+          <a key={id} href={`#${id}`} onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" data-testid={`link-section-${id}`}>{label}</a>
+        ))}
+      </nav>
+
+      <div id="details" className="mt-2 grid scroll-mt-28 gap-4 lg:grid-cols-[1fr_18rem]">
         <form onSubmit={submit} noValidate className="flex flex-col gap-5 rounded-lg border bg-card p-5 sm:p-6" data-testid="form-edit-job">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold">{t('jobDetails')}</h2>
@@ -219,27 +257,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
         </form>
 
         <aside className="flex flex-col gap-4">
-          <section className="rounded-lg border bg-card p-5">
-            <h2 className="text-sm font-semibold">{t('actions')}</h2>
-            {transitions.length === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">{job.status === 'cancelled' ? t('cancelledLocked') : t('noTransitions')}</p>
-            ) : (
-              <div className="mt-3 flex flex-col gap-2">
-                {dirty && <p className="text-xs text-muted-foreground">{t('saveBeforeTransition')}</p>}
-                {transitions.includes('open') && (
-                  <Button onClick={() => setConfirm('open')} disabled={dirty || stale || reloading || save.isPending || transition.isPending} data-testid="button-open-job">
-                    <PlayCircle className="h-4 w-4" aria-hidden />{t('openJob')}
-                  </Button>
-                )}
-                {transitions.includes('cancelled') && (
-                  <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setConfirm('cancelled')} disabled={dirty || stale || reloading || save.isPending || transition.isPending} data-testid="button-cancel-job">
-                    <Ban className="h-4 w-4" aria-hidden />{t('cancelJob')}
-                  </Button>
-                )}
-              </div>
-            )}
-          </section>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-3 rounded-lg border bg-card p-5 text-sm md:grid-cols-1">
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-3 rounded-lg border bg-card p-5 text-sm lg:grid-cols-1">
             <div><dt className="text-xs text-muted-foreground">{t('colCreatedBy')}</dt><dd className="font-mono text-xs" dir="ltr" style={{ textAlign: 'start' }}>{job.created_by.username}</dd></div>
             <div><dt className="text-xs text-muted-foreground">{t('revisionLabel')}</dt><dd className="font-mono text-xs" data-testid="text-revision">{job.revision}</dd></div>
             <div><dt className="text-xs text-muted-foreground">{t('createdLabel')}</dt><dd className="text-xs">{fmt(job.created_at)}</dd></div>
@@ -248,9 +266,9 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
         </aside>
       </div>
 
-      <CuttingLink jobId={job.id} />
+      <div id="cutting" className="scroll-mt-28"><CuttingLink jobId={job.id} /></div>
 
-      <MaterialsSection job={job} />
+      <div id="materials" className="scroll-mt-28"><MaterialsSection job={job} /></div>
 
       {confirm !== null && <AlertDialog open onOpenChange={(o) => { if (!o && !transition.isPending) setConfirm(null); }}>
         <AlertDialogContent>
