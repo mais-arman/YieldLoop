@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { ArrowLeft, Ban, ChevronRight, Ruler, Loader2, Lock, PlayCircle, RotateCw, Save, SearchX } from 'lucide-react';
+import { ArrowLeft, Ban, Bot, ChevronRight, Ruler, Loader2, Lock, PlayCircle, RotateCw, Save, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ import { MaterialsSection } from '@/components/materials/materials-section';
 import { cn } from '@/lib/utils';
 import { useCt } from '@/components/cutting/cutting-i18n';
 import { useUt } from '@/lib/ui-i18n';
+import { useFt } from '@/lib/feature-i18n';
 
 function BackLink() {
   const { t } = useI18n();
@@ -74,6 +75,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
   const qc = useQueryClient();
   const fmt = useFormatDate();
   const ut = useUt();
+  const ft = useFt();
   const [title, setTitle] = useState(job.title);
   const [notes, setNotes] = useState(job.notes ?? '');
   const base = useRef({ title: job.title, notes: job.notes ?? '', revision: job.revision });
@@ -172,6 +174,9 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
           <div className="flex flex-wrap gap-2">
             <Link href={`/jobs/${job.id}/cutting`} className="inline-flex h-9 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover:border-primary/40 hover:text-primary" data-testid="link-header-cutting">
               <Ruler className="h-4 w-4" aria-hidden />{ut('pageCutting')}
+            </Link>
+            <Link href={`/assistant?job_id=${job.id}`} className="inline-flex h-9 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover:border-primary/40 hover:text-primary" data-testid="link-header-assistant">
+              <Bot className="h-4 w-4" aria-hidden />{ft('asOpenAssistant')}
             </Link>
             {transitions.includes('open') && (
               <Button onClick={() => setConfirm('open')} disabled={dirty || stale || reloading || save.isPending || transition.isPending} data-testid="button-open-job">

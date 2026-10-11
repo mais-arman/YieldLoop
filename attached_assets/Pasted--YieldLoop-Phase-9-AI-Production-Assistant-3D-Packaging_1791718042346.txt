@@ -1,0 +1,140 @@
+# YieldLoop — Phase 9: AI Production Assistant + 3D Packaging Preview
+
+Implement the next useful product capabilities in the existing YieldLoop application. Do not produce another planning-only report. Inspect the current codebase and then implement the scoped features below.
+
+## Product context
+
+YieldLoop is for Ibn Khaldoun Printing Press.
+
+The application has exactly three roles:
+- Cutting Operator
+- Production Supervisor
+- Manager
+
+The existing application includes Django/DRF, PostgreSQL, React/TypeScript/Vite, English/Arabic localization, production jobs, material reconciliation, inventory, reporting, and Cutting Studio.
+
+Preserve the existing architecture, backend authorization, accounting, saved cutting plans, and revision safeguards.
+
+Do not redesign the entire application yet. We will review and refine the overall visual design after these features work.
+
+## Part A — AI Production Assistant
+
+Build a contextual AI assistant inside YieldLoop.
+
+### Core capabilities
+
+1. Accept Arabic and English questions.
+2. Understand the current permitted production job and its available dimensions, material measurements, and cutting-plan metrics.
+3. Explain cutting utilization, unplaced pieces, material variance, and the distinction between geometry utilization and actual production yield.
+4. Ask for missing information before recommending a plan.
+5. Suggest changes to piece dimensions, arrangement, or existing supported cutting settings when justified by available data.
+6. Explain each recommendation and its expected impact.
+7. Allow users to review a recommendation before applying or saving any changes.
+
+### Technical requirements
+
+- Inspect the existing integrations and available AI provider configuration before choosing an implementation.
+- Use a real supported AI provider through a server-side integration if credentials and configuration are available.
+- Never expose provider API keys to the browser.
+- If credentials are unavailable, implement a clearly identified unconfigured state and setup instructions. Do not simulate AI responses or claim the assistant is operational.
+- Use typed request and response schemas, input validation, reasonable request limits, error handling, and shared throttling.
+- Send only the minimum permitted context required for the current question. Do not send passwords, cookies, session identifiers, or unnecessary personal data.
+- Enforce existing user permissions on the backend before providing job or material context to the assistant.
+- Treat AI output as an untrusted recommendation. Validate every proposed change through the existing domain services and cutting geometry validator.
+- Never let the AI directly execute database writes, bypass permissions, modify reconciled quantities, consume inventory, or silently overwrite a saved plan.
+- Require explicit user confirmation before applying an accepted recommendation. Preserve revision conflict protection and audit requirements.
+- Make provider/model selection configurable rather than hard-coding credentials or depending on a single unavailable service.
+
+## Part B — Parametric 3D packaging preview
+
+Add an initial 3D packaging preview to Cutting Studio, beginning with a configurable pizza box.
+
+### User inputs
+
+Support the dimensions and parameters that can be represented reliably:
+- Internal or external length and width, with the selected convention clearly labeled.
+- Box height.
+- Cardboard thickness where the model supports it.
+- Box style selected from supported parametric templates.
+- Lid and flap configuration for the selected template.
+
+Do not imply that length, width, and height alone fully specify a manufacturable carton.
+
+### Geometry and interaction
+
+- Use Three.js or React Three Fiber if compatible with the current application.
+- Display an interactive 3D model that can be rotated, zoomed, and reset.
+- Support an assembled preview and an open-box preview when feasible.
+- Update the preview when supported parameters change.
+- Show dimensions and identify the chosen template.
+- Include useful validation messages for invalid or unsupported dimensions.
+- Keep the existing Cutting Studio available and preserve its current 2D placement, keyboard/touch interactions, save/reopen, comparison, and revision history.
+
+### Critical geometry rules
+
+- Generate the 3D model from explicit parametric geometry, not from an AI-generated picture.
+- Start with one well-defined pizza-box template instead of pretending to support every packaging design.
+- Document which flaps, tabs, folds, glue areas, and thickness effects are modeled and which are simplified.
+- Where feasible, generate the corresponding flat 2D dieline from the same template parameters and geometry definitions.
+- Do not claim the 2D dieline and 3D assembly are manufacturing-equivalent until their geometry and fold relationships have been validated.
+- Do not automatically convert the preview into cutting pieces or modify a saved cutting plan unless a validated mapping exists.
+- Do not claim physical machine compatibility, cardboard strength, or manufacturing readiness based on visualization alone.
+
+## Part C — Connecting AI, packaging, and cutting
+
+Allow the assistant to explain the selected box dimensions, identify missing packaging inputs, and suggest supported parameter changes.
+
+Where practical, show a before/after preview for proposed changes.
+
+The workflow must remain explicit:
+
+1. User enters or selects packaging parameters.
+2. The parametric model updates.
+3. The assistant explains or suggests changes.
+4. The user reviews the proposed result.
+5. Only validated and explicitly confirmed changes can be saved.
+
+The 3D visualization must not be used as proof of material consumption, manufacturing feasibility, or kilograms saved.
+
+## Part D — Localization and usability
+
+- Fully support Arabic and English, including RTL/LTR layout, validation, loading, errors, and empty states.
+- Make the assistant and 3D preview usable on desktop and mobile.
+- Provide accessible controls for rotation, zoom, reset, and numeric parameter entry.
+- Keep the new features visually consistent with the current application without undertaking the larger UI redesign.
+- Do not add decorative buttons that do not perform real actions.
+
+## Part E — Safety and scope
+
+- Preserve the existing read-only production safety guard and current database configuration.
+- Do not weaken authentication, role permissions, or account security.
+- Do not create production data, apply migrations, or alter accounting and inventory rules solely for these features.
+- Avoid unnecessary dependencies.
+- Do not add image-generation features that merely produce a picture instead of an editable geometric model.
+- Do not implement automatic industrial cutting optimization, machine control, inventory consumption, or production completion.
+- Do not publish or deploy.
+
+## Verification and completion
+
+Run the relevant frontend type checks, lint, production build, and focused backend tests.
+
+Add tests for:
+- AI authorization and malformed or unavailable provider responses.
+- Rejection of unsupported AI-proposed changes.
+- Parametric geometry for valid and invalid dimensions.
+- Stable geometry updates when parameters change.
+- Arabic/English behavior and responsive controls where automated verification is available.
+- Regression of existing cutting interactions, permissions, and saved-plan behavior.
+
+Verify the actual 3D rendering in the browser, not only the TypeScript build.
+
+At completion, report:
+1. The AI provider and configuration status.
+2. What the assistant can actually do versus what remains unavailable.
+3. Which pizza-box geometry is implemented and its limitations.
+4. Whether a corresponding 2D dieline exists and how it is validated.
+5. Files changed and dependencies added.
+6. Tests actually executed and any failures.
+7. Confirmation that existing application data, permissions, and production safety safeguards were preserved.
+
+Stop after this phase. Do not redesign the entire application or deploy it.

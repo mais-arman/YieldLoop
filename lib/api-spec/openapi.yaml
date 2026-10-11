@@ -11,6 +11,86 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/assistance/status:
+    get:
+      operationId: getAssistanceStatus
+      responses:
+        "200":
+          description: Configuration presence, not a provider availability guarantee
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AssistanceStatus"}
+  /v1/jobs/{job_id}/assistance/evidence:
+    parameters:
+      - {name: job_id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: getAssistanceEvidence
+      responses:
+        "200":
+          description: Authorized coherent recorded evidence, not an AI response
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AssistanceEvidence"}
+  /v1/jobs/{job_id}/assistance:
+    parameters:
+      - {name: job_id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: analyzeJobEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AssistanceInput"}
+      responses:
+        "200":
+          description: Read-only advisory response, model-selected validated leads, server-owned facts and calculations
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AssistanceAnswer"}
+        "503": {description: AI credentials unavailable}
+        "502": {description: Provider error or rejected malformed output}
+        "404": {description: Job missing or not visible}
+        "409": {description: Source revisions changed during generation}
+  /v1/packaging/templates:
+    get:
+      operationId: getPackagingTemplates
+      responses:
+        "200":
+          description: Supported visual concepts and parameter bounds
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingCatalogue"}
+  /v1/packaging/validate:
+    post:
+      operationId: validatePackagingConcept
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PackagingDesign"}
+      responses:
+        "200":
+          description: Valid concept parameters, never a manufacturing certification
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingValidation"}
+        "400": {description: Invalid or unsupported parameters}
+  /v1/packaging/propose:
+    post:
+      operationId: proposePackagingConcept
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PackagingPrompt"}
+      responses:
+        "200":
+          description: Review-required complete or partial proposal
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PackagingProposal"}
+        "503": {description: AI credentials unavailable}
+        "502": {description: Provider error or rejected malformed proposal}
   /v1/jobs/{job_id}/cutting:
     parameters:
       - {name: job_id, in: path, required: true, schema: {type: integer}}
@@ -522,6 +602,144 @@ components:
   securitySchemes:
     sessionCookie: {type: apiKey, in: cookie, name: yieldloop_session}
   schemas:
+    AssistanceStatus:
+      type: object
+      required: [available, provider, model]
+      properties:
+        available: {type: boolean}
+        provider: {type: string, enum: [openai]}
+        model: {type: [string, "null"]}
+    AssistanceInput:
+      type: object
+      additionalProperties: false
+      required: [language, question]
+      properties:
+        language: {type: string, enum: [en, ar]}
+        question: {type: string, minLength: 1, maxLength: 2000}
+        include_notes: {type: boolean, default: false}
+    EvidenceFact:
+      type: object
+      required: [id, kind, quantity, unit, created_at, voided]
+      properties:
+        id: {type: string}
+        kind: {type: string}
+        quantity: {type: string}
+        unit: {type: string}
+        created_at: {type: string}
+        voided: {type: boolean}
+        note: {type: string}
+    EvidenceJob:
+      type: object
+      required: [id, job_number, status, revision]
+      properties:
+        id: {type: integer}
+        job_number: {type: string}
+        status: {type: string}
+        revision: {type: integer}
+    EvidenceCuttingPlan:
+      type: object
+      required: [plan_id, revision, name, scenarios]
+      properties:
+        plan_id: {type: integer}
+        revision: {type: integer}
+        name: {type: string}
+        scenarios: {type: array, items: {$ref: "#/components/schemas/CuttingScenario"}}
+    AssistanceEvidence:
+      type: object
+      required: [job, material_revision, generated_at, recorded_facts, calculated_findings, cutting, limitations]
+      properties:
+        job: {$ref: "#/components/schemas/EvidenceJob"}
+        material_revision: {type: integer}
+        generated_at: {type: string}
+        recorded_facts: {type: array, items: {$ref: "#/components/schemas/EvidenceFact"}}
+        calculated_findings: {type: [object, "null"], additionalProperties: {type: [string, "null"]}}
+        cutting: {type: array, items: {$ref: "#/components/schemas/EvidenceCuttingPlan"}}
+        limitations: {type: array, items: {type: string}}
+    AssistanceLead:
+      type: object
+      required: [code, record_ids, text, evidence_needed, next_step]
+      properties:
+        code: {type: string}
+        record_ids: {type: array, items: {type: string}}
+        text: {type: string}
+        evidence_needed: {type: string}
+        next_step: {type: string}
+    AssistanceAnswer:
+      type: object
+      required: [evidence, advisory, language, answer, possible_leads, notice]
+      properties:
+        evidence: {$ref: "#/components/schemas/AssistanceEvidence"}
+        advisory: {type: boolean, const: true}
+        language: {type: string, enum: [en, ar]}
+        answer: {type: array, items: {type: string}}
+        possible_leads: {type: array, items: {$ref: "#/components/schemas/AssistanceLead"}}
+        notice: {type: string}
+    PackagingDesign:
+      type: object
+      additionalProperties: false
+      required: [template, name, parameters, state]
+      properties:
+        template: {type: string, enum: [tray, sleeve, lid_box]}
+        name: {type: string, minLength: 1, maxLength: 160}
+        parameters: {type: object, additionalProperties: {type: string}}
+        state: {type: string, enum: [assembled, open]}
+    PackagingValidation:
+      type: object
+      required: [valid, design, production_validated]
+      properties:
+        valid: {type: boolean, const: true}
+        design: {$ref: "#/components/schemas/PackagingDesign"}
+        production_validated: {type: boolean, const: false}
+    PackagingPrompt:
+      type: object
+      additionalProperties: false
+      required: [language, description]
+      properties:
+        language: {type: string, enum: [en, ar]}
+        description: {type: string, minLength: 1, maxLength: 2000}
+    PackagingProposal:
+      type: object
+      required: [template, name, parameters, missing, assumptions, valid, production_validated]
+      properties:
+        template: {type: [string, "null"], enum: [tray, sleeve, lid_box, null]}
+        name: {type: string}
+        parameters: {type: object, additionalProperties: {type: string}}
+        missing: {type: array, items: {type: string}}
+        assumptions: {type: array, items: {type: string}}
+        valid: {type: boolean}
+        production_validated: {type: boolean, const: false}
+    PackagingLabel:
+      type: object
+      required: [en, ar]
+      properties:
+        en: {type: string}
+        ar: {type: string}
+    PackagingParameter:
+      type: object
+      required: [key, label, min, max, required]
+      properties:
+        key: {type: string}
+        label: {$ref: "#/components/schemas/PackagingLabel"}
+        min: {type: number}
+        max: {type: number}
+        required: {type: boolean}
+    PackagingTemplate:
+      type: object
+      required: [id, label, parameters, states, unit, dimension_basis, production_validated]
+      properties:
+        id: {type: string, enum: [tray, sleeve, lid_box]}
+        label: {$ref: "#/components/schemas/PackagingLabel"}
+        parameters: {type: array, items: {$ref: "#/components/schemas/PackagingParameter"}}
+        states: {type: array, items: {type: string, enum: [assembled, open]}}
+        unit: {type: string, enum: [mm]}
+        dimension_basis: {type: string, enum: [internal]}
+        production_validated: {type: boolean, const: false}
+    PackagingCatalogue:
+      type: object
+      required: [templates, limitations]
+      properties:
+        templates: {type: array, items: {$ref: "#/components/schemas/PackagingTemplate"}}
+        limitations: {type: array, items: {type: string}}
     CuttingMillimetres:
       type: string
       pattern: '^(0|[1-9]\d{0,5})(\.\d{1,3})?$'

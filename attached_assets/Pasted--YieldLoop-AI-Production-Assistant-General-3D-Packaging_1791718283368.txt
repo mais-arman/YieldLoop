@@ -1,0 +1,244 @@
+# YieldLoop — AI Production Assistant + General 3D Packaging Designer
+
+## Objective
+
+Implement two product features in the existing YieldLoop application:
+
+1. **AI Assistant / AI Assistance** for evidence-based production analysis and recommendations.
+2. **General-purpose 3D Packaging Designer** that allows users to define different packaging shapes and dimensions and preview them in 3D.
+
+This is an implementation task, not a planning-only task. Inspect the existing codebase, follow its architecture and conventions, then implement, test, and document the changes.
+
+Do not redesign the entire application's UI in this phase. We will review and improve the existing pages separately after these features are complete.
+
+## 1. AI Assistant — Evidence-Based Production Assistance
+
+### Purpose
+
+The AI Assistant should help production staff understand production records, investigate discrepancies, interpret cutting layouts, and identify possible areas for investigation.
+
+It must distinguish clearly between:
+- Verified facts from recorded data.
+- Calculations derived from those records.
+- Possible explanations or hypotheses.
+- Information that is missing and requires operator confirmation.
+
+### Critical evidence rule
+
+**Never claim an exact root cause unless the available records and operator-provided evidence establish it.**
+
+Example scenario:
+
+An AI summary may identify a recorded **180 kg setup/layout entry** and suggest investigating that entry. It must not state that the entry caused the production variance or material loss unless sufficient supporting evidence exists.
+
+Appropriate response:
+
+"The records show a 180 kg setup/layout entry that may be relevant to this variance. Review the associated job, material issue, output records, timestamps, and operator notes to determine whether it contributed. The available records do not establish the exact root cause."
+
+Inappropriate response:
+
+"The 180 kg setup caused the loss."
+
+Use this evidence standard consistently across all AI-generated summaries, alerts, explanations, and recommendations.
+
+### Required AI capabilities
+
+- Summarize a production job using existing authorized records.
+- Explain material issued, output recorded, remaining quantities, and calculated variances using the application's existing business rules.
+- Identify unusual entries, missing records, inconsistent quantities, and timestamps that may warrant investigation.
+- Reference relevant record IDs, quantities, timestamps, and job identifiers when available.
+- Suggest concrete next steps for an operator or supervisor to verify a hypothesis.
+- Explain cutting-layout utilization and waste figures only when those values are supported by actual calculations.
+- Answer questions in Arabic and English.
+- Clearly indicate when evidence is incomplete or a calculation cannot be verified.
+- Ask for missing information when needed instead of inventing it.
+
+### Evidence and response format
+
+When investigating a discrepancy, structure the answer around:
+
+1. **Recorded facts:** What the database actually shows.
+2. **Calculated findings:** What can be calculated from those records.
+3. **Possible leads:** Entries or events worth investigating, explicitly labelled as unconfirmed.
+4. **Evidence needed:** Records, measurements, or operator observations that could confirm or reject each lead.
+5. **Suggested next steps:** Practical checks based on the available evidence.
+
+Do not imply that correlation establishes causation. Do not fabricate records, measurements, explanations, citations, or operator statements.
+
+### Permissions and safety
+
+- Respect YieldLoop's existing three roles: Cutting Operator, Production Supervisor, and Manager.
+- Use the existing backend authorization and data-access rules.
+- Never expose records that the current user is not authorized to access.
+- Treat AI output as advisory, not as an authoritative production record.
+- Do not allow the AI to silently alter production quantities, close jobs, void records, change stock, or modify cutting plans.
+- Any supported write action must be an explicit, validated, permission-checked action confirmed by the user.
+- Keep API keys and provider credentials on the server, never in client-side code.
+- Use an actual AI provider only when its credentials are configured. If credentials are unavailable, display a clear unavailable/configuration state; do not simulate AI responses and present them as real AI.
+- Do not send unnecessary sensitive data to the AI provider.
+
+### Implementation requirements
+
+Integrate the assistant into the existing application without breaking its current workflows. Reuse existing APIs, calculations, job records, audit trails, and business logic rather than creating conflicting definitions.
+
+Include loading, empty, unavailable, and error states. Record appropriate audit information for any AI-assisted action that changes application data.
+
+## 2. General-Purpose 3D Packaging Designer
+
+### Purpose
+
+Build a reusable packaging design feature, not a pizza-box-only demo.
+
+Users should be able to define different packaging concepts based on their actual requirements and see an interactive three-dimensional preview of the expected shape.
+
+Examples may include pizza boxes, shipping cartons, folding cartons, trays, sleeves, lids, and other supported packaging styles. These are examples, not a requirement to implement every possible packaging type immediately.
+
+### A. Packaging design inputs
+
+Create a design workspace with inputs appropriate to the selected packaging type, potentially including:
+
+- Design name and packaging type.
+- Length, width, and height.
+- Material thickness.
+- Internal or external dimensions, clearly labelled.
+- Lid, flap, wall, tab, and closure dimensions when applicable.
+- Additional parameters specific to the selected template.
+- Units, using the application's established unit conventions.
+
+Validate all dimensions and show clear validation messages.
+
+Do not force every packaging style to use the same parameters. Use a template-specific parameter model that can be extended for new packaging designs.
+
+### B. 3D interactive preview
+
+Use a suitable WebGL-based 3D library compatible with the existing React application, such as Three.js with React Three Fiber if appropriate.
+
+The preview should support:
+
+- Interactive rotation.
+- Zooming in and out.
+- Panning where practical.
+- Resetting the camera.
+- A clear default viewing angle.
+- Dimension labels or measurement indicators where feasible.
+- Responsive behavior on desktop and touch devices.
+- A clear visual indication of the selected packaging configuration.
+
+Where geometrically supported, allow users to switch between assembled and open/unfolded states.
+
+Changing a dimension should update the preview immediately or after a clearly indicated update action.
+
+### C. General design architecture
+
+Create a reusable packaging geometry architecture rather than hardcoding one product shape.
+
+Separate:
+- Packaging type and parameter definitions.
+- Geometry generation.
+- 3D rendering.
+- Dimension validation.
+- Optional 2D dieline generation.
+- Design persistence, if supported by the existing architecture.
+
+Use a documented, extensible template system so future packaging styles can be added without rewriting the whole feature.
+
+Start with a small number of useful, genuinely implemented parametric templates. Prioritize correctness and extensibility over the number of templates.
+
+For unsupported custom shapes, clearly explain the current limitations. Do not pretend the system can generate arbitrary manufacturable packaging from any description.
+
+### D. AI-assisted packaging design
+
+Where feasible, allow users to describe a packaging concept in Arabic or English and have the AI suggest a suitable supported template and propose its parameters.
+
+For example, a user might describe the object they want to package, the intended dimensions, and how it should open.
+
+The AI must:
+- Convert the request into a structured proposal using supported templates.
+- Identify missing dimensions or assumptions.
+- Ask follow-up questions when essential information is missing.
+- Validate proposed parameters before displaying the resulting model.
+- Let the user review and edit all proposed values.
+- Never claim that a design is production-ready merely because it looks correct in 3D.
+
+The AI must not invent an unsupported geometry type and silently present it as a validated design.
+
+### E. Relationship to Cutting Studio
+
+Keep the existing Cutting Studio workflows working.
+
+A 3D preview is not automatically a valid 2D cutting dieline.
+
+Only generate a dieline for packaging templates whose geometry and folding relationships are explicitly implemented and validated. Where supported, show the relationship between the assembled model and its unfolded layout.
+
+Before a design can be used for production cutting, validate the supported geometry, dimensions, fold lines, flaps, tabs, and required manufacturing constraints.
+
+Do not automatically convert an arbitrary 3D model into cutting pieces or modify an existing production plan without explicit user approval.
+
+If a design is only a visual concept, label it clearly as a preview rather than a production-validated dieline.
+
+## 3. User Experience and Localization
+
+- Follow the existing YieldLoop design system and component conventions.
+- Support Arabic RTL and English LTR.
+- Keep forms understandable and suitable for production-floor use.
+- Provide useful empty, loading, validation, and error states.
+- Make the 3D workspace usable on supported touch devices and keyboard-accessible where practical.
+- Do not introduce a full application redesign in this phase.
+
+## 4. Engineering and Data Integrity
+
+- Inspect the current codebase before deciding where to integrate these features.
+- Preserve the current authentication, role permissions, audit trail, production calculations, and material reconciliation rules.
+- Avoid unnecessary database migrations.
+- If persistence requires a schema change, explain why it is needed, implement it using the project's existing migration conventions, and test it.
+- Never bypass server-side validation or existing write protections.
+- Keep AI provider integration isolated behind a backend service or adapter.
+- Validate all client-submitted design parameters on the server wherever they are persisted or used in production workflows.
+- Avoid introducing new dependencies unless they provide clear value and are compatible with the project.
+
+## 5. Tests and Verification
+
+Add or update tests for:
+
+### AI Assistant
+- Evidence-based summaries.
+- The 180 kg setup/layout example: identify the entry as a potential investigation lead without asserting an unverified cause.
+- Clear separation between facts, calculations, hypotheses, and missing evidence.
+- Arabic and English responses.
+- Permission enforcement and unauthorized record access.
+- Missing AI credentials, provider errors, and malformed AI output.
+- No unauthorized production-data changes.
+
+### 3D Packaging Designer
+- Valid and invalid parameter combinations.
+- Geometry updates when dimensions change.
+- Correct handling of each implemented packaging template.
+- Assembled and open states where supported.
+- Geometry consistency between the 3D preview and any supported dieline.
+- Unsupported designs clearly marked as unvalidated.
+- Responsive layout and regression tests for existing Cutting Studio behavior.
+
+Run the relevant backend tests, frontend tests, type checks, and available browser tests. Verify that the actual 3D model renders and responds to interaction, rather than relying only on unit tests or a static screenshot.
+
+## 6. Scope and Final Report
+
+Implement both features in the existing project.
+
+Do not:
+- Replace the existing application architecture.
+- Rebuild existing production modules unnecessarily.
+- Claim industrial optimization or manufacturing validation that has not been implemented.
+- Mark the application production-ready simply because these features pass their tests.
+- Start the planned page-by-page UI redesign yet.
+
+When finished, report:
+
+1. Features implemented.
+2. Supported packaging templates and their current limitations.
+3. AI provider configuration required to enable real AI responses.
+4. How evidence and uncertainty are represented in AI summaries.
+5. Tests run and their actual results.
+6. Any known limitations or blocked items.
+7. How to open and test both features in the application.
+
+**Prioritize trustworthy production assistance, correct parametric geometry, and preservation of existing YieldLoop workflows over visual polish or feature count.**

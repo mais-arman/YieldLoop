@@ -5,6 +5,69 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AssistanceStatusProvider = typeof AssistanceStatusProvider[keyof typeof AssistanceStatusProvider];
+
+
+export const AssistanceStatusProvider = {
+  openai: 'openai',
+} as const;
+
+export interface AssistanceStatus {
+  available: boolean;
+  provider: AssistanceStatusProvider;
+  /** @nullable */
+  model: string | null;
+}
+
+export type AssistanceInputLanguage = typeof AssistanceInputLanguage[keyof typeof AssistanceInputLanguage];
+
+
+export const AssistanceInputLanguage = {
+  en: 'en',
+  ar: 'ar',
+} as const;
+
+export interface AssistanceInput {
+  language: AssistanceInputLanguage;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  question: string;
+  include_notes?: boolean;
+}
+
+export interface EvidenceFact {
+  id: string;
+  kind: string;
+  quantity: string;
+  unit: string;
+  created_at: string;
+  voided: boolean;
+  note?: string;
+}
+
+export interface EvidenceJob {
+  id: number;
+  job_number: string;
+  status: string;
+  revision: number;
+}
+
+export type CuttingGeometryInputUnit = typeof CuttingGeometryInputUnit[keyof typeof CuttingGeometryInputUnit];
+
+
+export const CuttingGeometryInputUnit = {
+  mm: 'mm',
+} as const;
+
+export type CuttingGeometryInputCuttingMode = typeof CuttingGeometryInputCuttingMode[keyof typeof CuttingGeometryInputCuttingMode];
+
+
+export const CuttingGeometryInputCuttingMode = {
+  rectangular_spacing_only: 'rectangular_spacing_only',
+} as const;
+
 /**
  * Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.
  * @pattern ^(0|[1-9]\d{0,5})(\.\d{1,3})?$
@@ -43,20 +106,6 @@ export interface CuttingPiece {
   rotation_allowed: boolean;
 }
 
-export type CuttingGeometryInputUnit = typeof CuttingGeometryInputUnit[keyof typeof CuttingGeometryInputUnit];
-
-
-export const CuttingGeometryInputUnit = {
-  mm: 'mm',
-} as const;
-
-export type CuttingGeometryInputCuttingMode = typeof CuttingGeometryInputCuttingMode[keyof typeof CuttingGeometryInputCuttingMode];
-
-
-export const CuttingGeometryInputCuttingMode = {
-  rectangular_spacing_only: 'rectangular_spacing_only',
-} as const;
-
 export interface CuttingGeometryInput {
   unit: CuttingGeometryInputUnit;
   /** @minimum 1 */
@@ -94,27 +143,13 @@ export interface CuttingPlacement {
   rotated: boolean;
 }
 
-export type CuttingScenarioInputOrigin = typeof CuttingScenarioInputOrigin[keyof typeof CuttingScenarioInputOrigin];
+export type CuttingScenarioOrigin = typeof CuttingScenarioOrigin[keyof typeof CuttingScenarioOrigin];
 
 
-export const CuttingScenarioInputOrigin = {
+export const CuttingScenarioOrigin = {
   manual: 'manual',
   shelf_v1: 'shelf_v1',
 } as const;
-
-export interface CuttingScenarioInput {
-  /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
-  key: string;
-  /**
-     * @minLength 1
-     * @maxLength 80
-     */
-  name: string;
-  input: CuttingGeometryInput;
-  /** @maxItems 100 */
-  placements: CuttingPlacement[];
-  origin: CuttingScenarioInputOrigin;
-}
 
 export type CuttingResultUnplacedItemReason = typeof CuttingResultUnplacedItemReason[keyof typeof CuttingResultUnplacedItemReason];
 
@@ -147,14 +182,6 @@ export interface CuttingResult {
   unplaced: CuttingResultUnplacedItem[];
 }
 
-export type CuttingScenarioOrigin = typeof CuttingScenarioOrigin[keyof typeof CuttingScenarioOrigin];
-
-
-export const CuttingScenarioOrigin = {
-  manual: 'manual',
-  shelf_v1: 'shelf_v1',
-} as const;
-
 export interface CuttingScenario {
   key: string;
   name: string;
@@ -162,6 +189,213 @@ export interface CuttingScenario {
   placements: CuttingPlacement[];
   origin: CuttingScenarioOrigin;
   result: CuttingResult;
+}
+
+export interface EvidenceCuttingPlan {
+  plan_id: number;
+  revision: number;
+  name: string;
+  scenarios: CuttingScenario[];
+}
+
+/**
+ * @nullable
+ */
+export type AssistanceEvidenceCalculatedFindings = {[key: string]: string | null} | null;
+
+export interface AssistanceEvidence {
+  job: EvidenceJob;
+  material_revision: number;
+  generated_at: string;
+  recorded_facts: EvidenceFact[];
+  /** @nullable */
+  calculated_findings: AssistanceEvidenceCalculatedFindings;
+  cutting: EvidenceCuttingPlan[];
+  limitations: string[];
+}
+
+export interface AssistanceLead {
+  code: string;
+  record_ids: string[];
+  text: string;
+  evidence_needed: string;
+  next_step: string;
+}
+
+export type AssistanceAnswerLanguage = typeof AssistanceAnswerLanguage[keyof typeof AssistanceAnswerLanguage];
+
+
+export const AssistanceAnswerLanguage = {
+  en: 'en',
+  ar: 'ar',
+} as const;
+
+export interface AssistanceAnswer {
+  evidence: AssistanceEvidence;
+  advisory: true;
+  language: AssistanceAnswerLanguage;
+  answer: string[];
+  possible_leads: AssistanceLead[];
+  notice: string;
+}
+
+export type PackagingDesignTemplate = typeof PackagingDesignTemplate[keyof typeof PackagingDesignTemplate];
+
+
+export const PackagingDesignTemplate = {
+  tray: 'tray',
+  sleeve: 'sleeve',
+  lid_box: 'lid_box',
+} as const;
+
+export type PackagingDesignParameters = {[key: string]: string};
+
+export type PackagingDesignState = typeof PackagingDesignState[keyof typeof PackagingDesignState];
+
+
+export const PackagingDesignState = {
+  assembled: 'assembled',
+  open: 'open',
+} as const;
+
+export interface PackagingDesign {
+  template: PackagingDesignTemplate;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  parameters: PackagingDesignParameters;
+  state: PackagingDesignState;
+}
+
+export interface PackagingValidation {
+  valid: true;
+  design: PackagingDesign;
+  production_validated: false;
+}
+
+export type PackagingPromptLanguage = typeof PackagingPromptLanguage[keyof typeof PackagingPromptLanguage];
+
+
+export const PackagingPromptLanguage = {
+  en: 'en',
+  ar: 'ar',
+} as const;
+
+export interface PackagingPrompt {
+  language: PackagingPromptLanguage;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  description: string;
+}
+
+/**
+ * @nullable
+ */
+export type PackagingProposalTemplate = typeof PackagingProposalTemplate[keyof typeof PackagingProposalTemplate] | null;
+
+
+export const PackagingProposalTemplate = {
+  tray: 'tray',
+  sleeve: 'sleeve',
+  lid_box: 'lid_box',
+} as const;
+
+export type PackagingProposalParameters = {[key: string]: string};
+
+export interface PackagingProposal {
+  /** @nullable */
+  template: PackagingProposalTemplate;
+  name: string;
+  parameters: PackagingProposalParameters;
+  missing: string[];
+  assumptions: string[];
+  valid: boolean;
+  production_validated: false;
+}
+
+export interface PackagingLabel {
+  en: string;
+  ar: string;
+}
+
+export interface PackagingParameter {
+  key: string;
+  label: PackagingLabel;
+  min: number;
+  max: number;
+  required: boolean;
+}
+
+export type PackagingTemplateId = typeof PackagingTemplateId[keyof typeof PackagingTemplateId];
+
+
+export const PackagingTemplateId = {
+  tray: 'tray',
+  sleeve: 'sleeve',
+  lid_box: 'lid_box',
+} as const;
+
+export type PackagingTemplateStatesItem = typeof PackagingTemplateStatesItem[keyof typeof PackagingTemplateStatesItem];
+
+
+export const PackagingTemplateStatesItem = {
+  assembled: 'assembled',
+  open: 'open',
+} as const;
+
+export type PackagingTemplateUnit = typeof PackagingTemplateUnit[keyof typeof PackagingTemplateUnit];
+
+
+export const PackagingTemplateUnit = {
+  mm: 'mm',
+} as const;
+
+export type PackagingTemplateDimensionBasis = typeof PackagingTemplateDimensionBasis[keyof typeof PackagingTemplateDimensionBasis];
+
+
+export const PackagingTemplateDimensionBasis = {
+  internal: 'internal',
+} as const;
+
+export interface PackagingTemplate {
+  id: PackagingTemplateId;
+  label: PackagingLabel;
+  parameters: PackagingParameter[];
+  states: PackagingTemplateStatesItem[];
+  unit: PackagingTemplateUnit;
+  dimension_basis: PackagingTemplateDimensionBasis;
+  production_validated: false;
+}
+
+export interface PackagingCatalogue {
+  templates: PackagingTemplate[];
+  limitations: string[];
+}
+
+export type CuttingScenarioInputOrigin = typeof CuttingScenarioInputOrigin[keyof typeof CuttingScenarioInputOrigin];
+
+
+export const CuttingScenarioInputOrigin = {
+  manual: 'manual',
+  shelf_v1: 'shelf_v1',
+} as const;
+
+export interface CuttingScenarioInput {
+  /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
+  key: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  input: CuttingGeometryInput;
+  /** @maxItems 100 */
+  placements: CuttingPlacement[];
+  origin: CuttingScenarioInputOrigin;
 }
 
 export interface CuttingSaveInput {

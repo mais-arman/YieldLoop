@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Link, Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { RotateCw, ShieldAlert } from 'lucide-react';
@@ -22,6 +22,8 @@ import CuttingEntryPage from '@/pages/cutting-entry';
 import InventoryPage from '@/pages/inventory';
 import InventoryDetailPage from '@/pages/inventory-detail';
 import { DashboardPage, ReportsPage } from '@/pages/reports';
+import AssistantPage from '@/pages/assistant';
+const PackagingPage = lazy(() => import('@/pages/packaging'));
 import { AuthError, useCurrentUser, type Employee } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { endSession, errorMessage, isSessionLoss, ME_KEY } from '@/lib/session';
@@ -146,6 +148,10 @@ function Authed({ user }: { user: Employee }) {
       </Route>
       <Route path="/dashboard"><AppShell user={user}><DashboardPage /></AppShell></Route>
       <Route path="/reports"><AppShell user={user}><ReportsPage /></AppShell></Route>
+      <Route path="/assistant"><AppShell user={user}><AssistantPage /></AppShell></Route>
+      <Route path="/packaging">
+        <AppShell user={user} wide><Suspense fallback={<div className="space-y-3"><Skeleton className="h-8 w-64" /><Skeleton className="h-96 w-full" /></div>}><PackagingPage /></Suspense></AppShell>
+      </Route>
       <Route path="/password"><AppShell user={user}><PasswordPage user={user} /></AppShell></Route>
       <Route component={NotFound} />
     </Switch>

@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { Activity, BarChart3, Boxes, ChevronDown, ClipboardList, FileText, KeyRound, Loader2, LogOut, Menu, Ruler, Users } from 'lucide-react';
+import { Activity, BarChart3, Bot, Box, Boxes, ChevronDown, ClipboardList, FileText, KeyRound, Loader2, LogOut, Menu, Ruler, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -75,6 +75,8 @@ function useNav(user: Employee): NavItem[] {
     { href: '/cutting', label: ut('pageCutting'), icon: Ruler, testId: 'cutting' },
     { href: '/inventory', label: ut('pageInventory'), icon: Boxes, testId: 'inventory' },
     { href: '/reports', label: ut('pageReports'), icon: FileText, testId: 'reports' },
+    { href: '/assistant', label: ut('pageAssistant'), icon: Bot, testId: 'assistant' },
+    { href: '/packaging', label: ut('pagePackaging'), icon: Box, testId: 'packaging' },
     ...(user.role === 'manager' ? [{ href: '/employees', label: ut('pageEmployees'), icon: Users, testId: 'employees' }] : []),
   ];
 }
@@ -95,6 +97,8 @@ function pageKey(location: string): UiKey {
   if (location.startsWith('/inventory')) return 'pageInventory';
   if (location.startsWith('/employees')) return 'pageEmployees';
   if (location.startsWith('/password')) return 'pagePassword';
+  if (location.startsWith('/assistant')) return 'pageAssistant';
+  if (location.startsWith('/packaging')) return 'pagePackaging';
   return 'pageNotFound';
 }
 
