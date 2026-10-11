@@ -20,6 +20,7 @@ import psycopg
 from django.conf import settings
 from django.db import connection
 from psycopg import sql
+from recovery_semantics import verify
 
 SOURCE = "test_yieldloop_phase2b"
 TARGET = "test_yieldloop_restore_drill"
@@ -46,6 +47,8 @@ def fingerprint(conn):
 
 
 def main():
+    if not __debug__:
+        raise RuntimeError("Recovery assertions are mandatory; do not use python -O.")
     assert settings.TESTING and settings.ENVIRONMENT == "development"
     assert os.environ.get("REPLIT_DEPLOYMENT") != "1"
     with connection.cursor() as cur:
@@ -55,8 +58,11 @@ def main():
         cur.execute("SELECT 1 FROM pg_database WHERE datname=%s", [TARGET])
         assert cur.fetchone() is None, "Existing restore database: refusing to overwrite."
     source = connection.connection
+    print(json.dumps({"server_version": source.info.server_version,
+                      "pg_dump": subprocess.check_output(["pg_dump", "--version"], text=True).strip(),
+                      "pg_restore": subprocess.check_output(["pg_restore", "--version"], text=True).strip()}))
     before = fingerprint(source)
-    assert before.get("jobs_productionjob", [0])[0] > 0, "Synthetic jobs required before drill."
+    assert "jobs_productionjob" in before, "Migrated isolated test schema required."
     # Credentials are forwarded in the child environment, never command arguments
     # or output. No dump is made from the application/development database.
     info = source.info
@@ -104,13 +110,15 @@ def main():
                     cur.execute("SELECT current_database(),system_identifier::text FROM pg_control_system()")
                     assert cur.fetchone() == (TARGET, cluster)
                 after = fingerprint(restored)
-            mismatches = [key for key in before if before[key] != after.get(key)]
-            if "_constraints" in mismatches:
-                print(json.dumps({"result": "BLOCKED", "tables": len(before) - 2,
-                                  "rows": sum(v[0] for k, v in before.items() if not k.startswith("_")),
-                                  "table_rows_equal": not any(k for k in mismatches if not k.startswith("_")),
-                                  "sequences_equal": "_sequences" not in mismatches,
-                                  "constraint_text_equal": False}))
+                restored.commit()
+                # Transaction-local writes ONLY on the identity-verified disposable
+                # destination, for rollback-only temporary constraint probes.
+                with restored.transaction():
+                    restored.execute("SET TRANSACTION READ WRITE")
+                    semantic_evidence = verify(source, restored)
+                print(json.dumps({"semantic_verification": semantic_evidence}))
+                assert fingerprint(restored) == after, "Behavioral probes changed restored public data."
+            mismatches = [key for key in before if key != "_constraints" and before[key] != after.get(key)]
             assert not mismatches, f"Restored fingerprint mismatch in: {','.join(mismatches)}"
             assert fingerprint(source) == before, "Source changed during drill."
             print(json.dumps({"result": "PASS", "source": SOURCE, "destination": TARGET,

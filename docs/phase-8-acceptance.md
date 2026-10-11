@@ -19,7 +19,7 @@ approval or verification of a real production-like staging environment.
 | Cutting interactions | Code/accessibility — high | **verified** | See cutting-interaction-verification.md: desktop, touch emulation, keyboard, RTL, save/reopen and server denial; 3 frontend tests rerun and passed. |
 | Comparison row meaning | Code/UX — low | **fixed** | Row now labeled “Layout source” / “مصدر التخطيط”, rather than Scenario; values intentionally identify manual vs shelf generation. |
 | Bilingual/accessibility coverage | UX — high | **verified** (bounded browser pass) | All roles in EN/AR, mobile pagination/read-only permissions, error associations and measured home contrast; scope and remaining gaps below. Physical devices/assistive technology remain unverified. |
-| Logical database recovery | Infrastructure — high | **blocked** (partial verification) | Restore reproduced all table rows/sequences; strict CHECK-definition comparison differs on reparsed array casts. Infrastructure/engineering must finish semantic constraint verification; details below. |
+| Logical database recovery | Infrastructure — high | **verified** (isolated local scope) | Focused semantic follow-up passed: 104 constraints / 33 validated CHECKs, 9 equivalent array-cast rewrites, 792 INSERT/UPDATE outcomes, matching rows/sequences and unchanged source. Operational/disaster recovery remains blocked separately. |
 | Offsite backups, RPO/RTO and recovery ownership | Infrastructure — critical | **blocked** | Infrastructure/factory owners must approve objectives, retention, encryption and provider-specific disaster recovery; local drill is insufficient. |
 | HTTPS, proxy, headers, secure session deployment | Infrastructure — critical | **blocked** | Offline production assertions verified; actual endpoint/certificate/proxy/SPA headers not deployed or measured. |
 | Logs, monitoring and load | Infrastructure — high | **blocked** | No live alert test, retention/access approval or realistic concurrent load exercise. Account-wide serialization and shared-peer throttle require sizing. |
@@ -115,6 +115,14 @@ expected, not unexplained application failures.
 
 ### Recovery evidence and safety
 
+**Current follow-up:** local constraint equivalence is now demonstrated. See
+`docs/staging-recovery-runbook.md`, “Focused constraint verification”, for exact
+definitions, accepted/rejected/null cases, safety controls and commands.
+Four focused offline tests and lint passed; isolated restore passed for 21 tables,
+107 rows and 19 sequences, with 104 constraints compared and 792 behavioral
+outcomes checked. No other release work or full regression suite was repeated.
+The following paragraphs describe the earlier unresolved drill historically.
+
 Executed the committed recovery drill after stopping the synthetic browser
 server. Source and destination are fixed isolated test DB names, with source
 cluster identity asserted. Initial PostgreSQL 17.5-client restore failed on
@@ -135,8 +143,8 @@ cleaned up after verification.
 
 1. **Infrastructure/security:** separately approve target-specific write
    authorization and least-privilege staging roles; current guard stays closed.
-2. **Infrastructure/engineering:** complete semantic constraint recovery
-   verification, test offsite/cluster-loss recovery, and approve RPO/RTO.
+2. **Infrastructure/engineering:** local semantic constraint verification is
+   complete; test offsite/cluster-loss and role/grant recovery, and approve RPO/RTO.
 3. **Factory:** resolve and sign each decision-register entry and bounded-pilot
    scope/training/fallback; do not infer accounting or consumption policies.
 4. **Infrastructure:** verify actual HTTPS/proxy/cookie/CSRF/SPA security headers,

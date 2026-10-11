@@ -47,9 +47,10 @@ authorized or executed by this remediation.
 
 ## Repeatable isolated recovery drill
 
-1. Finish automated DB tests, then start `acceptance_browser.py` and create
-   synthetic jobs/material records in its fixed test database. Its credentials
-   are random and private. Never use real factory records.
+1. Use the already-migrated isolated test database `test_yieldloop_phase2b`.
+   No browser or fresh fixtures are required for constraint verification.
+   For a separate populated business-record drill, use only synthetic records.
+   Never use real factory records or migrate the application database.
 2. Stop that harness and all other writers to the isolated test database.
 3. Run:
 
@@ -69,9 +70,11 @@ authorized or executed by this remediation.
    materializes SQL privately, removes exactly that session-setting statement,
    and uses `psql --single-transaction --set ON_ERROR_STOP=1 --no-psqlrc`.
    Schema/data errors still abort; no constraint or data statement is omitted.
-7. Assert destination identity, exact table-row fingerprints, constraints and
-   sequence state, and unchanged source. Delete only the destination created by
-   this run and remove its temporary synthetic archive. Review the PASS summary.
+7. Assert destination identity, exact table-row fingerprints and sequence state,
+   plus fail-closed semantic constraint comparison described below. Assert the
+   source and restored public data remain unchanged by probes. Delete only the
+   destination created by this run and remove its temporary synthetic archive.
+   Review both the semantic evidence and PASS summaries.
 8. Remove synthetic source fixtures/private browser credentials with the existing
    guarded test cleanup procedure after evidence is recorded.
 
@@ -80,7 +83,7 @@ cluster only. It does not prove offsite durability, encrypted retention, recover
 from total cluster loss, provider point-in-time recovery, or meeting factory
 RPO/RTO. Those remain release blockers requiring infrastructure-owner evidence.
 
-## Actual drill outcome (2026-10-11): BLOCKED / partial evidence
+## Earlier drill outcome (2026-10-11): BLOCKED / partial evidence
 
 Executed `python -B artifacts/api-server/backend/recovery_drill.py` against the
 synthetic browser fixture database after stopping its server. Initial restore
@@ -98,3 +101,127 @@ semantic verification (including allowed/invalid values) before changing the
 strict check. No constraints were dropped/disabled and no mismatch was silently
 accepted. Each attempt removed the destination it created and its private
 archive. Production and development application databases were not restore targets.
+
+## Focused constraint verification (2026-10-11): PASS, local scope only
+
+This section supersedes the earlier CHECK-equivalence blocker, not the offsite,
+cluster-loss, operational recovery or RPO/RTO gates.
+
+### Cause and semantic argument
+
+The server reports **160010 (PostgreSQL 16.10)**; installed pg_dump/pg_restore
+report **17.5**. The client emits the unsupported transaction_timeout SET noted
+above. That tooling incompatibility is separate from the CHECK differences:
+logical dumps preserve SQL, not the original internal expression tree. Restoring
+that SQL reparses/re-coerces its array expressions. Nine varchar-enumeration
+checks were represented differently:
+
+```sql
+-- Source, example:
+CHECK (((role)::text = ANY ((ARRAY['cutting_operator'::character varying,
+ 'production_supervisor'::character varying, 'manager'::character varying])::text[])))
+-- Restored:
+CHECK (((role)::text = ANY (ARRAY[('cutting_operator'::character varying)::text,
+ ('production_supervisor'::character varying)::text, ('manager'::character varying)::text])))
+```
+
+The left operand, equality/ANY operator, ordered finite literal list and resulting
+text-array element types are identical. These non-null ASCII varchar literals
+convert losslessly to text, whether the cast is on the whole array or on each
+element. Thus the comparison is membership in the same finite set. Database
+locale/provider/version and column collation/type/nullability also match.
+This is a narrowly recognized equivalence, not whitespace stripping, arbitrary
+SQL normalization, or a whitelist that ignores changed constraint bodies.
+
+`recovery_semantics.py` accepts **only** these two fully matched forms with
+identical column and ordered literals. Any changed value, operator, extra
+predicate, unrecognized cast, missing constraint or metadata discrepancy fails.
+All other definitions must remain textually identical.
+
+### Catalog and behavioral evidence
+
+- **104 constraints compared**, including **33 CHECKs, all validated**.
+- Exact metadata comparison includes type, convalidated, deferrable/deferred,
+  no-inherit and ordered referenced-column names.
+- **143 columns** compared for PostgreSQL type/typmod, NOT NULL, collation,
+  generated and identity attributes. Database locale metadata matched.
+- **24 CHECK definitions unchanged**; all **9 changed CHECKs** follow the
+  proven enum-cast rewrite. Remaining 71 non-CHECK definitions also match.
+- All nine rewritten constraints reference exactly their listed column, are
+  validated, and their real columns are NOT NULL:
+
+| Constraint | Table.column | Every allowed value tested |
+|---|---|---|
+| accounts_user_valid_role | accounts_user.role | cutting_operator, production_supervisor, manager |
+| audit_valid_event_type | audit_auditevent.event_type | account_created, role_changed, activation_changed, password_changed, password_reset, manager_bootstrapped |
+| audit_valid_outcome | audit_auditevent.outcome | success, denied |
+| inventory_valid_action | inventory_inventoryevent.action | addition, void |
+| job_event_status | jobs_jobevent.new_status | draft, open, cancelled |
+| job_event_type | jobs_jobevent.event_type | created, updated |
+| job_valid_status | jobs_productionjob.status | draft, open, cancelled |
+| entry_valid_kind | materials_materialentry.kind | issue, good, scrap, offcut |
+| reconciliation_action | materials_reconciliation.action | record, void |
+
+**792 checked INSERT/UPDATE outcomes passed** across both definitions and both
+nullable-isolated-CHECK / actual-NOT-NULL modes: 252 accepted, 504 CHECK violations
+(SQLSTATE 23514), and 36 NOT NULL violations (23502).
+Invalid cases per constraint: empty string, `invalid`, string `NULL`, uppercase
+first allowed value, leading space, trailing space and tab. Every allowed enum
+value is inserted and updated. UPDATE starts from a valid seeded row.
+
+SQL NULL produces UNKNOWN and is accepted by the CHECK alone; the actual
+NOT NULL attribute rejects it. The tests distinguish these two rules rather
+than falsely claiming the CHECK itself rejects NULL.
+
+Behavioral tests use temporary one-column tables instantiated with each catalog
+definition and the original column type, first nullable and then with original
+NOT NULL. This isolates CHECK enforcement from unrelated FK/required-column
+failures. They are not full application-row/business-workflow tests. The remaining
+unchanged CHECKs rely on exact definition/metadata/type/locale equality, not a
+new exhaustive behavioral matrix. Each successful/failed probe and temporary
+table is rolled back. No public constraint is removed, disabled or weakened.
+
+### Exact commands and results
+
+```sh
+python -B -m unittest discover -s artifacts/api-server/backend -p test_recovery_semantics.py -v
+ruff check artifacts/api-server/backend/recovery_drill.py artifacts/api-server/backend/recovery_semantics.py artifacts/api-server/backend/test_recovery_semantics.py
+python -B artifacts/api-server/backend/recovery_drill.py
+```
+
+Final results: **4 offline regression tests PASS (0.007s)**; **ruff PASS**;
+**isolated dump/restore + semantic verification PASS**. Offline tests cover both
+recognized forms, malformed/altered SQL, changed enum sets, validation status,
+referenced columns, column type/nullability, missing constraints and refusal of
+a non-disposable destination before catalog reads/writes. Two additional runtime
+negative controls verify operator/value changes are not normalized away.
+
+Final restore evidence: **21 tables, 107 rows, 19 sequences, 104 constraints**;
+archive **81,523 bytes**; all row hashes/sequence states match; source unchanged.
+This run used the existing synthetic/test framework rows, not newly populated
+production-job records. The earlier populated drill's row/sequence evidence is
+historical; it was not repeated or relabeled as this run.
+
+One initial focused run failed safely because the restored connection inherited
+read-only transaction defaults and PostgreSQL refused CREATE TEMP TABLE.
+After verifying exact destination name and cluster, the drill now enables writes
+**only for that disposable connection's probe transaction**, using SET TRANSACTION
+READ WRITE. It does not change the application write guard or any server/database
+default. That transaction contains rollback-only temporary-table probes.
+An intermediate lint check found a nested-with style issue, subsequently fixed;
+the final combined commands above all returned success.
+
+Every attempt removed its newly created restore database and private temporary
+archive, including the failed attempt. Existing source data was read/fingerprinted
+only; no fixtures were inserted/updated/deleted there. No migrations, production
+connection, application-data mutation, deployment or consumption enablement ran.
+Running Python with assertions disabled (`-O`) is explicitly refused.
+
+### Remaining recovery limits
+
+Local CHECK semantic equivalence is demonstrated for this schema and environment.
+**End-to-end operational/disaster recovery remains BLOCKED** until independent
+offsite retention/encryption, total-cluster loss, actual deployment-role/ACL
+recovery, named ownership and approved/measured RPO/RTO are evidenced. This
+no-owner/no-ACL logical drill intentionally does not prove role/grant restoration.
+No claim of production readiness or release approval follows from this PASS.
