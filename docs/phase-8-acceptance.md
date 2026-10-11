@@ -4,7 +4,154 @@ Assessment date: 2026-10-11. Scope: existing single-business React/TypeScript,
 Django/DRF/PostgreSQL MVP only. No deployment, production data access,
 production migrations, inventory consumption or accounting-policy changes.
 
-## Verdict: NOT READY
+## Release-gate remediation — current status
+
+This section supersedes earlier findings below, which remain historical evidence.
+Verdict remains **NOT READY**: dependency remediation does not replace factory
+approval or verification of a real production-like staging environment.
+
+| Gate | Category / priority | Status | Evidence / responsible next action |
+|---|---|---|---|
+| Production write authorization | Infrastructure/security — critical | **blocked** | Guard deliberately unchanged; infrastructure owner must approve target-specific staging/production authorization and least-privilege roles separately. |
+| Two dependency advisories | Build security — high/moderate | **fixed** | Removed vulnerable dependency paths; final dependency scan has zero findings. Engineering owns ongoing scans. |
+| Cross-module correctness/security | Code — high | **verified** | 81 DB tests plus 32 offline tests passed; new offline production-policy test passed separately. 114 unique backend tests now covered. |
+| Arabic home overflow | Code/accessibility — high | **fixed** | Prior focused 390px confirmation retained; see original evidence below. |
+| Cutting interactions | Code/accessibility — high | **verified** | See cutting-interaction-verification.md: desktop, touch emulation, keyboard, RTL, save/reopen and server denial; 3 frontend tests rerun and passed. |
+| Comparison row meaning | Code/UX — low | **fixed** | Row now labeled “Layout source” / “مصدر التخطيط”, rather than Scenario; values intentionally identify manual vs shelf generation. |
+| Bilingual/accessibility coverage | UX — high | **verified** (bounded browser pass) | All roles in EN/AR, mobile pagination/read-only permissions, error associations and measured home contrast; scope and remaining gaps below. Physical devices/assistive technology remain unverified. |
+| Logical database recovery | Infrastructure — high | **blocked** (partial verification) | Restore reproduced all table rows/sequences; strict CHECK-definition comparison differs on reparsed array casts. Infrastructure/engineering must finish semantic constraint verification; details below. |
+| Offsite backups, RPO/RTO and recovery ownership | Infrastructure — critical | **blocked** | Infrastructure/factory owners must approve objectives, retention, encryption and provider-specific disaster recovery; local drill is insufficient. |
+| HTTPS, proxy, headers, secure session deployment | Infrastructure — critical | **blocked** | Offline production assertions verified; actual endpoint/certificate/proxy/SPA headers not deployed or measured. |
+| Logs, monitoring and load | Infrastructure — high | **blocked** | No live alert test, retention/access approval or realistic concurrent load exercise. Account-wide serialization and shared-peer throttle require sizing. |
+| Admin provisioning/recovery | Operations — high | **blocked** | Automated auth/revocation covered; operational recovery and responsible owner still need staging rehearsal/sign-off. |
+| Factory policies | Factory — critical | **awaiting factory approval** | docs/factory-decision-register.md lists every decision, required evidence and responsible role. No policy is assumed approved. |
+| Controlled-pilot scope/training/fallback | Factory/operations — critical | **awaiting factory approval** | Accountable factory owner must approve participants, restrictions and independent fallback records. |
+| Bundle/sourcemap warnings | Engineering — low | **blocked** | Non-fatal, not accounting failures; deferred until measured performance needs justify optimization. |
+
+### Dependency disposition
+
+- `braces@3.0.3` / GHSA-vfj7-8cjw-p6xm (high): no published patched release
+  found; `fast-glob@3.3.3` remained the direct parent. The sandbox's only call
+  used a fixed, trusted TSX discovery pattern, not attacker-provided patterns.
+  Replaced that call with Node 24's native filesystem glob and removed fast-glob,
+  micromatch and braces from the dependency graph. Preserved nested TSX discovery,
+  ignored underscore/private files, hidden files and non-TSX files; regression
+  fixture and sandbox build passed. No vulnerable dependency was risk-accepted.
+- `postcss-selector-parser@6.0.10` / GHSA-rj75-hqrm-r3gf (moderate): direct parent
+  `@tailwindcss/typography@0.5.20` was latest and still pinned the vulnerable
+  major. Code search found no prose/typography usage. Removed the unused plugin
+  declaration and dependency instead of forcing a major parser override.
+  Application CSS output retained the same filename/size after removal.
+- Final dependency scan: **0 critical/high/moderate/low findings**.
+  Static security and privacy/dataflow scans also completed with **0 findings**.
+  These are scan results, not a claim of complete security.
+
+### Remediation commands and verification
+
+- `pnpm --filter @workspace/yieldloop remove @tailwindcss/typography`
+- `pnpm --filter @workspace/mockup-sandbox remove fast-glob`
+- Full PostgreSQL command in the original table: **81 passed**, 55.128s.
+- Original offline command plus `config.test_request_limits`: **32 passed**,
+  2.112s.
+- After adding offline production session/HTTPS/TLS/guard assertions:
+  `python -B artifacts/api-server/backend/manage.py test config.tests --settings=config.schema_settings`
+  — **8 passed**, 1.901s (7 previously covered plus 1 new test).
+- `ruff check artifacts/api-server/backend`: pass.
+- `pnpm run typecheck` and frontend lint: pass.
+- App build: pass, 11.10s; sandbox build with PORT=22518 BASE_PATH=/: pass, 1.72s.
+- Native Node glob regression using temporary nested/public/private/hidden files:
+  pass, exactly the two expected visible TSX files discovered.
+- Three committed cutting frontend geometry tests: pass.
+- Migration drift (`makemigrations --check --dry-run`, offline schema settings):
+  no changes detected. No migrations added/applied outside isolated test setup.
+
+### Staging and decisions
+
+See **docs/staging-recovery-runbook.md** for architecture, exact configuration
+requirements, offline versus deployed evidence boundaries, safe schema workflow,
+and isolated recovery procedure. See **docs/factory-decision-register.md** for
+approval records. Neither document enables writes or grants factory approval.
+
+### Bilingual/accessibility remediation evidence
+
+Tested the built app at 390×844 against the identity-guarded isolated test DB:
+all three roles signed in/rendered in English and Arabic; Supervisor Draft PATCH
+denied with 403 and no revision change; Operator viewed populated Open measurements
+and reports without write controls; Manager jobs/reports paginated 21 jobs as
+20+1; Arabic quantities remained LTR. Mobile cards did not widen the document.
+The Compare table scrolled within its 333px region (512px content), including
+keyboard-focusable controls; document width stayed 375px. Both localized
+“Layout source” labels were verified.
+
+The browser pass found and remediation fixed:
+
+1. **Critical axe finding:** viewport maximum-scale=1 prevented mobile zoom.
+   Removed that restriction; recheck confirmed unrestricted viewport metadata.
+2. **Serious axe finding:** unselected role descriptions inherited opacity 0.6,
+   yielding **2.86:1** small-text contrast. Removed opacity; measured recheck
+   **7.46:1 unselected / 6.61:1 selected**. Axe-core 4.10.3 reported zero WCAG
+   2.1 A/AA violations on the checked English and Arabic home pages.
+3. Cutting custom selects, material search and piece-label errors lacked
+   programmatic associations. Linked actual error elements; invalid save now
+   selects the first invalid scenario and focuses its first invalid control.
+   Arabic recheck verified every listed association and focused stock label.
+4. Save-dialog close lost focus to BODY. Added restoration to enabled Save or
+   the plan-name control when Save becomes disabled. Keyboard Cancel restoration
+   was confirmed after animation frames; successful-save fallback was code/type
+   checked but not re-exercised by the focused tester.
+5. Focused recheck found scenario-name error text incorrectly said plan name.
+   Replaced it with dedicated English/Arabic scenario-name text. This small copy
+   correction was verified by source inspection, typecheck/lint/build, not
+   another browser pass.
+
+After final copy correction, frontend typecheck/lint/build passed (10.60s).
+App/sandbox workflows were restarted successfully after the substantive batch.
+No claim of whole-app WCAG certification: physical devices, screen readers,
+complete contrast audit across all pages, successful-save focus fallback, and
+populated inventory pagination remain unverified in this pass. Previous cutting
+mouse/touch/keyboard evidence remains valid; the algorithm was not changed.
+Observed anonymous `/api/v1/auth/me` 401 and intentional Supervisor 403 were
+expected, not unexplained application failures.
+
+### Recovery evidence and safety
+
+Executed the committed recovery drill after stopping the synthetic browser
+server. Source and destination are fixed isolated test DB names, with source
+cluster identity asserted. Initial PostgreSQL 17.5-client restore failed on
+unsupported transaction_timeout. A compatibility branch removes only that
+session SET for pre-17 servers, then restores transactionally with fail-on-error.
+Restored public-table row fingerprints and sequence values matched exactly.
+Strict constraint text differed on text-array CHECK casts; that gate remains
+**blocked**, not accepted based on apparent equivalence. Diagnostic comparisons
+did not find row/sequence differences. See the recovery runbook for details.
+
+No development data or production database was accessed by the browser or drill.
+No production migration, deployment, default credential, inventory consumption,
+or write-guard weakening occurred. Temporary restore databases/archives were
+removed even on failure; synthetic source fixtures/private credentials were
+cleaned up after verification.
+
+### Prioritized remaining actions
+
+1. **Infrastructure/security:** separately approve target-specific write
+   authorization and least-privilege staging roles; current guard stays closed.
+2. **Infrastructure/engineering:** complete semantic constraint recovery
+   verification, test offsite/cluster-loss recovery, and approve RPO/RTO.
+3. **Factory:** resolve and sign each decision-register entry and bounded-pilot
+   scope/training/fallback; do not infer accounting or consumption policies.
+4. **Infrastructure:** verify actual HTTPS/proxy/cookie/CSRF/SPA security headers,
+   log controls, monitoring alerts, provisioning and recovery in staging.
+5. **QA/factory:** finish the explicitly unverified accessibility/device cases.
+6. **Engineering/operations:** measure concurrent load, shared-peer throttling
+   and account-lock contention using representative factory load.
+7. **Release owner:** re-evaluate controlled-pilot readiness from that evidence.
+   Automated passes alone do not authorize release. **Current verdict: NOT READY.**
+
+## Original assessment — historical evidence (verdict: NOT READY)
+
+The paragraphs below record the original assessment, including advisories and
+browser gaps subsequently remediated above. Use the release-gate status table at
+the beginning of this document for current dispositions.
 
 The supported workflow passes automated cross-module acceptance, but the current
 workspace is **not ready for operational production or a deployed factory pilot**.
@@ -256,15 +403,14 @@ cut sequence or guarantee of globally optimal nesting.
    use test settings, the loopback harness or development Vite server in production.
 5. Take a backup and demonstrate restoration. Record recovery objectives,
    migration owner, maintenance window and rollback/forward-repair procedure.
-6. On the explicitly approved target, inspect `showmigrations --plan` and
-   `migrate --plan` first. Let Django resolve the dependency graph; logical
-   sequence is contenttypes/auth prerequisites → accounts initial/rate bucket →
-   audit/jobs → materials → inventory, plus cutting after jobs/accounts and
-   sessions. Cutting is independent of materials/inventory tables; do not invent
-   a hard order contrary to Django's migration graph.
-7. Apply migrations only through a separately authorized, explicit release step,
-   never startup. Phase 8 introduces **no schema migrations**. Verify migration
-   state and constraints before allowing application writes.
+6. Establish managed versus external database ownership before choosing a schema
+   workflow. Replit-managed production uses the reviewed Publish schema-diff/
+   confirmation flow only when separately authorized; do not add production DDL
+   scripts, build hooks or startup migrations. External databases require their
+   own explicitly approved migration/recovery procedure.
+7. Verify Django migration state and schema constraints in staging before any
+   write authorization. Phase 8 introduces **no schema migrations** and this
+   assessment does not authorize production schema changes.
 8. Serve the production-built frontend, configure frame/CSP and HTTPS headers at
    the actual serving layer, validate secure cookies/CSRF/hosts and run
    `check --deploy` in real production-equivalent configuration.

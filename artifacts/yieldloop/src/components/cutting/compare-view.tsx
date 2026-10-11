@@ -22,7 +22,7 @@ export function CompareView({ columns }: { columns: CompareColumn[] }) {
     [ct('pieces'), iv((i) => (
       <ul className="space-y-0.5 text-xs">{i.pieces.map((p) => <li key={p.key}><span className="font-medium">{p.label}</span> <span className="font-mono" dir="ltr">{p.width}×{p.height} ×{p.quantity}</span> <span className="text-muted-foreground">{p.rotation_allowed ? ct('rotationYes') : ct('rotationNo')}</span></li>)}</ul>
     ))],
-    [ct('scenario'), (c) => ct(c.origin === 'shelf_v1' ? 'origin_shelf_v1' : 'origin_manual')],
+    [ct('layoutSource'), (c) => ct(c.origin === 'shelf_v1' ? 'origin_shelf_v1' : 'origin_manual')],
     [ct('m_utilization'), rv((r) => <span className="font-mono font-semibold">{r.utilization === null ? ct('na') : `${r.utilization} %`}</span>)],
     [ct('m_boards_used'), rv((r) => <span className="font-mono">{r.board_count} / {r.available_boards}</span>)],
     [ct('m_placed'), rv((r) => <span className="font-mono">{r.placed_count}</span>)],

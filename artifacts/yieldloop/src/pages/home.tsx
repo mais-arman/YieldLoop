@@ -59,7 +59,7 @@ export default function HomePage({ user }: { user: Employee }) {
               return (
                 <li
                   key={r}
-                  className={cn('rounded-md border px-3 py-2.5 transition-colors', mine ? 'border-primary/40 bg-accent' : 'border-transparent opacity-60')}
+                  className={cn('rounded-md border px-3 py-2.5 transition-colors', mine ? 'border-primary/40 bg-accent' : 'border-transparent')}
                   aria-current={mine ? 'true' : undefined}
                 >
                   <div className={cn('text-sm', mine ? 'font-semibold text-accent-foreground' : 'font-medium')}>{t(`role_${r}` as MsgKey)}</div>

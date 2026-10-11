@@ -1,0 +1,32 @@
+Perform a focused **MVP Release-Gate Remediation** for YieldLoop, based on `docs/phase-8-acceptance.md`.
+
+Do not rebuild completed phases or add unrelated features.
+
+### 1. Review every open release gate
+Inspect the acceptance report and identify each outstanding item, its severity, evidence needed, and responsible action. Separate code defects from infrastructure tasks and factory policy decisions.
+
+### 2. Resolve dependency advisories
+Inspect the two remaining dependency advisories and identify the affected packages, severity, exploitability, and available fixes. Upgrade safely where justified and compatible. Rerun relevant tests and builds. If an advisory cannot safely be resolved, document the exact residual risk and mitigation; do not simply label it accepted without evidence.
+
+### 3. Complete bilingual and accessibility checks
+Test Arabic/English layouts, RTL/LTR, keyboard navigation, focus visibility, contrast, form labels, validation errors, mobile tables, and Cutting Studio interactions. Fix confirmed defects and report any checks that remain unverified.
+
+### 4. Prepare staging and recovery verification
+Document a safe staging setup that matches the intended production architecture. Verify configuration requirements for sessions, CSRF, secure cookies, secrets, database access, logging, and HTTPS. Define and test a backup-and-restore procedure using an isolated non-production database. Never access or modify production data.
+
+### 5. Resolve factory decisions explicitly
+Create a decision register for reconciliation tolerance, rework, job completion approval, operator recording authority, material compatibility, offcut reuse and reversal, and cutting-machine constraints. Do not invent defaults or implement accounting changes without approval.
+
+### 6. Preserve safety
+Do not weaken the database write guard, create default credentials, run production migrations, deploy, publish, or enable inventory consumption. Keep development data intact and use isolated test fixtures.
+
+### 7. Deliverables
+Update `docs/phase-8-acceptance.md` with:
+- Each gate's status: verified, fixed, blocked, or awaiting factory approval.
+- Actual commands and test results.
+- Dependency advisory disposition.
+- Accessibility and bilingual verification results.
+- Staging and backup-restore evidence, or clearly identified blockers.
+- A prioritized list of remaining actions.
+
+End with a clear verdict: NOT READY, READY FOR CONTROLLED PILOT, or READY FOR PRODUCTION. Do not claim readiness based solely on passing automated tests. Stop without deployment.

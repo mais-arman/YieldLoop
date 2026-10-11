@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 
 const en = {
+  scenarioNameRequired: 'Scenario name is required.',
+  layoutSource: 'Layout source',
   navCutting: 'Cutting Studio',
   studioTitle: 'Cutting Studio',
   studioScope: 'Rectangular layout planning in millimetres. A plan is a proposal only: it does not record material use, change kg reconciliation or touch inventory.',
@@ -218,6 +220,8 @@ const en = {
 export type CtKey = keyof typeof en;
 
 const ar: typeof en = {
+  scenarioNameRequired: 'اسم السيناريو مطلوب.',
+  layoutSource: 'مصدر التخطيط',
   navCutting: 'استوديو القص',
   studioTitle: 'استوديو القص',
   studioScope: 'تخطيط تقطيع مستطيلات بالمليمتر. الخطة اقتراح فقط: لا تسجّل استهلاك مواد ولا تغيّر تسوية الكيلوغرامات ولا تمسّ المخزون.',

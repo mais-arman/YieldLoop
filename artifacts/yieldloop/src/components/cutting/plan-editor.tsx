@@ -141,15 +141,21 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <Label htmlFor="plan-name" className="text-xs">{ct('planName')}</Label>
           {readOnly ? <p id="plan-name" className="text-lg font-semibold" data-testid="text-plan-name">{name}</p> : (
-            <Input id="plan-name" value={name} maxLength={160} onChange={(e) => setName(e.target.value)} aria-invalid={tried && !name.trim()} data-testid="input-plan-name" />
+            <Input id="plan-name" value={name} maxLength={160} onChange={(e) => setName(e.target.value)} aria-invalid={tried && !name.trim()} aria-describedby={tried && !name.trim() ? 'plan-name-error' : undefined} data-testid="input-plan-name" />
           )}
-          {tried && !name.trim() && <p className="text-xs font-medium text-destructive" role="alert">{ct('nameRequired')}</p>}
+          {tried && !name.trim() && <p id="plan-name-error" className="text-xs font-medium text-destructive" role="alert">{ct('nameRequired')}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {plan && <span className="rounded bg-muted px-2 py-1 font-mono text-xs" data-testid="text-plan-revision">{ct('revShort', { n: base.current.revision })}</span>}
           {dirty && <span className="rounded-full bg-[hsl(38_92%_50%/0.14)] px-2 py-0.5 text-xs font-medium text-[hsl(32_81%_29%)]" data-testid="badge-unsaved">{ct('unsaved')}</span>}
           {!readOnly && (
-            <Button onClick={() => { setTried(true); if (allValid && name.trim()) setSaveOpen(true); }} disabled={save.isPending || (!dirty && plan !== null)} data-testid="button-save-plan">
+            <Button onClick={() => {
+              setTried(true);
+              if (allValid && name.trim()) { setSaveOpen(true); return; }
+              const invalid = drafts.findIndex(d => !validateForm(d.form).input || !d.name.trim());
+              if (invalid >= 0) setView(invalid);
+              requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]:not(:disabled)')?.focus());
+            }} disabled={save.isPending || (!dirty && plan !== null)} data-testid="button-save-plan">
               <Save className="h-4 w-4" aria-hidden />{ct('save')}
             </Button>
           )}
@@ -204,8 +210,9 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <Label htmlFor="sc-name" className="text-xs">{ct('scenarioName')}</Label>
               {readOnly ? <p id="sc-name" className="text-sm font-medium">{active.name}</p> : (
-                <Input id="sc-name" value={active.name} maxLength={80} onChange={(e) => update(activeIdx)((d) => ({ ...d, name: e.target.value }))} aria-invalid={tried && !active.name.trim()} data-testid="input-scenario-name" />
+                <Input id="sc-name" value={active.name} maxLength={80} onChange={(e) => update(activeIdx)((d) => ({ ...d, name: e.target.value }))} aria-invalid={tried && !active.name.trim()} aria-describedby={tried && !active.name.trim() ? 'scenario-name-error' : undefined} data-testid="input-scenario-name" />
               )}
+              {tried && !active.name.trim() && <p id="scenario-name-error" className="text-xs font-medium text-destructive" role="alert">{ct('scenarioNameRequired')}</p>}
             </div>
             {!readOnly && (
               <>
@@ -224,7 +231,10 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
       {plan && <HistoryPanel key={`${plan.id}-${base.current.revision}`} jobId={jobId} planId={plan.id} />}
 
       <Dialog open={saveOpen} onOpenChange={(o) => { if (!save.isPending) setSaveOpen(o); }}>
-        <DialogContent>
+        <DialogContent onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          requestAnimationFrame(() => (document.querySelector<HTMLElement>('[data-testid="button-save-plan"]:not(:disabled)') ?? document.getElementById('plan-name'))?.focus());
+        }}>
           <DialogHeader>
             <DialogTitle>{ct('saveTitle')}</DialogTitle>
             <DialogDescription>{ct('saveDesc')}</DialogDescription>

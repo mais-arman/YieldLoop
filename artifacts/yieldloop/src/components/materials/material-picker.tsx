@@ -14,8 +14,8 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { matErrorMessage, matFieldErrors } from './mat-utils';
 
-export function MaterialPicker({ value, onChange, canCreate, disabled }: {
-  value: Material | null; onChange: (m: Material) => void; canCreate: boolean; disabled?: boolean;
+export function MaterialPicker({ value, onChange, canCreate, disabled, errorId }: {
+  value: Material | null; onChange: (m: Material) => void; canCreate: boolean; disabled?: boolean; errorId?: string;
 }) {
   const { t } = useI18n();
   const { toast } = useToast();
@@ -51,7 +51,7 @@ export function MaterialPicker({ value, onChange, canCreate, disabled }: {
     <div className="flex flex-col gap-2" data-testid="picker-material">
       <div className="relative">
         <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input type="search" value={raw} onChange={(e) => onSearch(e.target.value)} placeholder={t('matSearch')} aria-label={t('matSearch')} className="ps-8" disabled={disabled} maxLength={120} data-testid="input-material-search" />
+        <Input type="search" value={raw} onChange={(e) => onSearch(e.target.value)} placeholder={t('matSearch')} aria-label={t('matSearch')} aria-invalid={!!errorId} aria-describedby={errorId} className="ps-8" disabled={disabled} maxLength={120} data-testid="input-material-search" />
       </div>
       <div className="max-h-56 overflow-y-auto rounded-md border" role="listbox" aria-label={t('matChooseMaterial')}>
         {q.isPending ? (

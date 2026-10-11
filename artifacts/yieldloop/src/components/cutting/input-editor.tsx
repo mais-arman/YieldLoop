@@ -58,7 +58,7 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
           <div className="flex flex-col gap-1">
             <Label htmlFor={`${u}-unit`} className="text-xs">{ct('unit')}</Label>
             <Select value={form.unit} onValueChange={(v) => set('unit', v as 'mm')} disabled={disabled}>
-              <SelectTrigger id={`${u}-unit`} aria-invalid={!!er('unit')} data-testid="select-unit"><SelectValue placeholder={ct('unitChoose')} /></SelectTrigger>
+              <SelectTrigger id={`${u}-unit`} aria-invalid={!!er('unit')} aria-describedby={er('unit') ? `${u}-unit-e` : undefined} data-testid="select-unit"><SelectValue placeholder={ct('unitChoose')} /></SelectTrigger>
               <SelectContent><SelectItem value="mm">{ct('unitMm')}</SelectItem></SelectContent>
             </Select>
             <Err id={`${u}-unit-e`} k={er('unit')} />
@@ -72,7 +72,7 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
               <span className="ms-2 font-mono text-xs text-muted-foreground">#{form.material_id}</span>
             </p>
           )}
-          {!disabled && <MaterialPicker value={material} onChange={(m) => onChange({ ...form, material_id: m.id, material_name: m.name })} canCreate={canCreateMaterial} disabled={disabled} />}
+          {!disabled && <MaterialPicker value={material} onChange={(m) => onChange({ ...form, material_id: m.id, material_name: m.name })} canCreate={canCreateMaterial} disabled={disabled} errorId={er('material') ? `${u}-mat-e` : undefined} />}
           <p className="text-xs text-muted-foreground">{ct('materialHint')}</p>
           <Err id={`${u}-mat-e`} k={er('material')} />
         </div>
@@ -98,7 +98,7 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
           <div className="flex flex-col gap-1">
             <Label htmlFor={`${u}-mode`} className="text-xs">{ct('mode')}</Label>
             <Select value={form.cutting_mode} onValueChange={(v) => set('cutting_mode', v as 'rectangular_spacing_only')} disabled={disabled}>
-              <SelectTrigger id={`${u}-mode`} aria-invalid={!!er('cutting_mode')} data-testid="select-mode"><SelectValue placeholder={ct('modeChoose')} /></SelectTrigger>
+              <SelectTrigger id={`${u}-mode`} aria-invalid={!!er('cutting_mode')} aria-describedby={er('cutting_mode') ? `${u}-mode-e` : undefined} data-testid="select-mode"><SelectValue placeholder={ct('modeChoose')} /></SelectTrigger>
               <SelectContent><SelectItem value="rectangular_spacing_only">{ct('modeRect')}</SelectItem></SelectContent>
             </Select>
             <Err id={`${u}-mode-e`} k={er('cutting_mode')} />
@@ -120,7 +120,7 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1.4fr_1fr_1fr_0.8fr_1fr_auto] sm:items-start">
                 <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">
                   <Label htmlFor={`${u}-p${i}-l`} className="text-xs">{ct('pieceLabel')}</Label>
-                  <Input id={`${u}-p${i}-l`} value={p.label} maxLength={80} disabled={disabled} onChange={(e) => setPiece(i, { label: e.target.value })} aria-invalid={!!er(`p${i}.label`)} data-testid={`input-piece-label-${i}`} />
+                  <Input id={`${u}-p${i}-l`} value={p.label} maxLength={80} disabled={disabled} onChange={(e) => setPiece(i, { label: e.target.value })} aria-invalid={!!er(`p${i}.label`)} aria-describedby={er(`p${i}.label`) ? `${u}-p${i}-l-e` : undefined} data-testid={`input-piece-label-${i}`} />
                   <Err id={`${u}-p${i}-l-e`} k={er(`p${i}.label`)} />
                 </div>
                 <NumField id={`${u}-p${i}-w`} label={ct('width')} value={p.width} onChange={(v) => setPiece(i, { width: v })} error={er(`p${i}.width`)} disabled={disabled} />
@@ -129,7 +129,7 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
                 <div className="flex flex-col gap-1">
                   <Label htmlFor={`${u}-p${i}-r`} className="text-xs">{ct('rotation')}</Label>
                   <Select value={p.rotation} onValueChange={(v) => setPiece(i, { rotation: v as 'yes' | 'no' })} disabled={disabled}>
-                    <SelectTrigger id={`${u}-p${i}-r`} aria-invalid={!!er(`p${i}.rotation`)} data-testid={`select-rotation-${i}`}><SelectValue placeholder={ct('rotationChoose')} /></SelectTrigger>
+                    <SelectTrigger id={`${u}-p${i}-r`} aria-invalid={!!er(`p${i}.rotation`)} aria-describedby={er(`p${i}.rotation`) ? `${u}-p${i}-r-e` : undefined} data-testid={`select-rotation-${i}`}><SelectValue placeholder={ct('rotationChoose')} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="yes">{ct('rotationYes')}</SelectItem>
                       <SelectItem value="no">{ct('rotationNo')}</SelectItem>
