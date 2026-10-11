@@ -1,0 +1,168 @@
+# YieldLoop UI/UX Redesign — Shared Application Experience
+
+Implement a focused redesign of the existing YieldLoop frontend using the supplied requirements below. Do not generate another planning-only report.
+
+Follow these project skills:
+
+* yieldloop-design-system
+* yieldloop-engineering-quality
+* yieldloop-domain
+* yieldloop-cutting-studio
+
+## Product requirement
+
+YieldLoop has exactly three application roles:
+
+* Cutting Operator
+* Production Supervisor
+* Manager
+
+All three roles must use the SAME shared application shell, page structure, navigation order, and visual design for all common pages.
+
+The ONLY role-specific navigation addition is the Employees page, which must be visible and accessible only to the Manager.
+
+This requirement does not grant identical write permissions. Preserve existing backend-enforced role permissions for jobs, material records, inventory, reports, and cutting plans. Do not broaden permissions or weaken security to make the interface look uniform.
+
+## 1. Shared application shell
+
+Replace the crowded horizontal navigation with a clean, consistent application shell:
+
+* Desktop: left sidebar with a compact logo and clear navigation.
+* Mobile/tablet: accessible collapsible navigation drawer.
+* Top bar: current page context, language switch, and a compact user/account menu.
+* Eliminate horizontal page-level navigation overflow and visible horizontal navigation scrollbars.
+* Remove development-stage labels such as “Phase 7 · Cutting Studio” from the login screen and product header.
+* Keep account actions—change password and sign out—consistent for all roles.
+* Keep technical system status accessible without allowing it to dominate the primary production navigation.
+* Use Dashboard as the main landing page. Remove the redundant Overview navigation item; redirect the old route safely if necessary.
+* Common navigation order for all roles: Dashboard, Production Jobs, Cutting Studio, Inventory, Reports.
+* Add Employees to the navigation only for Manager.
+* Use the same visual shell and page layout for all three roles, with action controls determined by existing permissions.
+
+## 2. Visual language
+
+Use a clean, calm, modern industrial SaaS design:
+
+* Dark navy: #0F172A
+* Teal: #0F766E
+* Emerald: #10B981
+* Amber: #F59E0B
+* Red: #DC2626
+* Neutral backgrounds: #F8FAFC and #E2E8F0
+
+Use readable text sizes, consistent spacing, clear visual hierarchy, comfortable content widths, restrained borders, and intentional whitespace.
+
+Do not overcrowd pages with cards, decorative elements, or excessive charts. Avoid oversized empty areas, tiny text, and forms spread across long pages without structure.
+
+Remove redundant content, especially the current Overview role-description card that displays every role to each user.
+
+Preserve Arabic and English localization across all screens. Ensure the entire page, including navigation, forms, tables, dialogs, tooltips, loading states, and errors, correctly supports RTL/LTR.
+
+Use purposeful, subtle transitions where helpful. Respect reduced-motion preferences.
+
+## 3. Dashboard
+
+Create a compact, actionable Dashboard:
+
+* A small set of meaningful production and material KPIs.
+* A concise section for jobs or discrepancies requiring attention.
+* Recent production jobs with useful links.
+* Filters placed in a collapsible area or compact filter row.
+* Clear empty states when no reconciled production data exists.
+* No fabricated metrics, meaningless zeros, or mixing quantities from different materials.
+* Display units and metric definitions where necessary.
+
+## 4. Reports
+
+Make Reports distinct from Dashboard:
+
+* Detailed reporting filters and readable summary results.
+* Paginated job and inventory tables.
+* Clear drill-down links to the source records.
+* Correct explanations of date scope, current reconciliations, units, corrected records, and unavailable rates.
+* Preserve current report calculation and authorization rules.
+* Do not implement export functionality unless it already exists.
+
+## 5. Production Jobs and Job Details
+
+* Use a comfortably sized table with consistent search, filters, status indicators, pagination, and responsive behavior.
+* Keep primary actions in predictable positions.
+* Make each row easy to open.
+* Redesign job details with a clear job identity, status, permitted actions, and well-organized sections.
+* Integrate the existing Cutting Studio and Materials & Reconciliation entry points naturally.
+* Explain empty states with a clear next action rather than technical implementation details.
+* Preserve existing job lifecycle rules, revision protection, and audit behavior.
+
+## 6. Materials & Reconciliation
+
+Make this section easier to understand:
+
+* Group material issue and output records logically.
+* Label quantities and kg units clearly.
+* Present good output, scrap, reusable offcuts, and variance distinctly.
+* Show a readable balance summary and actionable validation errors.
+* If no material has been issued, show a clear explanation and an authorized next action.
+* Preserve the current accounting formulas and backend validation. Never convert unexplained variance to scrap.
+
+## 7. Cutting Studio
+
+Improve the existing workspace without rebuilding the cutting algorithm:
+
+* Desktop: input panel on the left, a large central 2D canvas, and a results/scenario panel on the right.
+* Show the canvas as soon as sufficient board data is available; users must not need to scroll through a long form to find it.
+* Organize stock dimensions, margins, kerf, cutting mode, and part definitions into clear, collapsible groups.
+* Provide accessible Add Rectangle and Add Square actions connected to the existing numeric part model.
+* Preserve exact numeric dimensions, quantities, permitted rotation, mouse/touch interactions, keyboard movement, validation, save/reopen, scenario comparison, and revision history.
+* Desktop should support direct spatial interaction. Mobile should use clear Setup / Layout / Results tabs or an equivalent responsive pattern.
+* Keep validation visible near the canvas and explain invalid moves clearly.
+* Format user-facing utilization and area metrics readably, avoiding unnecessary trailing zeros. Do not reduce precision in stored calculations.
+* Preserve the distinction between geometry utilization and kilogram-based yield.
+* Do not claim physical machine compatibility, material compatibility, or global optimality without evidence.
+* Do not allow the UI changes to modify production measurements, inventory balances, or approved plans silently.
+
+## 8. Inventory
+
+* Preserve the current inventory workflow and permissions.
+* Keep Available and Voided states clear.
+* Replace large, repetitive warning banners with concise explanatory text and an optional details disclosure where appropriate.
+* Provide a useful empty state and a path to the source job where relevant.
+* Never imply that registered stock is suitable for reuse or permit blocked inventory transactions.
+
+## 9. Employees
+
+* Keep this page and route available only to Manager.
+* Use the same table, form, typography, spacing, confirmation, and responsive patterns as the rest of the application.
+* Make role changes, activation controls, and password resets clear and safe.
+* Do not introduce public registration or weaken account-management permissions.
+
+## 10. Account and system pages
+
+* Keep the password-change page visually consistent and easy to understand.
+* Keep system-health diagnostics separate from production dashboards and clearly label technical statuses.
+* Preserve current authentication and health behavior.
+
+## 11. Engineering and scope protection
+
+* Inspect existing components and routes before editing.
+* Reuse the existing frontend architecture, localization, APIs, and UI components.
+* Do not replace React, TypeScript, Vite, Django, or PostgreSQL.
+* Do not change database schemas or accounting rules for a visual task.
+* Do not remove working features, permissions, tests, or revision safeguards.
+* Do not introduce fake records, placeholder success actions, or nonfunctional buttons.
+* Avoid unnecessary dependencies and avoid rewriting the backend.
+
+## Acceptance criteria
+
+1. All three roles have the same common navigation order, page structure, and visual design.
+2. Employees navigation and its route are available only to Manager.
+3. Existing backend role permissions continue to be enforced.
+4. Horizontal navigation overflow is removed on desktop.
+5. Dashboard and Reports have distinct purposes and layouts.
+6. The Cutting Studio uses a workspace-first layout and retains all verified interactions and calculations.
+7. Arabic and English work across all redesigned pages with correct RTL/LTR behavior.
+8. Loading, empty, error, success, and confirmation states remain understandable.
+9. Existing health, authentication, jobs, reconciliation, inventory, reporting, and cutting tests continue to pass.
+
+Run relevant backend tests, frontend typecheck, lint, production build, and browser verification for all three roles, Arabic/English, RTL/LTR, and responsive layouts.
+
+Finish by reporting the files changed, screens redesigned, tests actually run, any regressions found, and any limitations. Do not publish or deploy. Stop after the redesign.
