@@ -1,0 +1,363 @@
+# YieldLoop — Final Core Requirements Completion, Demo Data, and Readiness Verification
+
+## Mission
+
+Bring the existing YieldLoop application to a verified, feature-complete state for the original Ibn Khaldoun Printing and Publishing / Digital HERizon internship challenge.
+
+This is the final core-product completion phase before a separate, page-by-page UI design review.
+
+**Do not stop after auditing or producing a report. Inspect the current code, identify missing or incomplete requirements, implement the missing functionality, seed the supplied demo data, run the tests, fix discovered issues, and verify the complete end-to-end workflow.**
+
+The goal is to finish the original challenge requirements properly, not to add unlimited new features.
+
+Preserve existing working functionality. Reuse the current architecture, models, business logic, authentication, authorization, audit trail, and UI components wherever appropriate.
+
+Do not perform a broad visual redesign in this phase. Functional UI changes needed to complete the requirements are allowed; visual polish and page-by-page redesign will happen later.
+
+---
+
+## 1. Source of truth: original challenge requirements
+
+The core product is a cutting material yield tool for Ibn Khaldoun Printing and Publishing.
+
+Its purpose is to show where board or paper goes in every cutting job and identify the largest avoidable material losses without counting reusable offcuts as waste.
+
+The original challenge requires the application to support:
+
+1. A digital production job card.
+2. Material and cutting machine selection.
+3. Recording issued material weight.
+4. Recording good product output.
+5. Recording scrap separately by reason.
+6. Recording reusable offcuts separately from scrap.
+7. Recording rework separately when applicable.
+8. Rejecting unbalanced job records.
+9. Showing yield and scrap with explicit definitions.
+10. Comparing two jobs using the same machine.
+11. Opening the underlying records to investigate differences.
+12. A factory demonstration using the two supplied case records.
+13. Optional AI assistance that suggests investigations without inventing a root cause.
+
+All existing features must be assessed against these requirements. A feature is complete only when its actual behavior is implemented and verified, not merely documented or represented by a placeholder.
+
+## 2. Required material reconciliation and calculations
+
+Enforce this reconciliation rule using the existing authoritative backend business logic:
+
+Issued material = good output + total scrap + reusable offcuts
+
+Handle decimal quantities precisely and consistently. Do not use floating-point approximations for material accounting.
+
+Definitions must be consistent throughout the backend, UI, reports, dashboard, and comparisons:
+
+- **Issued material:** total material issued to the job.
+- **Good output:** weight of acceptable product recorded for the job.
+- **Scrap:** material classified as waste in this exercise.
+- **Reusable offcuts:** material retained for potential reuse, not scrap.
+- **Total scrap:** sum of the recorded scrap categories.
+- **Scrap rate:** total scrap ÷ issued material × 100%.
+- **Good yield:** good output ÷ issued material × 100%.
+
+Reusable offcuts must not be counted as scrap.
+
+Do not confuse scrap rate with the percentage of all material that did not become good output. Good yield and scrap rate are separate metrics, and the reusable fraction must remain visible.
+
+### Validation behavior
+
+- Reject or prevent closing a job as balanced when its quantities do not reconcile.
+- Perform authoritative validation on the server, not only in the frontend.
+- Provide clear explanations when a job is incomplete or unbalanced.
+- Support the existing correction, void, and replacement workflows without double-counting records.
+- Prevent unauthorized users from bypassing validation.
+- Handle zero, negative, missing, or invalid quantities appropriately.
+- Avoid silently rounding away material differences.
+- Preserve a clear audit trail for material-related changes.
+
+If rework is implemented as a separate record type, define and enforce its accounting treatment so it cannot be double-counted. The original case data supplies no rework quantities, so do not invent any.
+
+## 3. Complete the digital job card
+
+Inspect the current production job workflow and complete any missing required functionality.
+
+An authorized operator must be able to:
+
+1. Open an existing job or create one according to current permissions.
+2. Select the material and cutting machine.
+3. Record the issued material weight.
+4. Record good product output.
+5. Record scrap quantities by reason.
+6. Record reusable offcuts separately.
+7. Record rework where supported.
+8. Review reconciliation and calculated metrics.
+9. See validation errors before attempting to close the job.
+10. Complete the supported job-closing workflow while preserving audit history.
+
+Required scrap categories must be recorded accurately. At minimum, the supplied IK-202 case needs separate setup/layout scrap and damaged-material scrap.
+
+Do not invent extra production measurements or force optional information to be present when the source data does not provide it.
+
+## 4. Complete same-machine job comparison
+
+Implement or complete a comparison workflow that lets an authorized user select two jobs performed on the same machine and compare their actual recorded results.
+
+Show, where available:
+
+- Job reference.
+- Machine.
+- Issued material.
+- Good output.
+- Total scrap.
+- Scrap by reason.
+- Reusable offcuts.
+- Scrap rate.
+- Good yield.
+- Differences in quantities and rates.
+- The underlying records supporting the results.
+
+Clearly label percentage-point differences separately from percentage changes.
+
+The user must be able to open relevant source records from the comparison instead of relying on unexplained summary numbers.
+
+Use the authoritative backend calculations. Do not duplicate calculation logic inconsistently across pages.
+
+If the selected jobs have different machines, make the mismatch clear. Do not present them as a same-machine comparison.
+
+## 5. Seed the exact supplied demonstration records
+
+Create an idempotent seeding command or equivalent using the existing project conventions.
+
+Seed only an explicitly verified development or designated demo database. Do not seed a production database. Never delete unrelated records, reset the database, create a default Manager account, or weaken security controls.
+
+Use existing application models and business workflows. Do not create duplicate demo-only models or duplicate inventory movements.
+
+### Case A: IK-202
+
+- Job reference: IK-202
+- Material: board
+- Machine: CT-2
+- Issued material: 1,200 kg
+- Good cut product: 900 kg
+- Setup/layout scrap: 180 kg
+- Damaged-material scrap: 60 kg
+- Reusable offcuts: 60 kg
+
+Expected results:
+
+- Total scrap: 240 kg
+- Reconciliation: 900 + 180 + 60 + 60 = 1,200 kg
+- Reconciliation difference: 0 kg
+- Scrap rate: 20%
+- Good yield: 75%
+- Largest scrap category: setup/layout, 180 kg
+- Reusable offcuts: 60 kg, excluded from scrap
+
+### Case B: IK-203
+
+- Job reference: IK-203
+- Material: board
+- Machine: CT-2
+- Issued material: 1,000 kg
+- Good product: 820 kg
+- Total scrap: 100 kg
+- Reusable offcuts: 80 kg
+
+Expected results:
+
+- Reconciliation: 820 + 100 + 80 = 1,000 kg
+- Reconciliation difference: 0 kg
+- Scrap rate: 10%
+- Good yield: 82%
+- Reusable offcuts: 80 kg, excluded from scrap
+
+The original source does not provide a breakdown of IK-203's 100 kg scrap by reason. Do not fabricate one. Use the existing data model to represent the unspecified breakdown honestly. If the schema cannot do this, implement a compatible, clearly labelled representation without falsely claiming that a specific reason was recorded.
+
+### Required comparison results
+
+Both jobs use CT-2.
+
+- IK-202 scrap rate: 20%.
+- IK-203 scrap rate: 10%.
+- Scrap-rate difference: IK-202 is 10 percentage points higher.
+- IK-202 good yield: 75%.
+- IK-203 good yield: 82%.
+- Good-yield difference: IK-202 is 7 percentage points lower.
+
+The seed process must be safe to run repeatedly without duplicating jobs, material issues, outputs, scrap records, offcuts, or inventory movements.
+
+Verify persisted records by reading them back after seeding. Do not report success based only on command output.
+
+Do not invent product dimensions, sheet sizes, planned yield, cutting instructions, operator evidence, timestamps, or other details absent from the supplied case.
+
+## 6. Complete offcut handling required by the challenge
+
+Inspect the existing offcut inventory implementation.
+
+Complete the minimum workflow needed to demonstrate that reusable offcuts remain separate from scrap and can be identified as reusable material.
+
+Where required by existing business rules, ensure offcuts have traceable source jobs and that corrections or voids do not corrupt the inventory balance.
+
+Do not introduce complex reservation, allocation, or consumption features solely to expand scope. Implement only the offcut functionality necessary for correct accounting and the promised reusable-material workflow, unless a broader workflow already exists and works correctly.
+
+Do not count an offcut as both reusable stock and scrap.
+
+## 7. AI assistance — evidence-based investigation only
+
+Inspect whether a real AI Assistant is implemented and functional. If it is missing or incomplete, implement the minimum useful AI assistance required by the original brief.
+
+The AI should help explain production results and identify possible investigation leads.
+
+### Mandatory example
+
+For IK-202, the assistant may say:
+
+"The recorded data shows 180 kg of setup/layout scrap, the largest recorded scrap category for this job. This is a useful area to investigate. Review the cutting instructions, layout, setup records, material issue, and operator observations to determine whether the setup or layout contributed to the loss. The available figures alone do not establish the exact root cause."
+
+It must not say that setup or layout definitely caused the loss without sufficient supporting evidence.
+
+### Required behavior
+
+- Base summaries on actual authorized records.
+- Distinguish recorded facts, calculated results, possible explanations, and missing evidence.
+- Cite relevant job references and recorded categories when available.
+- Suggest concrete follow-up checks.
+- Support Arabic and English.
+- Never fabricate data, operator statements, measurements, or root causes.
+- Never treat correlation as proof of causation.
+- Never silently alter production records or inventory.
+- Enforce role-based access and backend validation.
+- Keep AI provider credentials server-side.
+- Use a real provider when correctly configured.
+- If credentials are absent, show an honest configuration/unavailable state instead of simulating real AI.
+
+Do not build an elaborate autonomous agent or complex AI workflow beyond what is necessary for trustworthy production assistance.
+
+## 8. Existing Cutting Studio and advanced features
+
+Preserve existing working production and Cutting Studio functionality.
+
+Do not replace or weaken the current cutting-layout validation, revision history, or safeguards.
+
+The original challenge is a cutting material yield tool; advanced interactive layout editing is supporting functionality rather than a substitute for the job-card, reconciliation, scrap, offcut, and comparison requirements.
+
+A 3D Packaging Designer is not required to satisfy the original challenge. If it is not already implemented, do not let it block completion of the original requirements or start building it in this phase. Record it as optional future scope.
+
+Do not remove existing features simply because they are outside the original brief.
+
+## 9. Roles and permissions
+
+Preserve the existing three roles:
+
+- Cutting Operator
+- Production Supervisor
+- Manager
+
+Verify permissions for the required workflows. Operators must not gain access to management-only capabilities. Managers must be able to perform the intended comparison and investigation workflows.
+
+Preserve the existing authentication, database-backed session security, CSRF protections, audit trail, and authorization boundaries.
+
+Do not introduce public registration, default privileged accounts, hardcoded credentials, or weakened security settings.
+
+## 10. UI requirements for functional completeness
+
+This is not the visual redesign phase.
+
+Only change UI elements needed to make the required workflows functional, understandable, and testable.
+
+Ensure the existing pages expose the required actions and show the correct calculations. Use clear labels and definitions for issued material, good output, scrap, reusable offcuts, scrap rate, and good yield.
+
+Preserve Arabic RTL and English LTR behavior.
+
+Do not spend this phase reworking colors, typography, spacing, branding, animations, or the overall visual system unless a change is necessary for functional correctness or accessibility.
+
+## 11. Automated tests and end-to-end verification
+
+Add missing tests and fix failures caused by the implementation.
+
+Test the actual workflows, not only isolated formulas.
+
+### Accounting tests
+
+Verify:
+
+IK-202:
+- Issued: 1,200 kg
+- Good: 900 kg
+- Scrap: 240 kg
+- Reusable: 60 kg
+- Reconciliation difference: 0 kg
+- Scrap rate: 20%
+- Good yield: 75%
+
+IK-203:
+- Issued: 1,000 kg
+- Good: 820 kg
+- Scrap: 100 kg
+- Reusable: 80 kg
+- Reconciliation difference: 0 kg
+- Scrap rate: 10%
+- Good yield: 82%
+
+Comparison:
+- Both jobs use CT-2.
+- Scrap-rate difference: 10 percentage points.
+- Good-yield difference: 7 percentage points.
+
+### Workflow tests
+
+Verify:
+- Creating or opening a job through the supported workflow.
+- Recording material issues and outputs.
+- Recording scrap by reason.
+- Recording reusable offcuts.
+- Rejection of unbalanced jobs.
+- Clear display of definitions and metrics.
+- Same-machine comparison and access to supporting records.
+- Correct role restrictions.
+- Correct handling of voids and corrections.
+- Idempotent seeding without duplicate inventory movements.
+- AI uncertainty behavior for the 180 kg setup/layout entry.
+- AI provider unavailable/error handling if the assistant is implemented.
+- Existing Cutting Studio regression tests.
+
+Run backend tests, frontend tests, type checks, and available browser/end-to-end tests.
+
+Run the seed command twice against the verified development/demo database and confirm that the final records and inventory totals remain correct.
+
+If a test fails, investigate and fix the underlying problem where within scope. Do not disable tests, weaken validation, or change expected values merely to obtain a pass.
+
+## 12. Final completion gate
+
+Do not declare the core product ready until all original functional requirements have evidence of successful verification.
+
+Provide a final table with these statuses:
+
+- **PASS:** Implemented and verified.
+- **FAIL:** Missing or incorrect.
+- **BLOCKED:** Cannot be verified because of a specific environmental or external dependency.
+- **OPTIONAL:** Beyond the original challenge scope.
+
+For every PASS, identify the actual test, route, UI workflow, or persisted record that proves it.
+
+For every FAIL or BLOCKED item, either resolve it or explain exactly what prevents completion. Do not hide incomplete functionality behind a successful build or passing unit tests.
+
+Report separately:
+1. Original challenge feature completeness.
+2. Demonstration data and calculation correctness.
+3. End-to-end workflow verification.
+4. AI provider configuration status.
+5. Automated test results.
+6. Security, backup, recovery, deployment, and production-readiness limitations already identified in the project.
+
+**Passing the original challenge requirements is not the same as being safe for production deployment.** Do not claim production readiness unless the existing release and recovery requirements have also been independently satisfied.
+
+## 13. Stop condition
+
+Once the original challenge requirements are implemented and verified, the demo records are seeded, and all possible in-scope tests pass:
+
+- Stop implementing new features.
+- Do not start a page-by-page redesign.
+- Do not start the optional 3D Packaging Designer.
+- Do not add unrelated enhancements.
+- Provide the final evidence-based completion report and the exact steps to open and demonstrate IK-202 and IK-203.
+
+The next phase will be a dedicated visual review of the existing screens, one page at a time, using screenshots supplied by the user.
