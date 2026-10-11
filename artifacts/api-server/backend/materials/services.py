@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as ModelValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.db import IntegrityError, transaction
 from jobs.models import ProductionJob
-from jobs.policy import require_creator, require_editor, visible_jobs
+from jobs.policy import require_creator, require_recorder, visible_jobs
 from jobs.services import ready_actor
 from rest_framework.exceptions import NotFound, ValidationError
 
@@ -35,6 +35,20 @@ def latest(job):
     return Reconciliation.objects.filter(job=job).select_related("material").first()
 
 
+def closing(job, completing=False):
+    summary = latest(job)
+    reason = None
+    if not completing and job.status != "open":
+        reason = "job_closed"
+    elif not job.machine.strip():
+        reason = "machine_required"
+    elif summary is None or summary.issued <= 0 or summary.good <= 0:
+        reason = "material_incomplete"
+    elif summary.variance != 0:
+        reason = "material_unbalanced"
+    return {"can_close": reason is None, "reason": reason}
+
+
 def visible_job(actor, pk, lock=False):
     queryset = visible_jobs(actor)
     if lock:
@@ -60,8 +74,9 @@ def state(job, actor, values=None):
         "revision": snapshot.revision if snapshot else 0,
         "material": material_data(snapshot.material) if snapshot else None,
         "summary": summary,
+        "closing": closing(job),
         "permissions": {
-            "record": job.status == "open" and actor.role in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR),
+            "record": job.status == "open" and actor.role in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR, User.Role.CUTTING_OPERATOR),
             "manage_materials": actor.role == User.Role.MANAGER,
         },
         "entries": paginate(entries, values or {"page": 1, "page_size": 20}, entry_data),
@@ -83,7 +98,7 @@ def mutate(request, pk, values, entry_id=None):
         with transaction.atomic():
             actor = ready_actor(request)
             job = visible_job(actor, pk, lock=True)
-            require_editor(actor)
+            require_recorder(actor)
             if job.status != "open":
                 raise Conflict(code="job_not_open")
             before = latest(job)
@@ -105,7 +120,7 @@ def mutate(request, pk, values, entry_id=None):
                     raise Conflict(code="duplicate_record")
                 entry = MaterialEntry.objects.create(
                     job=job, material=material, created_by=actor,
-                    **{key: values[key] for key in ("kind", "quantity", "unit", "note", "request_id")},
+                    **{key: values[key] for key in ("kind", "quantity", "unit", "note", "request_id", "scrap_reason")},
                 )
             else:
                 try:

@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type MaterialStateSummary = {
+export interface MaterialSummary {
   issued: string;
   good: string;
   scrap: string;
@@ -21,4 +18,4 @@ export type MaterialStateSummary = {
   /** @nullable */
   scrap_rate: string | null;
   created_at: Date;
-} | null;
+}

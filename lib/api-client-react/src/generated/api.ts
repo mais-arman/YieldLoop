@@ -34,6 +34,7 @@ import type {
   Employee,
   EvaluateCuttingScenarioBody,
   GetCuttingHistoryParams,
+  GetJobComparisonParams,
   GetJobMaterialsParams,
   GetReportOverviewParams,
   HealthStatus,
@@ -41,7 +42,9 @@ import type {
   InventoryLot,
   InventoryPage,
   InventoryVoidInput,
+  JobComparison,
   JobInput,
+  JobMachines,
   JobPage,
   JobUpdate,
   ListCuttingPlansParams,
@@ -1771,7 +1774,7 @@ export const getRecordMaterialEntryUrl = (id: number,) => {
 }
 
 /**
- * Manager/Supervisor, Open jobs only, CSRF required. All decimal quantities must be strings.
+ * Manager/Supervisor/Operator, Open jobs only, CSRF required. All decimal quantities must be strings. scrap_reason only allowed on scrap.
  */
 export const recordMaterialEntry = async (id: number,
     materialEntryInput: MaterialEntryInput, options?: Parameters<typeof customFetch>[1]): Promise<MaterialState> => {
@@ -1858,7 +1861,7 @@ export const getVoidMaterialEntryUrl = (id: number,
 }
 
 /**
- * Manager/Supervisor correction on Open jobs; original record preserved. CSRF required.
+ * Manager/Supervisor/Operator correction on Open jobs; original record preserved. CSRF required.
  */
 export const voidMaterialEntry = async (id: number,
     entryId: number,
@@ -2099,6 +2102,155 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateProductionJobMutationOptions(options));
     }
 
+export const getListJobMachinesUrl = () => {
+
+
+
+
+  return `/api/v1/jobs/machines`
+}
+
+export const listJobMachines = async ( options?: Parameters<typeof customFetch>[1]): Promise<JobMachines> => {
+
+  return customFetch<JobMachines>(getListJobMachinesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJobMachinesQueryKey = () => {
+    return [
+    `/api/v1/jobs/machines`
+    ] as const;
+    }
+
+
+export const getListJobMachinesQueryOptions = <TData = Awaited<ReturnType<typeof listJobMachines>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJobMachines>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJobMachinesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJobMachines>>> = ({ signal }) => listJobMachines({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJobMachines>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJobMachinesQueryResult = NonNullable<Awaited<ReturnType<typeof listJobMachines>>>
+export type ListJobMachinesQueryError = ErrorType<unknown>
+
+
+
+export function useListJobMachines<TData = Awaited<ReturnType<typeof listJobMachines>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJobMachines>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJobMachinesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetJobComparisonUrl = (params: GetJobComparisonParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/comparison?${stringifiedParams}` : `/api/v1/reports/comparison`
+}
+
+export const getJobComparison = async (params: GetJobComparisonParams, options?: Parameters<typeof customFetch>[1]): Promise<JobComparison> => {
+
+  return customFetch<JobComparison>(getGetJobComparisonUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJobComparisonQueryKey = (params?: GetJobComparisonParams,) => {
+    return [
+    `/api/v1/reports/comparison`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetJobComparisonQueryOptions = <TData = Awaited<ReturnType<typeof getJobComparison>>, TError = ErrorType<void>>(params: GetJobComparisonParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJobComparison>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJobComparisonQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJobComparison>>> = ({ signal }) => getJobComparison(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJobComparison>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJobComparisonQueryResult = NonNullable<Awaited<ReturnType<typeof getJobComparison>>>
+export type GetJobComparisonQueryError = ErrorType<void>
+
+
+
+export function useGetJobComparison<TData = Awaited<ReturnType<typeof getJobComparison>>, TError = ErrorType<void>>(
+ params: GetJobComparisonParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJobComparison>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJobComparisonQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetProductionJobUrl = (id: number,) => {
 
 
@@ -2179,7 +2331,7 @@ export const getUpdateProductionJobUrl = (id: number,) => {
 }
 
 /**
- * CSRF required. Revision required to prevent lost updates. Cancelled jobs are immutable.
+ * CSRF required. Revision required to prevent lost updates. Cancelled and completed jobs are immutable. status=completed requires nonblank machine, recorded issue and good > 0, exact variance zero; error codes machine_required, material_incomplete, material_unbalanced, job_closed, stale_revision.
  */
 export const updateProductionJob = async (id: number,
     jobUpdate: JobUpdate, options?: Parameters<typeof customFetch>[1]): Promise<ProductionJob> => {

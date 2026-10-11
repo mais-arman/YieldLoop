@@ -9,6 +9,7 @@
 export interface EvidenceJob {
   id: number;
   job_number: string;
+  reference: string;
   status: string;
   revision: number;
 }

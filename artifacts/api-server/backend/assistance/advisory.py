@@ -7,10 +7,10 @@ from . import provider
 LEADS = {
     "review_entry": (
         ("This entry may warrant investigation; it does not establish a cause.",
-         "Confirm classification, weighing records and operator observations.",
+         "Review cutting instructions, layout, setup records, material issues, weighing records and operator observations.",
          "Open the cited entry and compare its timestamp and quantity with the source measurement."),
         ("قد يستحق هذا السجل التحقيق؛ ولا يثبت السبب.",
-         "تحقق من التصنيف وسجلات الوزن وملاحظات المشغل.",
+         "راجع تعليمات القص والمخطط وسجلات الإعداد وصرف المواد والوزن وملاحظات المشغل.",
          "افتح السجل المشار إليه وقارن وقته وكميته بالقياس الأصلي.")),
     "review_missing_records": (
         ("Missing or delayed records are an unconfirmed possibility, not an established loss.",
@@ -72,6 +72,7 @@ def analyze(evidence, language, question):
     # Exclude plan names, part labels, full geometry and irrelevant staff identities.
     payload = {k: evidence[k] for k in ("job", "material_revision", "recorded_facts",
                                        "calculated_findings", "limitations")}
+    payload["largest_scrap_category"] = evidence.get("largest_scrap_category")
     payload["cutting"] = [{"plan_id": p["plan_id"], "revision": p["revision"],
                           "results": [s["result"] for s in p["scenarios"]]} for p in evidence["cutting"]]
     payload.update(language=language, question=question)
@@ -98,6 +99,17 @@ def analyze(evidence, language, question):
         if code == "review_cutting" and not evidence["cutting"]:
             raise provider.InvalidOutput()
         text, needed, step = LEADS[code][lang]
+        largest = evidence.get("largest_scrap_category")
+        if code == "review_entry" and largest and any(
+            e["id"] in ids and not e["voided"] and e["kind"] == "scrap"
+            and (e.get("scrap_reason") or None) == largest["reason"] for e in evidence["recorded_facts"]
+        ):
+            category = largest["reason"] or ("غير محدد" if lang else "Unspecified")
+            reference = evidence["job"].get("reference") or evidence["job"]["job_number"]
+            text = (f"{reference}: {category}، {largest['quantity']} كغ، من أكبر فئات الهالك المسجلة. "
+                    "هذه نقطة للتحقيق وليست إثباتًا للسبب." if lang else
+                    f"{reference}: {category}, {largest['quantity']} kg, is a largest recorded scrap category. "
+                    "This entry does not establish a cause; it is an investigation lead, not proof of the root cause.")
         results.append({"code": code, "record_ids": ids, "text": text, "evidence_needed": needed, "next_step": step})
     return {"evidence": evidence, "advisory": True, "language": language,
             "answer": [ANSWERS[c][lang] for c in dict.fromkeys([*codes, "no_proven_cause"])],

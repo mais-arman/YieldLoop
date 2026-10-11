@@ -17,5 +17,9 @@ export interface JobUpdate {
   title?: string;
   /** @maxLength 5000 */
   notes?: string;
+  /** @maxLength 120 */
+  reference?: string;
+  /** @maxLength 120 */
+  machine?: string;
   status?: JobStatus;
 }

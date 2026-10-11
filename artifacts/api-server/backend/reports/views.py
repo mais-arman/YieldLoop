@@ -106,6 +106,7 @@ def overview(actor, filters):
         # Page jobs first, then fetch snapshots in one bounded query (no N+1).
         def job_row(job):
             return {"id": job.pk, "job_number": job.job_number, "title": job.title,
+                    "reference": job.reference, "machine": job.machine, "is_demo": job.is_demo,
                     "status": job.status, "created_at": job.created_at.isoformat()}
         job_page = paginate(jobs.order_by("-created_at", "-pk"),
                             {"page": filters["job_page"], "page_size": filters["page_size"]}, job_row)

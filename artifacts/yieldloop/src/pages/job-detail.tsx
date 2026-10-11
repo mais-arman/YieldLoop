@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'wouter';
-import { ArrowLeft, Ban, Bot, ChevronRight, Ruler, Loader2, Lock, PlayCircle, RotateCw, Save, SearchX } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { ArrowLeft, Ban, Bot, CheckCircle2, ChevronRight, FlaskConical, Ruler, Loader2, Lock, PlayCircle, RotateCw, Save, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,9 @@ import { JOBS_KEY, updateJob, useJob, type JobStatus, type JobUpdate, type Produ
 import { useI18n } from '@/lib/i18n';
 import { MaterialsSection } from '@/components/materials/materials-section';
 import { cn } from '@/lib/utils';
+import type { Employee } from '@/lib/auth';
+import { closeErrorCode, jobLabel, redirectAfterClose, showsBothIds, useKt, useMachines, type CKey } from '@/lib/core';
+import { MATERIAL_STATE_KEY, useJobMaterials } from '@/lib/materials';
 import { useCt } from '@/components/cutting/cutting-i18n';
 import { useUt } from '@/lib/ui-i18n';
 import { useFt } from '@/lib/feature-i18n';
@@ -32,7 +35,7 @@ function BackLink() {
   );
 }
 
-export default function JobDetailPage({ id }: { id: number }) {
+export default function JobDetailPage({ id, user }: { id: number; user: Employee }) {
   const { t } = useI18n();
   const q = useJob(id);
   if (!Number.isInteger(id) || id <= 0 || (q.isError && q.error instanceof AuthError && (q.error.status === 404 || q.error.code === 'not_found'))) {
@@ -66,10 +69,10 @@ export default function JobDetailPage({ id }: { id: number }) {
       </div>
     );
   }
-  return <JobView key={id} job={q.data!} refetch={() => q.refetch()} />;
+  return <JobView key={id} job={q.data!} user={user} refetch={() => q.refetch()} />;
 }
 
-function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<{ data?: ProductionJob; isError?: boolean }> }) {
+function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; refetch: () => Promise<{ data?: ProductionJob; isError?: boolean }> }) {
   const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -78,27 +81,36 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
   const ft = useFt();
   const [title, setTitle] = useState(job.title);
   const [notes, setNotes] = useState(job.notes ?? '');
-  const base = useRef({ title: job.title, notes: job.notes ?? '', revision: job.revision });
+  const [reference, setReference] = useState(job.reference ?? '');
+  const [machine, setMachine] = useState(job.machine ?? '');
+  const base = useRef({ title: job.title, notes: job.notes ?? '', reference: job.reference ?? '', machine: job.machine ?? '', revision: job.revision });
+  const kt = useKt();
+  const [, setLocation] = useLocation();
+  const machines = useMachines(job.permissions.edit_machine);
   const [confirm, setConfirm] = useState<JobStatus | null>(null);
   const [reloading, setReloading] = useState(false);
 
-  const dirty = title !== base.current.title || notes !== base.current.notes;
+  const dirty = title !== base.current.title || notes !== base.current.notes || reference !== base.current.reference || machine !== base.current.machine;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
 
   // Adopt newer server values only when the user has no unsaved input.
   useEffect(() => {
     if (job.revision !== base.current.revision && !dirtyRef.current) {
-      base.current = { title: job.title, notes: job.notes ?? '', revision: job.revision };
+      base.current = { title: job.title, notes: job.notes ?? '', reference: job.reference ?? '', machine: job.machine ?? '', revision: job.revision };
       setTitle(job.title);
       setNotes(job.notes ?? '');
+      setReference(job.reference ?? '');
+      setMachine(job.machine ?? '');
     }
-  }, [job.revision, job.title, job.notes]);
+  }, [job.revision, job.title, job.notes, job.reference, job.machine]);
 
   const adopt = (j: ProductionJob) => {
-    base.current = { title: j.title, notes: j.notes ?? '', revision: j.revision };
+    base.current = { title: j.title, notes: j.notes ?? '', reference: j.reference ?? '', machine: j.machine ?? '', revision: j.revision };
     setTitle(j.title);
     setNotes(j.notes ?? '');
+    setReference(j.reference ?? '');
+    setMachine(j.machine ?? '');
     qc.setQueryData([...JOBS_KEY, 'detail', j.id], j);
     qc.invalidateQueries({ queryKey: JOBS_KEY });
   };
@@ -108,9 +120,11 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
       const data: JobUpdate = { revision: base.current.revision };
       if (job.permissions.edit_title && title !== base.current.title) data.title = title.trim();
       if (job.permissions.edit_notes && notes !== base.current.notes) data.notes = notes;
+      if (job.permissions.edit_reference && reference !== base.current.reference) data.reference = reference.trim();
+      if (job.permissions.edit_machine && machine !== base.current.machine) data.machine = machine.trim();
       return updateJob(job.id, data);
     },
-    onSuccess: (j) => { adopt(j); save.reset(); toast({ title: t('jobSaved') }); },
+    onSuccess: (j) => { adopt(j); save.reset(); qc.invalidateQueries({ queryKey: MATERIAL_STATE_KEY }); qc.invalidateQueries({ queryKey: ['jobs', 'machines'] }); toast({ title: t('jobSaved') }); },
   });
 
   const transition = useMutation({
@@ -118,7 +132,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
     onSuccess: (j, status) => {
       setConfirm(null);
       adopt(j);
-      toast({ title: t(status === 'open' ? 'jobOpened' : 'jobCancelled', { num: j.job_number }) });
+      toast({ title: t(status === 'open' ? 'jobOpened' : 'jobCancelled', { num: jobLabel(j) }) });
     },
     onError: () => setConfirm(null),
   });
@@ -141,7 +155,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
 
   const stale = isStale(save.error) || isStale(transition.error);
   const fe = jobFieldErrors(save.error, t);
-  const canEdit = job.permissions.edit_title || job.permissions.edit_notes;
+  const canEdit = job.permissions.edit_title || job.permissions.edit_notes || job.permissions.edit_reference || job.permissions.edit_machine;
   const transitions = job.permissions.transitions ?? [];
   const otherError = !stale ? (save.error ?? transition.error) : null;
 
@@ -156,7 +170,20 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
     if (h === 'materials' || h === 'cutting') requestAnimationFrame(() => document.getElementById(h)?.scrollIntoView({ block: 'start' }));
   }, []);
 
-  const discard = () => { setTitle(base.current.title); setNotes(base.current.notes); save.reset(); };
+  const discard = () => { setTitle(base.current.title); setNotes(base.current.notes); setReference(base.current.reference); setMachine(base.current.machine); save.reset(); };
+
+  const close = useMutation({
+    mutationFn: () => updateJob(job.id, { revision: base.current.revision, status: 'completed' }),
+    onSuccess: (j) => {
+      setConfirm(null);
+      toast({ title: kt('closed', { num: jobLabel(j) }) });
+      qc.invalidateQueries({ queryKey: MATERIAL_STATE_KEY });
+      qc.invalidateQueries({ queryKey: ['reports'] });
+      if (redirectAfterClose(user.role)) { qc.invalidateQueries({ queryKey: JOBS_KEY }); setLocation('/jobs'); return; }
+      adopt(j);
+    },
+    onError: () => setConfirm(null),
+  });
 
   return (
     <div className="mx-auto max-w-6xl animate-in fade-in slide-in-from-bottom-1 duration-500">
@@ -164,8 +191,10 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
       <header className="mt-4 flex flex-col gap-4 rounded-lg border bg-card p-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <JobNumber value={job.job_number} className="text-sm" />
+            <span className="font-mono text-sm font-semibold tracking-wide" dir="ltr" data-testid="text-job-reference">{jobLabel(job)}</span>
+            {showsBothIds(job) && <span className="text-xs text-muted-foreground">{kt('internalNo')} <JobNumber value={job.job_number} /></span>}
             <StatusBadge status={job.status} />
+            {job.is_demo && <span title={kt('demoTitle')} className="inline-flex items-center gap-1 rounded-full bg-[hsl(262_40%_50%/0.1)] px-2 py-0.5 text-xs font-medium text-[hsl(262_40%_38%)] ring-1 ring-inset ring-[hsl(262_40%_50%/0.25)]" data-testid="badge-demo"><FlaskConical className="h-3 w-3" aria-hidden />{kt('demo')}</span>}
             <span className="text-xs text-muted-foreground">{t('updatedLabel')} {fmt(job.updated_at)}</span>
           </div>
           <h1 className={cn('mt-2 break-words text-2xl font-semibold tracking-tight', job.status === 'cancelled' && 'text-muted-foreground')} data-testid="text-page-title">{job.title}</h1>
@@ -190,7 +219,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
             )}
           </div>
           {transitions.length > 0 && dirty && <p className="text-xs text-muted-foreground">{t('saveBeforeTransition')}</p>}
-          {transitions.length === 0 && <p className="text-xs text-muted-foreground">{job.status === 'cancelled' ? t('cancelledLocked') : t('noTransitions')}</p>}
+          {transitions.length === 0 && <p className="text-xs text-muted-foreground">{job.status === 'cancelled' ? t('cancelledLocked') : job.status === 'completed' ? kt('completedLocked') : t('noTransitions')}</p>}
         </div>
       </header>
 
@@ -223,7 +252,7 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
           {!canEdit && (
             <p className="flex items-start gap-2 rounded-md bg-muted/60 px-3 py-2.5 text-sm text-muted-foreground" data-testid="text-readonly">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              {job.status === 'cancelled' ? t('cancelledLocked') : t('readOnlyJob')}
+              {job.status === 'cancelled' ? t('cancelledLocked') : job.status === 'completed' ? kt('completedLocked') : t('readOnlyJob')}
             </p>
           )}
 
@@ -235,6 +264,35 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
               <p id="e-title" className="text-sm" data-testid="text-job-title">{job.title}</p>
             )}
             <FieldError msg={fe.title} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="e-reference">{kt('reference')}</Label>
+              {job.permissions.edit_reference ? (
+                <Input id="e-reference" dir="ltr" maxLength={120} value={reference} disabled={save.isPending || reloading} onChange={(e) => setReference(e.target.value)} aria-invalid={!!fe.reference} placeholder={job.job_number} data-testid="input-edit-reference" />
+              ) : (
+                <p id="e-reference" dir="ltr" className={cn('font-mono text-sm', !job.reference && 'text-muted-foreground')} style={{ textAlign: 'start' }} data-testid="text-job-reference-field">{job.reference || job.job_number}</p>
+              )}
+              {job.permissions.edit_reference && <p className="text-xs text-muted-foreground">{kt('referenceHint')}</p>}
+              <FieldError msg={fe.reference} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="e-machine">{kt('machine')}</Label>
+              {job.permissions.edit_machine ? (
+                <>
+                  {user.role === 'manager' ? <Input id="e-machine" list="machine-options" maxLength={120} value={machine} disabled={save.isPending || reloading} onChange={(e) => setMachine(e.target.value)} aria-invalid={!!fe.machine} autoComplete="off" data-testid="input-edit-machine" /> :
+                    <select id="e-machine" value={machine} disabled={save.isPending || reloading} onChange={(e) => setMachine(e.target.value)} aria-invalid={!!fe.machine} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" data-testid="select-edit-machine">
+                      <option value="" disabled>{kt('machineUnset')}</option>
+                      {(machines.data?.machines ?? []).map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>}
+                  <datalist id="machine-options">{(machines.data?.machines ?? []).map((m) => <option key={m} value={m} />)}</datalist>
+                  {user.role === 'manager' && <p className="text-xs text-muted-foreground">{kt('machineHint')}</p>}
+                </>
+              ) : (
+                <p id="e-machine" className={cn('text-sm', !job.machine && 'text-muted-foreground')} data-testid="text-job-machine">{job.machine || kt('machineUnset')}</p>
+              )}
+              <FieldError msg={fe.machine} />
+            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="e-notes">{t('jobNotesLabel')}</Label>
@@ -273,12 +331,31 @@ function JobView({ job, refetch }: { job: ProductionJob; refetch: () => Promise<
 
       <div id="cutting" className="scroll-mt-28"><CuttingLink jobId={job.id} /></div>
 
-      <div id="materials" className="scroll-mt-28"><MaterialsSection job={job} /></div>
+      <div id="materials" className="scroll-mt-28"><MaterialsSection job={job} canManageInventory={user.role !== 'cutting_operator'} /></div>
 
-      {confirm !== null && <AlertDialog open onOpenChange={(o) => { if (!o && !transition.isPending) setConfirm(null); }}>
+      {job.status === 'open' && (
+        <ClosePanel jobId={job.id} dirty={dirty} busy={close.isPending || save.isPending || transition.isPending || reloading || stale} error={close.error} onClose={() => setConfirm('completed')} />
+      )}
+
+      {confirm === 'completed' && <AlertDialog open onOpenChange={(o) => { if (!o && !close.isPending) setConfirm(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t(confirm === 'open' ? 'openJobTitle' : 'cancelJobTitle', { num: job.job_number })}</AlertDialogTitle>
+            <AlertDialogTitle>{kt('closeConfirm', { num: jobLabel(job) })}</AlertDialogTitle>
+            <AlertDialogDescription>{kt('closeConfirmDesc')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={close.isPending}>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction data-testid="button-confirm-close" disabled={close.isPending} onClick={(ev) => { ev.preventDefault(); close.mutate(); }}>
+              {close.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}{kt('closeBtn')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>}
+
+      {confirm !== null && confirm !== 'completed' && <AlertDialog open onOpenChange={(o) => { if (!o && !transition.isPending) setConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t(confirm === 'open' ? 'openJobTitle' : 'cancelJobTitle', { num: jobLabel(job) })}</AlertDialogTitle>
             <AlertDialogDescription>{confirm === 'open' ? t('openJobDesc') : t('cancelJobDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -310,5 +387,39 @@ function CuttingLink({ jobId }: { jobId: number }) {
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" aria-hidden />
     </Link>
+  );
+}
+
+function ClosePanel({ jobId, dirty, busy, error, onClose }: { jobId: number; dirty: boolean; busy: boolean; error: unknown; onClose: () => void }) {
+  const kt = useKt();
+  const { t } = useI18n();
+  const q = useJobMaterials(jobId, 1);
+  const closing = q.data?.closing;
+  const code = closeErrorCode(error);
+  const serverMsg = error ? (code ? kt(`err_${code}` as CKey) : jobErrorMessage(error, t)) : null;
+  const can = !!closing?.can_close && !dirty && !busy;
+  return (
+    <section className="mt-4 rounded-lg border bg-card p-5" aria-labelledby="h-close" data-testid="panel-close-job">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 id="h-close" className="text-sm font-semibold">{kt('closeTitle')}</h2>
+          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">{kt('closeDesc')}</p>
+        </div>
+        <Button onClick={onClose} disabled={!can} data-testid="button-close-job">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CheckCircle2 className="h-4 w-4" aria-hidden />}{kt('closeBtn')}
+        </Button>
+      </div>
+      <div className="mt-3 text-sm" aria-live="polite">
+        {q.isPending ? <Skeleton className="h-5 w-64" /> : q.isError ? (
+          <p className="text-destructive">{jobErrorMessage(q.error, t)}</p>
+        ) : closing?.can_close ? (
+          <p className="flex items-center gap-2 text-[hsl(152_50%_28%)]" data-testid="text-close-ready"><CheckCircle2 className="h-4 w-4" aria-hidden />{kt('closeReady')}</p>
+        ) : (
+          <p className="flex items-start gap-2" data-testid="text-close-blocked"><Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /><span><span className="font-medium">{kt('closeBlocked')}:</span> {closing?.reason ?? ''}</span></p>
+        )}
+        {dirty && <p className="mt-1 text-xs text-muted-foreground">{kt('closeDirty')}</p>}
+        {serverMsg && <div className="mt-3"><FormAlert message={serverMsg} testId="error-close-job" /></div>}
+      </div>
+    </section>
   );
 }

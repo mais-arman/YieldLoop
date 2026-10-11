@@ -6,6 +6,22 @@ production migrations, inventory consumption or accounting-policy changes.
 
 ## Release-gate remediation — current status
 
+### Original challenge completion follow-on (2026-10-11)
+
+See `docs/core-completion.md` for exact development seed/read-back, role approval,
+new schema migrations, comparison/closing tests and browser evidence. Operators
+were explicitly approved to record production and close balanced Open jobs; they
+can select existing machines without managing the catalogue. This supersedes
+earlier read-only-Operator/no-completion functional assumptions, not production
+approval. IK-202 and IK-203 are persisted and verified with idempotent seeding.
+
+Core recording/comparison/demo workflows pass. Real AI remains unavailable without
+provider configuration; rework is not implemented and 3D remains optional.
+**Production remains NOT READY.** No offsite/cluster-loss/roles-and-grants exercise
+or RPO/RTO approval was performed. Historical local CHECK-equivalence evidence is
+preserved; it is not evidence of restoring a fresh backup of the newly extended
+core schema. No production systems were accessed.
+
 This section supersedes earlier findings below, which remain historical evidence.
 Verdict remains **NOT READY**: dependency remediation does not replace factory
 approval or verification of a real production-like staging environment.

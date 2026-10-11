@@ -4,6 +4,7 @@ from audit.models import AppendOnlyQuerySet
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
 
 
 def job_number():
@@ -15,9 +16,13 @@ class ProductionJob(models.Model):
         DRAFT = "draft", "Draft"
         OPEN = "open", "Open / In progress"
         CANCELLED = "cancelled", "Cancelled"
+        COMPLETED = "completed", "Completed"
 
     job_number = models.CharField(max_length=15, unique=True, default=job_number, editable=False)
     title = models.CharField(max_length=200)
+    reference = models.CharField(max_length=120, blank=True, default="")
+    machine = models.CharField(max_length=120, blank=True, default="")
+    is_demo = models.BooleanField(default=False)
     notes = models.CharField(max_length=5000, blank=True, default="")
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
@@ -32,7 +37,9 @@ class ProductionJob(models.Model):
             models.Index(fields=["-created_at", "-id"], name="job_created"),
         )
         constraints = (
-            models.CheckConstraint(condition=models.Q(status__in=["draft", "open", "cancelled"]), name="job_valid_status"),
+            models.CheckConstraint(condition=models.Q(status__in=["draft", "open", "cancelled", "completed"]), name="job_valid_status"),
+            models.UniqueConstraint(Lower("reference"), condition=~models.Q(reference=""), name="job_reference_unique"),
+            models.CheckConstraint(condition=~models.Q(status="completed") | models.Q(machine__regex=r"\S"), name="completed_job_has_machine"),
             models.CheckConstraint(condition=models.Q(title__regex=r"\S"), name="job_nonblank_title"),
             models.CheckConstraint(condition=models.Q(revision__gte=1), name="job_positive_revision"),
             models.CheckConstraint(condition=models.Q(job_number__regex=r"^YL-[0-9A-F]{12}$"), name="job_number_format"),
@@ -49,6 +56,10 @@ class JobEvent(models.Model):
     event_type = models.CharField(max_length=8, choices=[("created", "Created"), ("updated", "Updated")])
     revision = models.PositiveIntegerField()
     old_title = models.CharField(max_length=200, null=True, blank=True)
+    old_reference = models.CharField(max_length=120, null=True, blank=True)
+    new_reference = models.CharField(max_length=120, blank=True, default="")
+    old_machine = models.CharField(max_length=120, null=True, blank=True)
+    new_machine = models.CharField(max_length=120, blank=True, default="")
     new_title = models.CharField(max_length=200)
     old_notes = models.CharField(max_length=5000, null=True, blank=True)
     new_notes = models.CharField(max_length=5000, blank=True)
@@ -61,7 +72,7 @@ class JobEvent(models.Model):
         constraints = (
             models.UniqueConstraint(fields=["job", "revision"], name="job_event_revision_unique"),
             models.CheckConstraint(condition=models.Q(event_type__in=["created", "updated"]), name="job_event_type"),
-            models.CheckConstraint(condition=models.Q(new_status__in=["draft", "open", "cancelled"]), name="job_event_status"),
+            models.CheckConstraint(condition=models.Q(new_status__in=["draft", "open", "cancelled", "completed"]), name="job_event_status"),
         )
 
     def save(self, *args, **kwargs):

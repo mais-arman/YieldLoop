@@ -12,5 +12,6 @@ export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
 export const JobStatus = {
   draft: 'draft',
   open: 'open',
+  completed: 'completed',
   cancelled: 'cancelled',
 } as const;

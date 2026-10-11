@@ -6,17 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Material } from './material';
+import type { MaterialClosing } from './materialClosing';
 import type { MaterialStateEntries } from './materialStateEntries';
 import type { MaterialStatePermissions } from './materialStatePermissions';
-import type { MaterialStateSummary } from './materialStateSummary';
+import type { MaterialSummary } from './materialSummary';
 
 export interface MaterialState {
   job_id: number;
   job_revision: number;
   revision: number;
   material: Material | null;
-  /** @nullable */
-  summary: MaterialStateSummary;
+  summary: MaterialSummary | null;
+  closing: MaterialClosing;
   permissions: MaterialStatePermissions;
   entries: MaterialStateEntries;
 }

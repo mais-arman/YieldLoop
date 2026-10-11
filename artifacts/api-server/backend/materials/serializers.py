@@ -18,12 +18,18 @@ class RevisionInput(StrictSerializer):
 
 
 class EntryInput(RevisionInput):
+    scrap_reason = serializers.CharField(max_length=160, allow_blank=True, default="")
     material_id = serializers.IntegerField(min_value=1)
     kind = serializers.ChoiceField(choices=MaterialEntry.Kind.choices)
     quantity = serializers.DecimalField(max_digits=15, decimal_places=3, min_value=Decimal("0.001"))
     unit = serializers.ChoiceField(choices=["kg"])
     note = serializers.CharField(max_length=1000, allow_blank=True, default="")
     request_id = serializers.UUIDField()
+
+    def validate(self, values):
+        if values["kind"] != "scrap" and values["scrap_reason"]:
+            raise serializers.ValidationError("Only scrap can have a scrap reason.", code="scrap_reason_kind")
+        return values
 
     def validate_quantity(self, value):
         # JSON numbers have already passed through binary floating point.
@@ -54,6 +60,7 @@ def entry_data(entry):
     return {
         "id": entry.pk, "material_id": entry.material_id, "kind": entry.kind,
         "quantity": format(entry.quantity, ".3f"), "unit": entry.unit, "note": entry.note,
+        "scrap_reason": entry.scrap_reason,
         "created_at": entry.created_at.isoformat(),
         "created_by": {"id": entry.created_by_id, "username": entry.created_by.username},
         "void": {

@@ -12,6 +12,7 @@ import { PlanEditor } from '@/components/cutting/plan-editor';
 import { ConfirmDialog, type ConfirmSpec } from '@/components/cutting/confirm-dialog';
 import { useCt, type CtKey } from '@/components/cutting/cutting-i18n';
 import { useUt } from '@/lib/ui-i18n';
+import { jobLabel } from '@/lib/core-helpers';
 
 export function canWriteCutting(user: Employee, job: ProductionJob) {
   if (user.role === 'manager') return job.status === 'draft' || job.status === 'open';
@@ -78,7 +79,7 @@ function Studio({ job, user }: { job: ProductionJob; user: Employee }) {
       <header className="mt-3 flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"><Ruler className="h-3.5 w-3.5" aria-hidden />{ct('studioTitle')}</span>
-          <JobNumber value={job.job_number} className="text-sm" />
+          <JobNumber value={jobLabel(job)} className="text-sm" />
           <StatusBadge status={job.status} />
         </div>
         <h1 className="break-words text-xl font-semibold tracking-tight sm:text-2xl" data-testid="text-page-title">{job.title}</h1>

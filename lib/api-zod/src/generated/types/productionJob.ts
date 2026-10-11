@@ -12,6 +12,9 @@ import type { ProductionJobPermissions } from './productionJobPermissions';
 export interface ProductionJob {
   id: number;
   job_number: string;
+  reference: string;
+  machine: string;
+  readonly is_demo: boolean;
   title: string;
   notes: string;
   status: JobStatus;

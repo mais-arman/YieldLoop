@@ -11,6 +11,9 @@ import type { ReportSnapshot } from './reportSnapshot';
 export interface ReportJob {
   id: number;
   job_number: string;
+  reference: string;
+  machine: string;
+  is_demo: boolean;
   title: string;
   status: JobStatus;
   created_at: Date;

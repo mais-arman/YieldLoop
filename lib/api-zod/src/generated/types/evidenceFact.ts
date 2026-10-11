@@ -14,4 +14,5 @@ export interface EvidenceFact {
   created_at: string;
   voided: boolean;
   note?: string;
+  scrap_reason?: string;
 }

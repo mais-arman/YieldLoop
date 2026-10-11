@@ -165,17 +165,18 @@ class MaterialTests(TransactionTestCase):
         with self.assertRaises(ValidationError):
             Material.objects.filter(pk=self.material.pk).update(unit="g")
 
-    def test_supervisor_operations_operator_read_only_and_scope(self):
+    def test_supervisor_and_operator_recording_and_scope(self):
         state = self.record(client=self.supervisor)
         self.assertEqual(self.current(self.operator)["summary"]["issued"], "1200.000")
-        self.assertEqual(self.add(client=self.operator).status_code, 403)
+        added = self.add(client=self.operator)
+        self.assertEqual(added.status_code, 201)
         pk = state["entries"]["results"][0]["id"]
-        self.assertEqual(self.void(pk, client=self.operator).status_code, 403)
-        self.assertEqual(self.void(pk, client=self.supervisor).status_code, 200)
+        self.assertEqual(self.void(pk, client=self.operator).status_code, 200)
+        self.assertEqual(self.void(added.json()["entries"]["results"][0]["id"], client=self.supervisor).status_code, 200)
         self.job.status = "cancelled"
         self.job.save()
         self.assertEqual(self.operator.get(self.url).status_code, 404)
-        self.assertEqual(self.operator.get("/api/v1/materials").json()["count"], 0)
+        self.assertEqual(self.operator.get("/api/v1/materials").json()["count"], 1)
         for client in (self.manager, self.supervisor):
             self.assertEqual(client.get(self.url).status_code, 200)
             self.assertEqual(self.add(client=client).status_code, 409)

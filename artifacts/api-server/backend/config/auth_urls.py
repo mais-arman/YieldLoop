@@ -12,11 +12,14 @@ from django.urls import path
 from inventory.views import BlockedReuse, InventoryDetail, InventoryView, InventoryVoid
 from jobs.views import JobsView, JobView
 from materials.views import EntriesView, JobMaterialsView, MaterialsView, VoidView
+from reports.comparison import ComparisonView, MachinesView
 from reports.views import OverviewView
 
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
+    path("api/v1/jobs/machines", MachinesView.as_view()),
+    path("api/v1/reports/comparison", ComparisonView.as_view()),
     path("api/v1/assistance/status", StatusView.as_view()),
     path("api/v1/jobs/<int:pk>/assistance/evidence", EvidenceView.as_view()),
     path("api/v1/jobs/<int:pk>/assistance", AnalyzeView.as_view()),

@@ -1,8 +1,9 @@
 # YieldLoop
 
-Material Yield & Production Intelligence Platform. Phase 4 adds persisted material
-recording and reconciliation to Production Jobs, Django sessions, employee roles, and the original
-bilingual health screen/API, all in verified development.
+Material Yield & Production Intelligence Platform. Core completion includes job
+references and machines, structured scrap reasons, exact-balance completion,
+same-machine comparison and explicitly labelled demonstration cases. Django sessions,
+audits, cutting safeguards and development database protections remain authoritative.
 
 ## Run & Operate
 
@@ -52,8 +53,10 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
   Phase 7 rectangular Cutting Studio is approved: explicit mm dimensions,
   spacing-only kerf/margins, deterministic shelf heuristic and audited saved proposals.
   Plans never change kg accounting or inventory. See docs/phase-7.md.
-  Phase 8 acceptance is documented in docs/phase-8-acceptance.md. Stop after assessment;
-  no exports, optimization, AI, publishing or multi-tenant onboarding.
+  Phase 8 acceptance is documented in docs/phase-8-acceptance.md; production release
+  and external recovery remain blocked. Subsequent approved assistant/packaging work
+  is documented in docs/ai-packaging.md. Final challenge completion is documented in
+  docs/core-completion.md. No publishing or multi-tenant onboarding is authorized.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
 - Follow the YieldLoop domain, design-system, and engineering-quality skills.
@@ -68,8 +71,11 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
 - Read `docs/phase-2b.md` for development write guards, tests, and first-Manager setup.
   Development selects `config.session_settings`; `config.schema_settings` is offline only.
 - Read `docs/phase-3.md` for the centralized job policy: Managers manage; Supervisors
-  open drafts/edit open-job notes; Operators read Open jobs only. Completion awaits
-  material reconciliation; cancellation is Manager-only and terminal.
+  open drafts/edit open-job notes. Operators see Open jobs only and, with explicit
+  user approval, record/void production and close exactly balanced Open jobs.
+  Material catalogue selection is available to all ready roles; catalogue creation
+  and job creation remain Manager-only. Inventory mutations remain Supervisor/Manager.
+  Completed and cancelled jobs are read-only; cancellation remains Manager-only.
 
 ## Pointers
 

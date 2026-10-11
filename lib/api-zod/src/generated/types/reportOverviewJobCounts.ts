@@ -9,5 +9,6 @@
 export type ReportOverviewJobCounts = {
   draft: number;
   open: number;
+  completed: number;
   cancelled: number;
 };

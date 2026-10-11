@@ -1,3 +1,4 @@
+from accounts.models import User
 from accounts.security import Conflict, lock_accounts
 from accounts.services import actor_locked
 from django.core.exceptions import ValidationError as ModelValidationError
@@ -9,13 +10,13 @@ from .policy import (
     TRANSITIONS,
     capabilities,
     require_creator,
-    require_editor,
+    require_recorder,
     visible_jobs,
 )
 
 
 def snapshot(job):
-    return {field: getattr(job, field) for field in ("title", "notes", "status")}
+    return {field: getattr(job, field) for field in ("title", "notes", "status", "reference", "machine")}
 
 
 def record_event(job, actor, old=None):
@@ -66,14 +67,18 @@ def update_job(request, pk, values):
         raise NotFound() from None
     allowed = capabilities(actor, job)
     # Do not disclose mutable state to actors with no update permission.
-    require_editor(actor)
-    if job.status == ProductionJob.Status.CANCELLED:
+    require_recorder(actor)
+    if job.status in ("cancelled", "completed"):
         raise Conflict(code="job_closed")
     if values["revision"] != job.revision:
         raise Conflict(code="stale_revision")
-    for field in ("title", "notes"):
+    for field in ("title", "notes", "reference", "machine"):
         if field in values and not allowed[f"edit_{field}"]:
             raise PermissionDenied()
+    # Selecting a configured machine is production recording, not catalogue management.
+    if ("machine" in values and actor.role != User.Role.MANAGER and
+            (not values["machine"] or not ProductionJob.objects.filter(machine=values["machine"]).exists())):
+        raise PermissionDenied()
     if "status" in values:
         status = values["status"]
         if status not in TRANSITIONS[job.status]:
@@ -84,9 +89,16 @@ def update_job(request, pk, values):
         if status not in allowed["transitions"]:
             raise PermissionDenied()
     before = snapshot(job)
-    for field in ("title", "notes", "status"):
+    for field in ("title", "notes", "status", "reference", "machine"):
         if field in values:
             setattr(job, field, values[field])
+    if values.get("status") == "completed":
+        from materials.services import closing
+        eligibility = closing(job, completing=True)
+        if not eligibility["can_close"]:
+            error = ValidationError("Job cannot be completed.")
+            error.public_code = eligibility["reason"]
+            raise error
     if snapshot(job) != before:
         job.revision += 1
         validate(job)

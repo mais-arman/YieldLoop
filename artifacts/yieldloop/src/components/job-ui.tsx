@@ -6,10 +6,10 @@ import { cn } from '@/lib/utils';
 
 type T = (k: MsgKey, v?: Record<string, string | number>) => string;
 
-export const JOB_STATUSES: JobStatus[] = ['draft', 'open', 'cancelled'];
+export const JOB_STATUSES: JobStatus[] = ['draft', 'open', 'completed', 'cancelled'];
 const JOB_CODES = new Set(['invalid_transition', 'stale_revision', 'job_closed', 'not_found']);
 const FIELD_CODES = new Set(['required', 'blank', 'max_length', 'invalid_choice', 'invalid', 'unknown_field', 'empty_update']);
-const JOB_FIELDS = new Set(['title', 'notes', 'status', 'revision', 'non_field_errors']);
+const JOB_FIELDS = new Set(['title', 'notes', 'reference', 'machine', 'status', 'revision', 'non_field_errors']);
 
 export function jobErrorMessage(err: unknown, t: T): string {
   if (err instanceof AuthError) {
@@ -39,6 +39,7 @@ export function isStale(err: unknown) {
 const tone: Record<JobStatus, string> = {
   draft: 'bg-muted text-muted-foreground ring-border',
   open: 'bg-primary/10 text-primary ring-primary/25',
+  completed: 'bg-[hsl(152_45%_38%/0.12)] text-[hsl(152_50%_26%)] ring-[hsl(152_45%_38%/0.3)]',
   cancelled: 'bg-destructive/10 text-destructive ring-destructive/20 line-through decoration-1',
 };
 
@@ -46,7 +47,7 @@ export function StatusBadge({ status, className }: { status: JobStatus; classNam
   const { t } = useI18n();
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset', tone[status], className)} data-testid={`status-${status}`}>
-      <span className={cn('h-1.5 w-1.5 rounded-full', status === 'open' ? 'bg-primary' : status === 'draft' ? 'border border-current' : 'bg-destructive')} aria-hidden />
+      <span className={cn('h-1.5 w-1.5 rounded-full', status === 'open' ? 'bg-primary' : status === 'draft' ? 'border border-current' : status === 'completed' ? 'bg-[hsl(152_45%_38%)]' : 'bg-destructive')} aria-hidden />
       {t(`status_${status}` as MsgKey)}
     </span>
   );

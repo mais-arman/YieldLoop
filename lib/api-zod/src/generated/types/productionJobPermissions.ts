@@ -10,5 +10,7 @@ import type { JobStatus } from './jobStatus';
 export type ProductionJobPermissions = {
   edit_title: boolean;
   edit_notes: boolean;
+  edit_reference: boolean;
+  edit_machine: boolean;
   transitions: JobStatus[];
 };

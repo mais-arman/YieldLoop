@@ -324,7 +324,7 @@ paths:
     post:
       operationId: recordMaterialEntry
       security: [{sessionCookie: []}]
-      description: Manager/Supervisor, Open jobs only, CSRF required. All decimal quantities must be strings.
+      description: Manager/Supervisor/Operator, Open jobs only, CSRF required. All decimal quantities must be strings. scrap_reason only allowed on scrap.
       parameters:
         - {name: id, in: path, required: true, schema: {type: integer}}
       requestBody:
@@ -344,7 +344,7 @@ paths:
     post:
       operationId: voidMaterialEntry
       security: [{sessionCookie: []}]
-      description: Manager/Supervisor correction on Open jobs; original record preserved. CSRF required.
+      description: Manager/Supervisor/Operator correction on Open jobs; original record preserved. CSRF required.
       parameters:
         - {name: id, in: path, required: true, schema: {type: integer}}
         - {name: entryId, in: path, required: true, schema: {type: integer}}
@@ -397,6 +397,31 @@ paths:
               schema: {$ref: "#/components/schemas/ProductionJob"}
         "400": {description: Validation error}
         "403": {description: Forbidden}
+  /v1/jobs/machines:
+    get:
+      operationId: listJobMachines
+      security: [{sessionCookie: []}]
+      responses:
+        "200":
+          description: Distinct non-blank saved machine names
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/JobMachines"}
+  /v1/reports/comparison:
+    get:
+      operationId: getJobComparison
+      security: [{sessionCookie: []}]
+      parameters:
+        - {name: left, in: query, required: true, schema: {type: integer}}
+        - {name: right, in: query, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Same-machine comparison with exact server-owned decimal differences
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/JobComparison"}
+        "400": {description: Invalid query}
+        "404": {description: Missing or not visible job}
   /v1/jobs/{id}:
     parameters:
       - {name: id, in: path, required: true, schema: {type: integer}}
@@ -413,7 +438,7 @@ paths:
     patch:
       operationId: updateProductionJob
       security: [{sessionCookie: []}]
-      description: CSRF required. Revision required to prevent lost updates. Cancelled jobs are immutable.
+      description: "CSRF required. Revision required to prevent lost updates. Cancelled and completed jobs are immutable. status=completed requires nonblank machine, recorded issue and good > 0, exact variance zero; error codes machine_required, material_incomplete, material_unbalanced, job_closed, stale_revision." 
       requestBody:
         required: true
         content:
@@ -628,12 +653,14 @@ components:
         created_at: {type: string}
         voided: {type: boolean}
         note: {type: string}
+        scrap_reason: {type: string}
     EvidenceJob:
       type: object
-      required: [id, job_number, status, revision]
+      required: [id, job_number, reference, status, revision]
       properties:
         id: {type: integer}
         job_number: {type: string}
+        reference: {type: string}
         status: {type: string}
         revision: {type: integer}
     EvidenceCuttingPlan:
@@ -646,13 +673,19 @@ components:
         scenarios: {type: array, items: {$ref: "#/components/schemas/CuttingScenario"}}
     AssistanceEvidence:
       type: object
-      required: [job, material_revision, generated_at, recorded_facts, calculated_findings, cutting, limitations]
+      required: [job, material_revision, generated_at, recorded_facts, calculated_findings, largest_scrap_category, cutting, limitations]
       properties:
         job: {$ref: "#/components/schemas/EvidenceJob"}
         material_revision: {type: integer}
         generated_at: {type: string}
         recorded_facts: {type: array, items: {$ref: "#/components/schemas/EvidenceFact"}}
         calculated_findings: {type: [object, "null"], additionalProperties: {type: [string, "null"]}}
+        largest_scrap_category:
+          type: [object, "null"]
+          required: [reason, quantity]
+          properties:
+            reason: {type: [string, "null"]}
+            quantity: {type: string}
         cutting: {type: array, items: {$ref: "#/components/schemas/EvidenceCuttingPlan"}}
         limitations: {type: array, items: {type: string}}
     AssistanceLead:
@@ -920,10 +953,13 @@ components:
             specification: {type: string}
     ReportJob:
       type: object
-      required: [id, job_number, title, status, created_at, reconciliation]
+      required: [id, job_number, reference, machine, is_demo, title, status, created_at, reconciliation]
       properties:
         id: {type: integer}
         job_number: {type: string}
+        reference: {type: string}
+        machine: {type: string}
+        is_demo: {type: boolean}
         title: {type: string}
         status: {$ref: "#/components/schemas/JobStatus"}
         created_at: {type: string, format: date-time}
@@ -970,10 +1006,11 @@ components:
         unit: {type: string, enum: [kg]}
         job_counts:
           type: object
-          required: [draft, open, cancelled]
+          required: [draft, open, completed, cancelled]
           properties:
             draft: {type: integer}
             open: {type: integer}
+            completed: {type: integer}
             cancelled: {type: integer}
         job_count: {type: integer}
         measured_jobs: {type: integer}
@@ -1094,6 +1131,7 @@ components:
         quantity: {type: string, description: Positive kg decimal with at most 12 integer and 3 fractional digits}
         unit: {type: string, enum: [kg]}
         note: {type: string, maxLength: 1000}
+        scrap_reason: {type: string, maxLength: 160, default: ""}
         request_id: {type: string, format: uuid}
     MaterialVoidInput:
       type: object
@@ -1105,7 +1143,7 @@ components:
         reason: {type: string, minLength: 1, maxLength: 1000}
     MaterialEntry:
       type: object
-      required: [id, material_id, kind, quantity, unit, note, created_at, created_by, void]
+      required: [id, material_id, kind, quantity, unit, note, scrap_reason, created_at, created_by, void]
       properties:
         id: {type: integer}
         material_id: {type: integer}
@@ -1113,6 +1151,7 @@ components:
         quantity: {type: string}
         unit: {type: string, enum: [kg]}
         note: {type: string}
+        scrap_reason: {type: string}
         created_at: {type: string, format: date-time}
         created_by:
           type: object
@@ -1134,7 +1173,7 @@ components:
                 username: {type: string}
     MaterialState:
       type: object
-      required: [job_id, job_revision, revision, material, summary, permissions, entries]
+      required: [job_id, job_revision, revision, material, summary, permissions, entries, closing]
       properties:
         job_id: {type: integer}
         job_revision: {type: integer}
@@ -1144,18 +1183,10 @@ components:
             - {$ref: "#/components/schemas/Material"}
             - {type: "null"}
         summary:
-          type: [object, "null"]
-          required: [issued, good, scrap, offcut, accounted, variance, yield_rate, scrap_rate, created_at]
-          properties:
-            issued: {type: string}
-            good: {type: string}
-            scrap: {type: string}
-            offcut: {type: string}
-            accounted: {type: string}
-            variance: {type: string}
-            yield_rate: {type: [string, "null"]}
-            scrap_rate: {type: [string, "null"]}
-            created_at: {type: string, format: date-time}
+          anyOf:
+            - {$ref: "#/components/schemas/MaterialSummary"}
+            - {type: "null"}
+        closing: {$ref: "#/components/schemas/MaterialClosing"}
         permissions:
           type: object
           required: [record, manage_materials]
@@ -1171,9 +1202,67 @@ components:
             page_size: {type: integer}
             total_pages: {type: integer}
             results: {type: array, items: {$ref: "#/components/schemas/MaterialEntry"}}
+    MaterialSummary:
+      type: object
+      required: [issued, good, scrap, offcut, accounted, variance, yield_rate, scrap_rate, created_at]
+      properties:
+        issued: {type: string}
+        good: {type: string}
+        scrap: {type: string}
+        offcut: {type: string}
+        accounted: {type: string}
+        variance: {type: string}
+        yield_rate: {type: [string, "null"]}
+        scrap_rate: {type: [string, "null"]}
+        created_at: {type: string, format: date-time}
+    MaterialClosing:
+      type: object
+      required: [can_close, reason]
+      properties:
+        can_close: {type: boolean}
+        reason: {type: [string, "null"]}
+    JobMachines:
+      type: object
+      required: [machines]
+      properties:
+        machines: {type: array, items: {type: string}}
+    ScrapByReason:
+      type: object
+      required: [reason, quantity, entry_ids]
+      properties:
+        reason: {type: [string, "null"]}
+        quantity: {type: string}
+        entry_ids: {type: array, items: {type: integer}}
+    ComparisonJob:
+      type: object
+      required: [job, material, summary, scrap_by_reason, entry_ids]
+      properties:
+        job: {$ref: "#/components/schemas/ProductionJob"}
+        material:
+          anyOf:
+            - {$ref: "#/components/schemas/Material"}
+            - {type: "null"}
+        summary:
+          anyOf:
+            - {$ref: "#/components/schemas/MaterialSummary"}
+            - {type: "null"}
+        scrap_by_reason: {type: array, items: {$ref: "#/components/schemas/ScrapByReason"}}
+        entry_ids: {type: array, items: {type: integer}}
+    JobComparison:
+      type: object
+      required: [same_machine, comparable_material, left, right, differences]
+      properties:
+        same_machine: {type: boolean}
+        comparable_material: {type: boolean}
+        left: {$ref: "#/components/schemas/ComparisonJob"}
+        right: {$ref: "#/components/schemas/ComparisonJob"}
+        differences:
+          type: [object, "null"]
+          description: Left minus right; kg for quantities, percentage points for rates
+          additionalProperties: {type: [string, "null"]}
     JobStatus:
       type: string
-      enum: [draft, open, cancelled]
+      enum: [draft, open, completed, cancelled]
     JobInput:
       type: object
       additionalProperties: false
@@ -1181,6 +1270,8 @@ components:
       properties:
         title: {type: string, minLength: 1, maxLength: 200}
         notes: {type: string, maxLength: 5000}
+        reference: {type: string, maxLength: 120}
+        machine: {type: string, maxLength: 120}
     JobUpdate:
       type: object
       additionalProperties: false
@@ -1189,13 +1280,18 @@ components:
         revision: {type: integer, minimum: 1}
         title: {type: string, minLength: 1, maxLength: 200}
         notes: {type: string, maxLength: 5000}
+        reference: {type: string, maxLength: 120}
+        machine: {type: string, maxLength: 120}
         status: {$ref: "#/components/schemas/JobStatus"}
     ProductionJob:
       type: object
-      required: [id, job_number, title, notes, status, revision, created_by, created_at, updated_at, permissions]
+      required: [id, job_number, reference, machine, is_demo, title, notes, status, revision, created_by, created_at, updated_at, permissions]
       properties:
         id: {type: integer}
         job_number: {type: string}
+        reference: {type: string}
+        machine: {type: string}
+        is_demo: {type: boolean, readOnly: true}
         title: {type: string}
         notes: {type: string}
         status: {$ref: "#/components/schemas/JobStatus"}
@@ -1210,10 +1306,12 @@ components:
         updated_at: {type: string, format: date-time}
         permissions:
           type: object
-          required: [edit_title, edit_notes, transitions]
+          required: [edit_title, edit_notes, edit_reference, edit_machine, transitions]
           properties:
             edit_title: {type: boolean}
             edit_notes: {type: boolean}
+            edit_reference: {type: boolean}
+            edit_machine: {type: boolean}
             transitions: {type: array, items: {$ref: "#/components/schemas/JobStatus"}}
     JobPage:
       type: object

@@ -21,6 +21,7 @@ import {
 } from '@/lib/materials';
 import { useI18n, type MsgKey } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { scrapReasonText, useKt } from '@/lib/core';
 import { MaterialPicker } from './material-picker';
 import { RegisterOffcutDialog } from './register-offcut-dialog';
 import { isConflict, isUncertain, isZero, matErrorMessage, matFieldErrors, newRequestId, quantityError, signed } from './mat-utils';
@@ -42,7 +43,8 @@ function useApplyState(jobId: number) {
   };
 }
 
-export function MaterialsSection({ job }: { job: ProductionJob }) {
+export function MaterialsSection({ job, canManageInventory = true }: { job: ProductionJob; canManageInventory?: boolean }) {
+  const kt = useKt();
   const { t } = useI18n();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
@@ -93,10 +95,10 @@ export function MaterialsSection({ job }: { job: ProductionJob }) {
           ) : (
             <p className="flex items-start gap-2 rounded-md bg-muted/60 px-3 py-2.5 text-sm text-muted-foreground" data-testid="text-materials-readonly">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              {job.status === 'cancelled' ? t('matReadOnlyCancelled') : job.status === 'draft' ? t('matReadOnlyDraft') : t('matReadOnlyOpen')}
+              {job.status === 'completed' ? kt('matReadOnlyCompleted') : job.status === 'cancelled' ? t('matReadOnlyCancelled') : job.status === 'draft' ? t('matReadOnlyDraft') : t('matReadOnlyOpen')}
             </p>
           )}
-          <Entries s={s} canVoid={s.permissions.record && !formOpen} onVoid={setVoiding} canRegister={s.permissions.record && job.status === 'open' && !formOpen} onRegister={setRegistering} page={page} setPage={setPage} busy={q.isFetching || formOpen || !!voiding || !!registering} />
+          <Entries s={s} canVoid={s.permissions.record && !formOpen} onVoid={setVoiding} canRegister={canManageInventory && s.permissions.record && job.status === 'open' && !formOpen} onRegister={setRegistering} page={page} setPage={setPage} busy={q.isFetching || formOpen || !!voiding || !!registering} />
         </div>
       ) : null}
 
@@ -212,6 +214,8 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
   const [kind, setKind] = useState<Kind>(state.material ? 'good' : 'issue');
   const [quantity, setQuantity] = useState('');
   const [note, setNote] = useState('');
+  const [scrapReason, setScrapReason] = useState('');
+  const kt = useKt();
   const [touched, setTouched] = useState(false);
   const [reloading, setReloading] = useState(false);
   const reqId = useRef(newRequestId());
@@ -264,12 +268,14 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
   const submit = (e: FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (busy || uncertain || !state.permissions.record || job.status !== 'open' || drift || conflict || quantityError(quantity, t) || materialMissing || note.length > 1000) return;
+    if (busy || uncertain || !state.permissions.record || job.status !== 'open' || drift || conflict || quantityError(quantity, t) || materialMissing || note.length > 1000 || scrapReason.length > 160) return;
+    const effKind = firstEntry ? 'issue' : kind;
     const mat = pinned ?? material!;
     mutation.mutate({
       revision: base.current.revision, job_revision: base.current.job_revision, material_id: mat.id,
       kind: firstEntry ? 'issue' : kind, quantity: quantity.trim(), unit: 'kg',
-      ...(note.trim() ? { note: note.trim() } : {}), request_id: reqId.current,
+      ...(note.trim() ? { note: note.trim() } : {}),
+      ...(effKind === 'scrap' && scrapReason.trim() ? { scrap_reason: scrapReason.trim() } : {}), request_id: reqId.current,
     });
   };
 
@@ -343,6 +349,15 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
         <FieldError msg={qErr ?? fe.quantity ?? fe.unit} />
       </div>
 
+      {!firstEntry && kind === 'scrap' && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="m-scrap-reason">{kt('scrapReason')} <span className="font-normal text-muted-foreground">({t('optional')})</span></Label>
+          <Input id="m-scrap-reason" maxLength={200} value={scrapReason} disabled={busy} onChange={(e) => setScrapReason(e.target.value)} aria-invalid={!!fe.scrap_reason || scrapReason.length > 160} placeholder={kt('unspecified')} data-testid="input-scrap-reason" />
+          <p className="text-xs text-muted-foreground">{kt('scrapReasonHint')}</p>
+          <FieldError msg={scrapReason.length > 160 ? kt('scrapReasonTooLong') : fe.scrap_reason} />
+        </div>
+      )}
+
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="m-note">{t('matNote')} <span className="font-normal text-muted-foreground">({t('optional')})</span></Label>
         <Textarea id="m-note" rows={2} value={note} disabled={busy} onChange={(e) => setNote(e.target.value)} aria-invalid={!!fe.note || note.length > 1000} data-testid="input-material-note" />
@@ -361,6 +376,7 @@ function EntryForm({ state, job, refetch, onClose, onSaved }: { state: MaterialS
 }
 
 function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, busy }: { s: MaterialState; canVoid: boolean; onVoid: (e: MaterialEntry) => void; canRegister: boolean; onRegister: (e: MaterialEntry) => void; page: number; setPage: (p: number) => void; busy: boolean }) {
+  const kt = useKt();
   const { t } = useI18n();
   const fmt = useFormatDate();
   const e = s.entries;
@@ -388,6 +404,11 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, page, setPage, b
                 </div>
                 <div className="min-w-0 flex-1 text-xs">
                   <p className="text-muted-foreground">{t('matBy', { user: en.created_by.username, time: fmt(en.created_at) })}</p>
+                  {en.kind === 'scrap' && (
+                    <p className={cn('mt-1 text-xs', !en.scrap_reason?.trim() && 'italic text-muted-foreground')} data-testid={`text-entry-scrap-reason-${en.id}`}>
+                      <span className="font-medium not-italic text-foreground">{kt('scrapReason')}:</span> {scrapReasonText(en.scrap_reason, kt('unspecified'))}
+                    </p>
+                  )}
                   {en.note && <p className={cn('mt-1 whitespace-pre-wrap break-words text-sm', v && 'text-muted-foreground line-through')}>{en.note}</p>}
                   {v && (
                     <div className="mt-2 rounded border-s-2 border-destructive/50 bg-destructive/5 px-2 py-1.5" data-testid={`text-entry-void-${en.id}`}>

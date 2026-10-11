@@ -22,6 +22,7 @@ import CuttingEntryPage from '@/pages/cutting-entry';
 import InventoryPage from '@/pages/inventory';
 import InventoryDetailPage from '@/pages/inventory-detail';
 import { DashboardPage, ReportsPage } from '@/pages/reports';
+import ComparisonPage from '@/pages/comparison';
 import AssistantPage from '@/pages/assistant';
 const PackagingPage = lazy(() => import('@/pages/packaging'));
 import { AuthError, useCurrentUser, type Employee } from '@/lib/auth';
@@ -140,13 +141,14 @@ function Authed({ user }: { user: Employee }) {
       </Route>
       <Route path="/cutting"><AppShell user={user}><CuttingEntryPage /></AppShell></Route>
       <Route path="/jobs/:id">
-        {(params) => <AppShell user={user}><JobDetailPage key={params.id} id={Number(params.id)} /></AppShell>}
+        {(params) => <AppShell user={user}><JobDetailPage key={params.id} id={Number(params.id)} user={user} /></AppShell>}
       </Route>
       <Route path="/inventory"><AppShell user={user}><InventoryPage /></AppShell></Route>
       <Route path="/inventory/:id">
         {(params) => <AppShell user={user}><InventoryDetailPage key={params.id} id={Number(params.id)} /></AppShell>}
       </Route>
       <Route path="/dashboard"><AppShell user={user}><DashboardPage /></AppShell></Route>
+      <Route path="/comparison"><AppShell user={user}><ComparisonPage user={user} /></AppShell></Route>
       <Route path="/reports"><AppShell user={user}><ReportsPage /></AppShell></Route>
       <Route path="/assistant"><AppShell user={user}><AssistantPage /></AppShell></Route>
       <Route path="/packaging">

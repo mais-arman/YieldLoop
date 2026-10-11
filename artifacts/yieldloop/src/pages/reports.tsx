@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
-import { AlertTriangle, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, Info, RotateCw, Scissors, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, GitCompare, Info, RotateCw, Scissors, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import type { Material } from '@/lib/materials';
 import { useReportOverview, type GetReportOverviewParams, type ReportMeasures, type ReportOverview } from '@/lib/reports';
 import { errorMessage } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { jobLabel, useKt } from '@/lib/core';
 
 const S = {
   en: {
@@ -150,7 +151,7 @@ function useS() {
 
 /* ---------- URL filter state ---------- */
 type Tz = 'UTC' | 'Asia/Jerusalem';
-type Status = 'draft' | 'open' | 'cancelled';
+type Status = 'draft' | 'open' | 'completed' | 'cancelled';
 type Filters = { start_date: string; end_date: string; timezone: Tz; status: '' | Status; material_id: number | null; material_name: string; job_page: number; lot_page: number };
 const EMPTY: Filters = { start_date: '', end_date: '', timezone: 'UTC', status: '', material_id: null, material_name: '', job_page: 1, lot_page: 1 };
 
@@ -323,7 +324,7 @@ function FilterBar({ applied, go, serverFields }: { applied: Filters; go: (f: Fi
           <Label htmlFor="rf-status">{s('status')}</Label>
           <select id="rf-status" className={sel} value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Filters['status'] })} data-testid="select-status">
             <option value="">{s('anyStatus')}</option>
-            {(['draft', 'open', 'cancelled'] as const).map((v) => <option key={v} value={v}>{t(`status_${v}`)}</option>)}
+            {(['draft', 'open', 'completed', 'cancelled'] as const).map((v) => <option key={v} value={v}>{t(`status_${v}`)}</option>)}
           </select>
           <FieldError msg={fe('status')} />
         </div>
@@ -394,8 +395,8 @@ function Summary({ data }: { data: ReportOverview }) {
       <section className="rounded-lg border bg-card p-4" aria-labelledby="h-jobs">
         <h2 id="h-jobs" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s('jobs')}</h2>
         <p className="mt-1 font-mono text-4xl font-semibold tabular-nums" dir="ltr" data-testid="text-job-count">{data.job_count}</p>
-        <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
-          {(['draft', 'open', 'cancelled'] as const).map((k) => (
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+          {(['draft', 'open', 'completed', 'cancelled'] as const).map((k) => (
             <div key={k}><dt className="text-xs text-muted-foreground">{t(`status_${k}`)}</dt><dd className="font-mono tabular-nums" dir="ltr">{data.job_counts[k]}</dd></div>
           ))}
         </dl>
@@ -442,6 +443,7 @@ function scrollReportTable(event: KeyboardEvent<HTMLDivElement>) {
 }
 
 function JobsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p: number) => void; fetching: boolean }) {
+  const kt = useKt();
   const s = useS();
   const fmt = useFormatDate();
   const j = data.jobs;
@@ -467,7 +469,9 @@ function JobsList({ data, onPage, fetching }: { data: ReportOverview; onPage: (p
                 return (
                   <tr key={job.id} className="align-top hover:bg-muted/30" data-testid={`row-report-job-${job.id}`}>
                     <td className="px-3 py-2">
-                      <Link href={`/jobs/${job.id}`} className="font-medium hover:text-primary hover:underline"><JobNumber value={job.job_number} className="me-2 text-foreground" />{job.title}</Link>
+                      <Link href={`/jobs/${job.id}`} className="font-medium hover:text-primary hover:underline"><JobNumber value={jobLabel(job)} className="me-2 text-foreground" />{job.title}</Link>
+                      {job.is_demo && <span className="ms-2 rounded-full bg-[hsl(262_40%_50%/0.1)] px-1.5 py-0.5 text-[10px] font-medium text-[hsl(262_40%_38%)]" data-testid={`badge-demo-${job.id}`}>{kt('demo')}</span>}
+                      {job.machine && <div className="text-[11px] text-muted-foreground">{job.machine}</div>}
                       {r && <div className="mt-0.5 text-[11px] text-muted-foreground">{s('snapshot', { id: r.id, rev: r.revision, time: fmt(r.created_at) })}</div>}
                     </td>
                     <td className="px-3 py-2"><StatusBadge status={job.status} /></td>
@@ -565,6 +569,7 @@ function serverFieldErrors(error: unknown): Record<string, string> {
 
 /* ---------- pages ---------- */
 function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
+  const kt = useKt();
   const s = useS();
   const { applied, go } = useReportState(path);
   const params = useMemo(() => toParams(detailed ? applied : { ...applied, job_page: 1, lot_page: 1 }), [applied, detailed]);
@@ -580,11 +585,18 @@ function ReportView({ path, detailed }: { path: string; detailed: boolean }) {
           <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-page-title">{detailed ? s('repTitle') : s('dashTitle')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{detailed ? s('repSub') : s('dashSub')}</p>
         </div>
+        <div className="flex flex-wrap gap-2 self-start">
+        {detailed && (
+          <Link href="/comparison" className="inline-flex shrink-0 items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm font-medium hover:border-primary/40" data-testid="link-to-comparison">
+            <GitCompare className="h-4 w-4 text-primary" aria-hidden />{kt('compare')}
+          </Link>
+        )}
         <Link href={`${detailed ? '/dashboard' : '/reports'}?${qs}`} className="group inline-flex shrink-0 items-center gap-2 self-start rounded-md border bg-card px-3 py-2 text-sm font-medium hover:border-primary/40" data-testid={detailed ? 'link-to-dashboard' : 'link-to-report'}>
           {detailed ? <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> : <FileText className="h-4 w-4 text-primary" aria-hidden />}
           {detailed ? s('openDashboard') : s('openReport')}
           {!detailed && <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />}
         </Link>
+        </div>
       </header>
       <FilterBar applied={applied} go={go} serverFields={fields} />
       {q.isPending ? <ReportSkeleton detailed={detailed} /> : q.isError || !data ? (
@@ -718,7 +730,7 @@ function DashboardView() {
                           <Link href={`/jobs/${job.id}#materials`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40" data-testid={`link-attention-${job.id}`}>
                             <span className={cn('h-2 w-2 shrink-0 rounded-full', kind === 'unmeasured' ? 'bg-muted-foreground/50' : 'bg-[hsl(38_92%_50%)]')} aria-hidden />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-medium"><JobNumber value={job.job_number} className="me-2" />{job.title}</span>
+                              <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} className="me-2" />{job.title}</span>
                               <span className="block text-xs text-muted-foreground">{kind === 'unmeasured' ? s('attUnmeasured') : kind === 'neg' ? s('attNegVariance', { v }) : s('attVariance', { v })}{job.reconciliation && ` · ${job.reconciliation.material_name}`}</span>
                             </span>
                             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" aria-hidden />
@@ -737,7 +749,7 @@ function DashboardView() {
                     {data.jobs.results.slice(0, 8).map((job) => (
                       <li key={job.id} className="flex items-center gap-3 px-4 py-2.5">
                         <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1 hover:text-primary" data-testid={`link-recent-${job.id}`}>
-                          <span className="block truncate text-sm font-medium"><JobNumber value={job.job_number} className="me-2" />{job.title}</span>
+                          <span className="block truncate text-sm font-medium"><JobNumber value={jobLabel(job)} className="me-2" />{job.title}</span>
                           <span className="block text-xs text-muted-foreground">{t(`status_${job.status}`)}</span>
                         </Link>
                         <StatusBadge status={job.status} />

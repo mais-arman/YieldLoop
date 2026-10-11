@@ -21,5 +21,7 @@ export interface MaterialEntryInput {
   unit: MaterialEntryInputUnit;
   /** @maxLength 1000 */
   note?: string;
+  /** @maxLength 160 */
+  scrap_reason?: string;
   request_id: string;
 }

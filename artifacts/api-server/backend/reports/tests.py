@@ -159,7 +159,7 @@ class ReportTests(TransactionTestCase):
         self.assertEqual(self.report(self.operator, status="cancelled")["job_count"], 0)
         for client in (self.manager, self.supervisor):
             result = self.report(client)
-            self.assertEqual(result["job_counts"], {"draft": 1, "open": 0, "cancelled": 2})
+            self.assertEqual(result["job_counts"], {"draft": 1, "open": 0, "cancelled": 2, "completed": 0})
             self.assertEqual(result["lots"]["count"], 1)
             self.assertIn(cancelled.pk, [row["id"] for row in result["jobs"]["results"]])
         ProductionJob.objects.filter(pk=self.job.pk).update(status="open")
@@ -184,7 +184,7 @@ class ReportTests(TransactionTestCase):
         self.assertEqual(len(second["lots"]["results"]), 1)
         self.assertTrue({r["id"] for r in first["jobs"]["results"]}.isdisjoint(r["id"] for r in second["jobs"]["results"]))
         for query in (
-            {"start_date": "bad"}, {"timezone": "Mars"}, {"status": "completed"},
+            {"start_date": "bad"}, {"timezone": "Mars"}, {"status": "unknown"},
             {"start_date": "2026-03-02", "end_date": "2026-03-01"},
             {"end_date": "9999-12-31"}, {"page_size": 101}, {"job_page": 0}, {"role": "manager"},
         ):

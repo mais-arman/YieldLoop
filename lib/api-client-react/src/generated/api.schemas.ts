@@ -45,11 +45,13 @@ export interface EvidenceFact {
   created_at: string;
   voided: boolean;
   note?: string;
+  scrap_reason?: string;
 }
 
 export interface EvidenceJob {
   id: number;
   job_number: string;
+  reference: string;
   status: string;
   revision: number;
 }
@@ -203,6 +205,15 @@ export interface EvidenceCuttingPlan {
  */
 export type AssistanceEvidenceCalculatedFindings = {[key: string]: string | null} | null;
 
+/**
+ * @nullable
+ */
+export type AssistanceEvidenceLargestScrapCategory = {
+  /** @nullable */
+  reason: string | null;
+  quantity: string;
+} | null;
+
 export interface AssistanceEvidence {
   job: EvidenceJob;
   material_revision: number;
@@ -210,6 +221,8 @@ export interface AssistanceEvidence {
   recorded_facts: EvidenceFact[];
   /** @nullable */
   calculated_findings: AssistanceEvidenceCalculatedFindings;
+  /** @nullable */
+  largest_scrap_category: AssistanceEvidenceLargestScrapCategory;
   cutting: EvidenceCuttingPlan[];
   limitations: string[];
 }
@@ -492,12 +505,16 @@ export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
 export const JobStatus = {
   draft: 'draft',
   open: 'open',
+  completed: 'completed',
   cancelled: 'cancelled',
 } as const;
 
 export interface ReportJob {
   id: number;
   job_number: string;
+  reference: string;
+  machine: string;
+  is_demo: boolean;
   title: string;
   status: JobStatus;
   created_at: string;
@@ -554,6 +571,7 @@ export const ReportOverviewUnit = {
 export type ReportOverviewJobCounts = {
   draft: number;
   open: number;
+  completed: number;
   cancelled: number;
 };
 
@@ -773,6 +791,8 @@ export interface MaterialEntryInput {
   unit: MaterialEntryInputUnit;
   /** @maxLength 1000 */
   note?: string;
+  /** @maxLength 160 */
+  scrap_reason?: string;
   request_id: string;
 }
 
@@ -831,28 +851,12 @@ export interface MaterialEntry {
   quantity: string;
   unit: MaterialEntryUnit;
   note: string;
+  scrap_reason: string;
   created_at: string;
   created_by: MaterialEntryCreatedBy;
   /** @nullable */
   void: MaterialEntryVoid;
 }
-
-/**
- * @nullable
- */
-export type MaterialStateSummary = {
-  issued: string;
-  good: string;
-  scrap: string;
-  offcut: string;
-  accounted: string;
-  variance: string;
-  /** @nullable */
-  yield_rate: string | null;
-  /** @nullable */
-  scrap_rate: string | null;
-  created_at: string;
-} | null;
 
 export type MaterialStatePermissions = {
   record: boolean;
@@ -867,15 +871,101 @@ export type MaterialStateEntries = {
   results: MaterialEntry[];
 };
 
+export interface MaterialSummary {
+  issued: string;
+  good: string;
+  scrap: string;
+  offcut: string;
+  accounted: string;
+  variance: string;
+  /** @nullable */
+  yield_rate: string | null;
+  /** @nullable */
+  scrap_rate: string | null;
+  created_at: string;
+}
+
+export interface MaterialClosing {
+  can_close: boolean;
+  /** @nullable */
+  reason: string | null;
+}
+
 export interface MaterialState {
   job_id: number;
   job_revision: number;
   revision: number;
   material: Material | null;
-  /** @nullable */
-  summary: MaterialStateSummary;
+  summary: MaterialSummary | null;
+  closing: MaterialClosing;
   permissions: MaterialStatePermissions;
   entries: MaterialStateEntries;
+}
+
+export interface JobMachines {
+  machines: string[];
+}
+
+export interface ScrapByReason {
+  /** @nullable */
+  reason: string | null;
+  quantity: string;
+  entry_ids: number[];
+}
+
+export type ProductionJobCreatedBy = {
+  id: number;
+  username: string;
+};
+
+export type ProductionJobPermissions = {
+  edit_title: boolean;
+  edit_notes: boolean;
+  edit_reference: boolean;
+  edit_machine: boolean;
+  transitions: JobStatus[];
+};
+
+export interface ProductionJob {
+  id: number;
+  job_number: string;
+  reference: string;
+  machine: string;
+  readonly is_demo: boolean;
+  title: string;
+  notes: string;
+  status: JobStatus;
+  revision: number;
+  created_by: ProductionJobCreatedBy;
+  created_at: string;
+  updated_at: string;
+  permissions: ProductionJobPermissions;
+}
+
+export interface ComparisonJob {
+  job: ProductionJob;
+  material: Material | null;
+  summary: MaterialSummary | null;
+  scrap_by_reason: ScrapByReason[];
+  entry_ids: number[];
+}
+
+/**
+ * Left minus right; kg for quantities, percentage points for rates
+ * @nullable
+ */
+export type JobComparisonDifferences = {[key: string]: string | null} | null;
+
+export interface JobComparison {
+  same_machine: boolean;
+  comparable_material: boolean;
+  left: ComparisonJob;
+  right: ComparisonJob;
+  /**
+     * Left minus right; kg for quantities, percentage points for rates
+     * @nullable
+     */
+  differences: JobComparisonDifferences;
 }
 
 export interface JobInput {
@@ -886,6 +976,10 @@ export interface JobInput {
   title: string;
   /** @maxLength 5000 */
   notes?: string;
+  /** @maxLength 120 */
+  reference?: string;
+  /** @maxLength 120 */
+  machine?: string;
 }
 
 export interface JobUpdate {
@@ -898,31 +992,11 @@ export interface JobUpdate {
   title?: string;
   /** @maxLength 5000 */
   notes?: string;
+  /** @maxLength 120 */
+  reference?: string;
+  /** @maxLength 120 */
+  machine?: string;
   status?: JobStatus;
-}
-
-export type ProductionJobCreatedBy = {
-  id: number;
-  username: string;
-};
-
-export type ProductionJobPermissions = {
-  edit_title: boolean;
-  edit_notes: boolean;
-  transitions: JobStatus[];
-};
-
-export interface ProductionJob {
-  id: number;
-  job_number: string;
-  title: string;
-  notes: string;
-  status: JobStatus;
-  revision: number;
-  created_by: ProductionJobCreatedBy;
-  created_at: string;
-  updated_at: string;
-  permissions: ProductionJobPermissions;
 }
 
 export interface JobPage {
@@ -1085,6 +1159,11 @@ page_size?: number;
  */
 search?: string;
 status?: JobStatus;
+};
+
+export type GetJobComparisonParams = {
+left: number;
+right: number;
 };
 
 export type AcquireCsrf200 = {

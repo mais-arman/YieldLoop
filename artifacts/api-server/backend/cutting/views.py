@@ -18,7 +18,7 @@ from .serializers import EvaluateInput, ListInput, PlanInput
 
 
 def can_edit(actor, job):
-    return job.status != "cancelled" and (
+    return job.status not in ("cancelled", "completed") and (
         actor.role == User.Role.MANAGER or
         (actor.role == User.Role.PRODUCTION_SUPERVISOR and job.status == "open")
     )
@@ -27,7 +27,7 @@ def can_edit(actor, job):
 def require_edit(actor, job):
     if actor.role == User.Role.CUTTING_OPERATOR:
         raise PermissionDenied()
-    if job.status == "cancelled":
+    if job.status in ("cancelled", "completed"):
         raise Conflict(code="job_closed")
     if not can_edit(actor, job):
         raise PermissionDenied()

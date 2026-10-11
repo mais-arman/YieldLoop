@@ -23,7 +23,7 @@ class JobsView(ProtectedView):
         if values["search"]:
             search = values["search"]
             jobs = jobs.filter(
-                Q(title__icontains=search) | Q(job_number__icontains=search) | Q(notes__icontains=search)
+                Q(title__icontains=search) | Q(job_number__icontains=search) | Q(notes__icontains=search) | Q(reference__icontains=search)
             )
         paginator = Paginator(jobs, values["page_size"])
         try:

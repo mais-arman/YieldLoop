@@ -11,6 +11,7 @@ import { useJobs, type JobStatus } from '@/lib/jobs';
 import { useI18n, type MsgKey } from '@/lib/i18n';
 import { useUt } from '@/lib/ui-i18n';
 import { cn } from '@/lib/utils';
+import { jobLabel } from '@/lib/core-helpers';
 
 export default function JobsPage({ user }: { user: Employee }) {
   const { t } = useI18n();
@@ -119,7 +120,7 @@ export default function JobsPage({ user }: { user: Employee }) {
                 <tr key={j.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-muted/40 xl:table-row xl:p-0">
                   <td className="min-w-0 flex-1 basis-full xl:px-4 xl:py-3">
                     <Link href={`/jobs/${j.id}`} data-testid={`row-job-${j.id}`} className="block min-w-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                      <JobNumber value={j.job_number} />
+                      <JobNumber value={jobLabel(j)} />
                       <span className={cn('block truncate text-sm font-medium group-hover:text-primary', j.status === 'cancelled' && 'text-muted-foreground')}>{j.title}</span>
                     </Link>
                   </td>

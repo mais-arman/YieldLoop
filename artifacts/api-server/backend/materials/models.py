@@ -56,6 +56,7 @@ class MaterialEntry(ImmutableRecord):
     quantity = models.DecimalField(max_digits=15, decimal_places=3)
     unit = models.CharField(max_length=2)
     note = models.CharField(max_length=1000, blank=True, default="")
+    scrap_reason = models.CharField(max_length=160, blank=True, default="")
     request_id = models.UUIDField(default=uuid.uuid4)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -67,6 +68,7 @@ class MaterialEntry(ImmutableRecord):
             models.CheckConstraint(condition=models.Q(quantity__gt=0), name="entry_positive_qty"),
             models.CheckConstraint(condition=models.Q(unit="kg"), name="entry_kg_only"),
             models.CheckConstraint(condition=models.Q(kind__in=["issue", "good", "scrap", "offcut"]), name="entry_valid_kind"),
+            models.CheckConstraint(condition=models.Q(kind="scrap") | models.Q(scrap_reason=""), name="entry_scrap_reason_kind"),
         )
 
     def clean(self):

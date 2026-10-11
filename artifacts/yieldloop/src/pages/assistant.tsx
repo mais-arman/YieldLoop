@@ -19,6 +19,8 @@ import { useI18n } from '@/lib/i18n';
 import { useJobs, type JobStatus } from '@/lib/jobs';
 import { errorMessage } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { jobLabel } from '@/lib/core-helpers';
+import { scrapReasonText, useKt } from '@/lib/core';
 
 const FINDINGS = ['issued', 'good', 'scrap', 'offcut', 'accounted', 'variance', 'yield_rate', 'scrap_rate'] as const;
 
@@ -73,7 +75,7 @@ function JobPicker({ selected, onSelect }: { selected: number | null; onSelect: 
         {jobs.data?.results.map((j) => (
           <button key={j.id} type="button" onClick={() => onSelect(j.id)} aria-pressed={selected === j.id} data-testid={`button-pick-job-${j.id}`}
             className={cn('w-full rounded-md px-2.5 py-2 text-start transition-colors', selected === j.id ? 'bg-accent text-accent-foreground' : 'hover:bg-muted')}>
-            <JobNumber value={j.job_number} className="text-xs" />
+            <JobNumber value={jobLabel(j)} className="text-xs" />
             <span className="block truncate text-sm">{j.title}</span>
           </button>
         ))}
@@ -129,6 +131,7 @@ function JobAssistant({ jobId }: { jobId: number }) {
 
 function EvidencePanel({ ev }: { ev: Evidence }) {
   const ft = useFt();
+  const kt = useKt();
   const { lang } = useI18n();
   const fmt = useFormatDate();
   return (
@@ -142,7 +145,7 @@ function EvidencePanel({ ev }: { ev: Evidence }) {
       </div>
       <div className="space-y-6 p-5">
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <JobNumber value={ev.job.job_number} />
+          <JobNumber value={jobLabel(ev.job)} />
           <StatusBadge status={ev.job.status as JobStatus} />
           <span className="text-xs text-muted-foreground">{ft('asRevision', { r: ev.job.revision, m: ev.material_revision })}</span>
           <span className="ms-auto text-xs text-muted-foreground">{ft('asGenerated')} {fmt(ev.generated_at)}</span>
@@ -167,6 +170,14 @@ function EvidencePanel({ ev }: { ev: Evidence }) {
           ) : null}
           {ev.calculated_findings?.created_at && <p className="mt-1.5 text-xs text-muted-foreground" data-testid="finding-created-at">{ft('f_created_at')}: {fmt(ev.calculated_findings.created_at)}</p>}
           {!ev.calculated_findings && <p className="mt-2 rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">{ft('asNoFindings')}</p>}
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="text-definitions">{kt('defs')}</p>
+          <div className="mt-3 rounded-md border bg-card px-3 py-2.5" data-testid="panel-largest-scrap">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kt('largestScrap')}</p>
+            {ev.largest_scrap_category ? (
+              <p className="mt-1 text-sm"><span className={cn('font-medium', !ev.largest_scrap_category.reason?.trim() && 'italic text-muted-foreground')} data-testid="text-largest-scrap-reason">{scrapReasonText(ev.largest_scrap_category.reason, kt('unspecified'))}</span> <span className="font-mono tabular-nums" dir="ltr" data-testid="text-largest-scrap-qty">{ev.largest_scrap_category.quantity} kg</span></p>
+            ) : <p className="mt-1 text-sm text-muted-foreground">{kt('noLargestScrap')}</p>}
+            <p className="mt-1 text-xs text-muted-foreground">{kt('largestScrapNote')}</p>
+          </div>
         </div>
 
         <div>
@@ -178,7 +189,7 @@ function EvidencePanel({ ev }: { ev: Evidence }) {
                   {ev.recorded_facts.map((f) => (
                     <tr key={f.id} className={cn('border-b last:border-0', f.voided && 'text-muted-foreground line-through decoration-muted-foreground/50')} data-testid={`fact-${f.id}`}>
                       <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground" dir="ltr">{f.id}</td>
-                      <td className="px-3 py-2">{f.kind.replace(/_/g, ' ')}{f.voided && <span className="ms-2 rounded bg-muted px-1.5 py-0.5 text-[10px] no-underline">{ft('asVoided')}</span>}</td>
+                      <td className="px-3 py-2">{f.kind.replace(/_/g, ' ')}{f.kind === 'scrap' && <span className={cn('ms-2 text-xs', !f.scrap_reason?.trim() && 'italic text-muted-foreground')} data-testid={`fact-reason-${f.id}`}>· {scrapReasonText(f.scrap_reason, kt('unspecified'))}</span>}{f.voided && <span className="ms-2 rounded bg-muted px-1.5 py-0.5 text-[10px] no-underline">{ft('asVoided')}</span>}</td>
                       <td className="px-3 py-2 text-end font-mono tabular-nums" dir="ltr">{f.quantity ?? ''} {f.unit ?? ''}</td>
                       <td className="hidden px-3 py-2 text-xs text-muted-foreground sm:table-cell">{f.created_at ? fmt(f.created_at) : ''}</td>
                       {f.note !== undefined && <td className="max-w-[16rem] truncate px-3 py-2 text-xs text-muted-foreground" title={f.note}>{f.note}</td>}

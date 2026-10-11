@@ -11,6 +11,7 @@ import { FieldError, jobErrorMessage, jobFieldErrors } from '@/components/job-ui
 import { useToast } from '@/hooks/use-toast';
 import { createJob, JOBS_KEY } from '@/lib/jobs';
 import { useI18n } from '@/lib/i18n';
+import { jobLabel } from '@/lib/core-helpers';
 
 export default function JobNewPage() {
   const { t } = useI18n();
@@ -23,7 +24,7 @@ export default function JobNewPage() {
     mutationFn: () => createJob({ title: title.trim(), notes: notes.trim() || undefined }),
     onSuccess: (job) => {
       qc.invalidateQueries({ queryKey: JOBS_KEY });
-      toast({ title: t('jobCreated', { num: job.job_number }) });
+      toast({ title: t('jobCreated', { num: jobLabel(job) }) });
       navigate(`/jobs/${job.id}`);
     },
   });

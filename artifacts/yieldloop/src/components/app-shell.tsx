@@ -88,7 +88,7 @@ const isActive = (location: string, href: string) =>
 
 function pageKey(location: string): UiKey {
   if (location.startsWith('/dashboard')) return 'pageDashboard';
-  if (location.startsWith('/reports')) return 'pageReports';
+  if (location.startsWith('/reports') || location.startsWith('/comparison')) return 'pageReports';
   if (location === '/jobs/new') return 'pageJobNew';
   if (/^\/jobs\/\d+\/cutting/.test(location) || location.startsWith('/cutting')) return 'pageCutting';
   if (/^\/jobs\/[^/]+/.test(location)) return 'pageJob';

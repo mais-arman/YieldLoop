@@ -4,7 +4,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from .models import ProductionJob
 
-TRANSITIONS = {"draft": {"open", "cancelled"}, "open": {"cancelled"}, "cancelled": set()}
+TRANSITIONS = {"draft": {"open", "cancelled"}, "open": {"cancelled", "completed"}, "cancelled": set(), "completed": set()}
 
 
 def visible_jobs(user):
@@ -27,16 +27,27 @@ def require_editor(user):
 
 
 def capabilities(user, job):
-    if job.status == ProductionJob.Status.CANCELLED:
-        return {"edit_title": False, "edit_notes": False, "transitions": []}
+    fields = {"edit_reference": user.role == User.Role.MANAGER and job.status in ("draft", "open"),
+              "edit_machine": (user.role == User.Role.MANAGER and job.status in ("draft", "open")) or
+              (user.role in (User.Role.CUTTING_OPERATOR, User.Role.PRODUCTION_SUPERVISOR) and job.status == "open")}
+    if job.status in ("cancelled", "completed"):
+        return {**fields, "edit_title": False, "edit_notes": False, "transitions": []}
     if user.role == User.Role.MANAGER:
         return {
+            **fields,
             "edit_title": True, "edit_notes": True,
             "transitions": sorted(TRANSITIONS[job.status]),
         }
     if user.role == User.Role.PRODUCTION_SUPERVISOR:
         return {
+            **fields,
             "edit_title": False, "edit_notes": job.status == ProductionJob.Status.OPEN,
-            "transitions": ["open"] if job.status == ProductionJob.Status.DRAFT else [],
+            "transitions": ["open"] if job.status == ProductionJob.Status.DRAFT else ["completed"],
         }
-    return {"edit_title": False, "edit_notes": False, "transitions": []}
+    return {**fields, "edit_title": False, "edit_notes": False,
+            "transitions": ["completed"] if user.role == User.Role.CUTTING_OPERATOR and job.status == "open" else []}
+
+
+def require_recorder(user):
+    if user.role not in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR, User.Role.CUTTING_OPERATOR):
+        raise PermissionDenied()

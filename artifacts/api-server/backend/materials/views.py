@@ -1,4 +1,3 @@
-from accounts.models import User
 from accounts.security import ReadyAccount
 from accounts.views import ProtectedView
 from django.db import transaction
@@ -25,8 +24,8 @@ class MaterialsView(ProtectedView):
     def get(self, request):
         values = checked(PageInput, request.query_params.dict())
         queryset = Material.objects.all()
-        if request.user.role == User.Role.CUTTING_OPERATOR:
-            queryset = queryset.filter(materialentry__job__status="open").distinct()
+        # Recording Operators need the shared catalogue for a first material issue.
+        # Creation stays Manager-only; this exposes no underlying job records.
         if values["search"]:
             queryset = queryset.filter(Q(name__icontains=values["search"]) | Q(specification__icontains=values["search"]))
         return Response(services.paginate(queryset, values, material_data))

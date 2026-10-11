@@ -2,7 +2,9 @@
 from cutting.models import CuttingPlan
 from cutting.views import scenario_data
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
+from materials.models import MaterialEntry
 from materials.services import state, visible_job
 
 
@@ -13,6 +15,7 @@ def collect(user, job_id, include_notes=False):
     facts = [{
         "id": f"entry:{e['id']}", "kind": e["kind"], "quantity": e["quantity"],
         "unit": e["unit"], "created_at": e["created_at"], "voided": e["void"] is not None,
+        "scrap_reason": e["scrap_reason"],
         **({"note": e["note"]} if include_notes else {}),
     } for e in material["entries"]["results"]]
     plans = CuttingPlan.objects.filter(job=job)[:5]
@@ -25,7 +28,10 @@ def collect(user, job_id, include_notes=False):
         limitations.append("plans_truncated")
     if material["summary"] is None:
         limitations.append("no_reconciliation")
-    return {"job": {"id": job.pk, "job_number": job.job_number, "status": job.status, "revision": job.revision},
+    largest = (MaterialEntry.objects.filter(job=job, kind="scrap", void__isnull=True)
+               .values("scrap_reason").annotate(quantity=Sum("quantity")).order_by("-quantity", "scrap_reason").first())
+    return {"job": {"id": job.pk, "job_number": job.job_number, "reference": job.reference, "status": job.status, "revision": job.revision},
+            "largest_scrap_category": {"reason": largest["scrap_reason"] or None, "quantity": format(largest["quantity"], ".3f")} if largest else None,
             "material_revision": material["revision"], "generated_at": timezone.now().isoformat(),
             "recorded_facts": facts, "calculated_findings": material["summary"], "cutting": cutting,
             "limitations": limitations}

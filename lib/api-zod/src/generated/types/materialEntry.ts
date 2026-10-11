@@ -17,6 +17,7 @@ export interface MaterialEntry {
   quantity: string;
   unit: MaterialEntryUnit;
   note: string;
+  scrap_reason: string;
   created_at: Date;
   created_by: MaterialEntryCreatedBy;
   /** @nullable */

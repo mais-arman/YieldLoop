@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AssistanceEvidenceCalculatedFindings } from './assistanceEvidenceCalculatedFindings';
+import type { AssistanceEvidenceLargestScrapCategory } from './assistanceEvidenceLargestScrapCategory';
 import type { EvidenceCuttingPlan } from './evidenceCuttingPlan';
 import type { EvidenceFact } from './evidenceFact';
 import type { EvidenceJob } from './evidenceJob';
@@ -17,6 +18,8 @@ export interface AssistanceEvidence {
   recorded_facts: EvidenceFact[];
   /** @nullable */
   calculated_findings: AssistanceEvidenceCalculatedFindings;
+  /** @nullable */
+  largest_scrap_category: AssistanceEvidenceLargestScrapCategory;
   cutting: EvidenceCuttingPlan[];
   limitations: string[];
 }

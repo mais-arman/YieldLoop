@@ -150,7 +150,7 @@ class MVPAcceptanceTests(TransactionTestCase):
     def test_cross_job_denial_session_revocation_logout_and_csrf(self):
         self.open_job()
         for client in (self.operator,):
-            self.assertEqual(self.add(client=client).status_code, 403)
+            self.assertEqual(self.add(client=client).status_code, 201)
             self.assertEqual(self.register(source=999, client=client).status_code, 403)
         self.record(quantity="100")
         source = self.record("offcut", "10")["entries"]["results"][0]["id"]
