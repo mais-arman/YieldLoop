@@ -52,6 +52,7 @@ export const saveCutting = (jobId: number, id: number | null, values: {
 /** Same integer 0.001 mm geometry as the server; no canvas size determines part size. */
 const grid = (v: string) => Math.round(Number(v) * 1000);
 export function placementError(input: CuttingInput, placements: Placement[]): string | null {
+  if (placements.some(p => [p.x, p.y].some(v => Number.isFinite(Number(v)) && Number(v) < 0))) return "out_of_bounds";
   const b = input.board;
   const dimensions = [b.width, b.height, b.left, b.right, b.top, b.bottom, input.kerf,
     ...input.pieces.flatMap(p => [p.width, p.height]), ...placements.flatMap(p => [p.x, p.y])];

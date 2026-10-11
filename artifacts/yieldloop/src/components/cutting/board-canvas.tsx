@@ -1,9 +1,9 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { Maximize, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { CuttingInput, Placement } from '@/lib/cutting';
+import { placementError, type CuttingInput, type Placement } from '@/lib/cutting';
 import { colorFor, fmtNum, pid, pieceDims } from './model';
-import { useCt } from './cutting-i18n';
+import { useCt, type CtKey } from './cutting-i18n';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -22,7 +22,9 @@ export function BoardCanvas({ input, placements, board, onBoard, selected, onSel
   const pad = Math.max(W, H) * 0.08;
   const fs = Math.max(W, H) / 42;
   const [zoom, setZoom] = useState(1);
-  const [drag, setDrag] = useState<{ id: string; dx: number; dy: number; x: number; y: number; moved: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; pointerId: number; viewBox: string; dx: number; dy: number; x: number; y: number; moved: boolean } | null>(null);
+  const previewError = drag ? placementError(input, placements.map(p => pid(p) === drag.id
+    ? { ...p, x: fmtNum(drag.x), y: fmtNum(drag.y) } : p)) : null;
 
   const selP = placements.find((p) => pid(p) === selected && p.board === board);
   const fullW = W + pad * 2, fullH = H + pad * 2;
@@ -41,33 +43,39 @@ export function BoardCanvas({ input, placements, board, onBoard, selected, onSel
   };
 
   const down = (e: PointerEvent, p: Placement) => {
+    if (!e.isPrimary || e.button !== 0 || drag) return;
+    e.preventDefault();
+    (e.currentTarget as SVGElement).focus();
     onSelect(pid(p));
     if (readOnly) return;
     const m = toModel(e);
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    setDrag({ id: pid(p), dx: m.x - Number(p.x), dy: m.y - Number(p.y), x: Number(p.x), y: Number(p.y), moved: false });
+    setDrag({ id: pid(p), pointerId: e.pointerId, viewBox: svg.current!.getAttribute('viewBox')!, dx: m.x - Number(p.x), dy: m.y - Number(p.y), x: Number(p.x), y: Number(p.y), moved: false });
   };
   const move = (e: PointerEvent) => {
-    if (!drag) return;
+    if (!drag || drag.pointerId !== e.pointerId) return;
     const m = toModel(e);
-    setDrag({ ...drag, x: Math.max(0, m.x - drag.dx), y: Math.max(0, m.y - drag.dy), moved: true });
+    setDrag({ ...drag, x: Math.round((m.x - drag.dx) * 1000) / 1000, y: Math.round((m.y - drag.dy) * 1000) / 1000, moved: true });
   };
-  const up = () => {
-    if (!drag) return;
+  const up = (e: PointerEvent) => {
+    if (!drag || drag.pointerId !== e.pointerId) return;
     const p = placements.find((q) => pid(q) === drag.id);
-    if (p && drag.moved) onMove(p, Math.round(drag.x * 1000) / 1000, Math.round(drag.y * 1000) / 1000);
+    const m = toModel(e);
+    if (!readOnly && p && drag.moved) onMove(p, Math.round((m.x - drag.dx) * 1000) / 1000, Math.round((m.y - drag.dy) * 1000) / 1000);
     setDrag(null);
   };
 
   const key = (e: KeyboardEvent, p: Placement) => {
+    if (e.key === 'Escape') { e.preventDefault(); setDrag(null); return; }
+    if (drag) return;
     if (readOnly) return;
     const step = e.shiftKey ? 10 : 1;
     const d: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
     if (d[e.key]) {
       e.preventDefault();
-      onMove(p, Math.max(0, Number(p.x) + d[e.key][0]), Math.max(0, Number(p.y) + d[e.key][1]));
+      onMove(p, Number(p.x) + d[e.key][0], Number(p.y) + d[e.key][1]);
     } else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); onRotate(p); }
-    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onRemove(p); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onRemove(p); svg.current?.focus(); }
   };
 
   const onBoardItems = placements.filter((p) => p.board === board);
@@ -97,10 +105,10 @@ export function BoardCanvas({ input, placements, board, onBoard, selected, onSel
       </div>
       {/* Physical coordinates never mirror in RTL. */}
       <div dir="ltr" className="overflow-hidden rounded-lg border bg-[hsl(40_30%_96%)]">
-        <svg ref={svg} viewBox={`${vx} ${vy} ${vw} ${vh}`} className="block h-auto max-h-[70vh] w-full touch-none select-none"
+        <svg ref={svg} tabIndex={-1} viewBox={drag?.viewBox ?? `${vx} ${vy} ${vw} ${vh}`} className="block h-auto max-h-[70vh] w-full touch-none select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           style={{ aspectRatio: `${fullW} / ${fullH}` }}
           role="group" aria-label={`${ct('canvas')} ${ct('boardN', { n: board + 1 })}: ${fmtNum(W)} × ${fmtNum(H)} mm`}
-          onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDrag(null)}
+          onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDrag(null)} onLostPointerCapture={() => setDrag(null)}
           onPointerDown={(e) => { if (e.target === svg.current) onSelect(null); }} data-testid="svg-board">
           <defs>
             <pattern id="margin-hatch" width={fs} height={fs} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -125,7 +133,7 @@ export function BoardCanvas({ input, placements, board, onBoard, selected, onSel
                 aria-label={`${part.label} #${p.copy + 1}, ${fmtNum(w)} × ${fmtNum(h)} mm, x ${p.x}, y ${p.y}${p.rotated ? `, ${ct('rotated')}` : ''}`}
                 onPointerDown={(e) => down(e, p)} onFocus={() => onSelect(id)} onKeyDown={(e) => key(e, p)}
                 className={cn('outline-none', !readOnly && 'cursor-grab', isDrag && 'cursor-grabbing')} data-testid={`piece-${id}`}>
-                <rect x={x} y={y} width={w} height={h} fill={`hsl(${c} / ${isDrag ? 0.45 : 0.28})`} stroke={`hsl(${c})`} strokeWidth={sel ? fs / 3.5 : fs / 9} />
+                <rect x={x} y={y} width={w} height={h} fill={isDrag && previewError ? 'hsl(var(--destructive) / 0.2)' : `hsl(${c} / ${isDrag ? 0.45 : 0.28})`} stroke={isDrag && previewError ? 'hsl(var(--destructive))' : `hsl(${c})`} strokeWidth={sel ? fs / 3.5 : fs / 9} />
                 {sel && <rect x={x - fs / 3} y={y - fs / 3} width={w + fs / 1.5} height={h + fs / 1.5} fill="none" stroke="hsl(30 15% 20%)" strokeDasharray={`${fs / 2} ${fs / 4}`} strokeWidth={fs / 10} />}
                 {lf > fs * 0.25 && (
                   <>
@@ -138,6 +146,9 @@ export function BoardCanvas({ input, placements, board, onBoard, selected, onSel
           })}
         </svg>
       </div>
+      <p role="status" aria-live="polite" className="min-h-5 text-sm text-destructive" data-testid="text-drag-validation">
+        {previewError ? ct('rejected', { msg: ct(`pe_${previewError}` as CtKey) }) : ''}
+      </p>
       <p className="text-xs text-muted-foreground">{onBoardItems.length === 0 ? ct('canvasEmpty') + ' ' : ''}{!readOnly && ct('canvasHelp')}</p>
     </div>
   );
