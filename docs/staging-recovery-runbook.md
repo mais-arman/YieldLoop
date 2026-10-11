@@ -1,5 +1,13 @@
 # Staging and recovery release gates
 
+Latest closure review (2026-10-11): local packaging rendering is now verified in
+software Chromium; this has no bearing on backup/recovery readiness. Four
+recovery-checker and33 offline security/configuration tests passed; no new restore,
+backup retrieval, external role exercise or RPO/RTO approval occurred. The concrete
+owner/evidence matrix in `docs/final-acceptance.md` lists the remaining release
+gates. Independent infrastructure, authorized recovery/DBA/security personnel and
+business-approved targets are still required. Production remains **NOT READY**.
+
 Final acceptance update: `docs/final-acceptance.md` records200 passing automated
 tests and supported browser workflows. Four of those tests exercise the recovery
 checker's fail-closed logic; **no new restoration, independent backup retrieval,

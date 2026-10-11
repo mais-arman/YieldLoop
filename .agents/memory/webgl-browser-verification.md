@@ -17,6 +17,14 @@ Those observations alone do not prove interaction responsiveness.
 camera changes. Compare input-driven images only for an on-screen canvas, and
 report unresolved interaction results rather than inferring a successful test.
 
+Use an actual separately launched Chromium process for software-rendering flags,
+not context options on an already-running managed browser. Capture the composited
+surface through that same page's CDP session; do not rely on another registered tab.
+
+**Why:** Context-level flags left WebGL unavailable, while a separate process
+rendered successfully. Same-page captures finally proved live dimension redraw
+and an identical saved/reopened model without changing application rendering.
+
 Remote-browser downloads need separate content verification. The tooling may not
 expose a browser-managed download path or permit synchronous file reads; use an
 explicit saved destination and asynchronous reading before comparing parameters.

@@ -6,6 +6,17 @@ production migrations, inventory consumption or accounting-policy changes.
 
 ## Release-gate remediation — current status
 
+### Packaging visual closure (2026-10-11)
+
+The remaining local visual gap is now **PASS in software-rendered Chromium**:
+actual same-page composited screenshots prove a live200→300 mm tray-length change;
+revision2 saves/reopens with300 mm and an identical rendered image. See
+`docs/final-acceptance.md` for renderer, commands, hashes and screenshots.
+37 relevant offline/recovery-checker tests passed after the test-driver change;
+the earlier full200-test baseline is preserved. Application code and production
+guards did not change. External recovery and production authorization gates remain
+BLOCKED; overall production release remains **NOT READY**.
+
 ### Final verification follow-on (2026-10-11)
 
 `docs/final-acceptance.md` supersedes the staged-test limitation: a single full
@@ -54,7 +65,7 @@ approval or verification of a real production-like staging environment.
 |---|---|---|---|
 | Production write authorization | Infrastructure/security — critical | **blocked** | Guard deliberately unchanged; infrastructure owner must approve target-specific staging/production authorization and least-privilege roles separately. |
 | Two dependency advisories | Build security — high/moderate | **fixed** | Removed vulnerable dependency paths; final dependency scan has zero findings. Engineering owns ongoing scans. |
-| Cross-module correctness/security | Code — high | **verified** | 81 DB tests plus 32 offline tests passed; new offline production-policy test passed separately. 114 unique backend tests now covered. |
+| Cross-module correctness/security | Code — high | **verified** | Final baseline:124 PostgreSQL application,33 offline,4 recovery-checker and39 frontend tests passed (200 total); detailed commands and browser evidence in final-acceptance.md. |
 | Arabic home overflow | Code/accessibility — high | **fixed** | Prior focused 390px confirmation retained; see original evidence below. |
 | Cutting interactions | Code/accessibility — high | **verified** | See cutting-interaction-verification.md: desktop, touch emulation, keyboard, RTL, save/reopen and server denial; 3 frontend tests rerun and passed. |
 | Comparison row meaning | Code/UX — low | **fixed** | Row now labeled “Layout source” / “مصدر التخطيط”, rather than Scenario; values intentionally identify manual vs shelf generation. |

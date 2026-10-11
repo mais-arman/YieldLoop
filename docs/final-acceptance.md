@@ -3,7 +3,8 @@
 ## Decision
 
 **Functional production-material MVP/demo: PASS for the supported workflows
-verified below. Full visual verification: incomplete for live 3D packaging.
+verified below. Packaging visual verification: PASS in local Chromium with
+ANGLE/SwiftShader software WebGL (closure evidence below).
 Production release: NOT READY.**
 
 This is a final full automated run, replacing the staged-run limitation in
@@ -150,9 +151,10 @@ remaining steps; previously passed flows were not restarted.
   length110,width80,height50,thickness2.5,template tray,state assembled.
 - English and Arabic mobile controls were exercised. Arabic document/body RTL
   and no horizontal overflow were verified at390px; mobile cutting was single-column.
-- **Live 3D visual output remains unverified:** browser WebGL context creation
-  failed and the UI displayed its explicit unavailable state. No rendering pass,
-  manufacturing-grade CAD or validated dieline is claimed.
+- **Historical first-pass limitation, now closed below:** browser WebGL context creation
+  failed and the UI displayed its explicit unavailable state. That first pass did
+  not establish rendering. Manufacturing-grade CAD or validated dielines remain
+  outside the supported conceptual feature.
 
 ## Existing application data verification
 
@@ -166,9 +168,8 @@ for each IK reference, without seeding/updating it:
 
 ## Remaining evidence limits and required external actions
 
-- Live 3D rendering/redraw needs a WebGL-capable browser/device with reliable
-  visual capture. Parameter persistence, server dimensions and exported values
-  passed; they do not substitute for rendered-geometry evidence.
+- Live 3D rendering/redraw is now verified with actual composited canvas screenshots
+  in software-rendered Chromium; this does not certify every GPU/device or template.
 - Responsive/touch emulation is not physical-device or real-operator acceptance.
 - Optional live AI provider calls were not made; unavailable behavior and mocked
   provider/error/authorization tests passed. No fabricated provider result.
@@ -182,3 +183,109 @@ for each IK reference, without seeding/updating it:
 
 See `staging-recovery-runbook.md` for procedure and evidence requirements.
 Production remains **NOT READY** regardless of the green automated suite.
+
+## Remaining-acceptance closure — 2026-10-11
+
+### Actual WebGL evidence
+
+The managed test browser continued to report WebGL unavailable. Two context-level
+launch-option attempts did not produce a working renderer; neither was reported as
+a visual pass. A separately launched local Chromium process **did** support WebGL2:
+
+```sh
+chromium --headless --no-sandbox --disable-dev-shm-usage \
+  --use-gl=angle --use-angle=swiftshader --enable-webgl \
+  --ignore-gpu-blocklist --enable-unsafe-swiftshader \
+  --remote-debugging-port=9333 --user-data-dir=/tmp/yl-gl-closure-profile about:blank
+```
+
+This temporary browser was used only against the loopback acceptance harness, not
+production. These test-process flags do not change the application or its security
+configuration. Renderer: `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)
+(0x0000C0DE)), SwiftShader driver)`.
+
+Added a repeatable **test-only** CDP driver:
+
+```sh
+python -B artifacts/api-server/backend/acceptance_browser.py
+# In a separate shell, use the private temporary path printed by that harness:
+node scripts/verify-packaging-webgl.mjs /tmp/yieldloop-acceptance-<generated>.json
+```
+
+The script requires harness-style temporary credentials, loopback8099, and an empty
+concept library before creating anything. Each new run needs a fresh harness
+schema; it must not overwrite/reuse business records. No credentials are printed.
+
+Actual successful invocation (the private file was removed during cleanup):
+`node scripts/verify-packaging-webgl.mjs /tmp/yieldloop-acceptance-g2stb3_1.json`
+
+Actual run used the fresh isolated harness and:
+
+1. Entered tray dimensions200×120×60 mm, thickness2, in the real UI.
+2. Captured the centered visible canvas using **Page.captureScreenshot from the
+   same Chromium page**, not a different registered tab or an expired WebGL buffer.
+3. Validated and saved revision1.
+4. Changed only length200→300 via the UI; captured the visibly longer/narrower
+   model **before pressing Validate**, proving live parameter-driven redraw.
+5. Validated/saved revision2, navigated away, reopened and asserted length300.
+   History confirmed revisions2 and1. Captured the reopened model.
+
+Result: **PASS**. Before/after images were opened and visually inspected. The live
+300 mm image and reopened revision2 image are byte-identical; before200 is distinct.
+The camera automatically fits the changed geometry, so evidence compares proportions,
+not a claim of fixed-camera millimetres-per-pixel.
+
+Evidence files (ignored generated output, not application assets):
+
+- `generated-artifacts/webgl-acceptance/before-200.png`
+- `generated-artifacts/webgl-acceptance/after-live-300.png`
+- `generated-artifacts/webgl-acceptance/reopened-revision-2.png`
+- `generated-artifacts/webgl-acceptance/evidence.json` — renderer and saved/history data.
+
+SHA-256 before200:
+`737cf0a75aab706208da126a473905f8d26491eb0429f70ae5af616d267abd67`
+
+SHA-256 live300 **and** reopened revision2:
+`646ad152727080c0392a9396ddcb9442e2bc352e3d1422273a54ad0661b4f17e`
+
+The first driver attempt stopped at an incorrect test selector before saving; the
+selector was corrected and the complete driver then passed. An optional Pillow
+image-composition attempt could not run because Pillow is not installed; no package
+was installed. This did not affect original screenshots or their visual/byte checks.
+
+### Checks after the final test-driver change
+
+```sh
+node --check scripts/verify-packaging-webgl.mjs
+node scripts/verify-packaging-webgl.mjs /tmp/yieldloop-acceptance-<generated>.json
+PYTHONPATH=artifacts/api-server/backend python -m unittest test_recovery_semantics -q
+python -B artifacts/api-server/backend/manage.py test \
+  accounts.tests audit.tests health config.tests config.test_request_limits \
+  --settings=config.schema_settings
+python -B artifacts/api-server/backend/manage.py makemigrations --check --dry-run \
+  --settings=config.schema_settings
+sha256sum generated-artifacts/webgl-acceptance/*.png
+cmp -s generated-artifacts/webgl-acceptance/after-live-300.png \
+  generated-artifacts/webgl-acceptance/reopened-revision-2.png
+```
+
+Results: script syntax and complete browser driver passed; **4/4 recovery-checker
+and33/33 offline tests passed,0 failed,0 skipped**; no migration drift; `cmp` exit0.
+The earlier complete **200/200 baseline is preserved**, not relabeled as newly rerun.
+No application code changed, no application migration ran, and no regression was
+observed. Fresh test schemas only were migrated by the existing verified harness.
+Temporary browser/server processes were stopped and private credentials removed.
+
+### Genuinely outstanding release gates
+
+|Gate|Current evidence status|Who and what closes it|
+|---|---|---|
+|Independent/offsite backup availability|Not demonstrated here|Infrastructure/backup owner supplies dated inventory, retention/encryption/access controls, checksum and successful independent retrieval evidence.|
+|Independent cluster-loss recovery|Not demonstrated here|Named DBA/recovery owner obtains an authorized disposable independent cluster and conducts a timed restore without relying on the original cluster; retain expanded-schema integrity and service/workflow acceptance evidence.|
+|Database roles/grants/ownership|Not demonstrated here|DBA/security owner approves a sanitized role/ACL/ownership/default-privilege baseline, restores it and logs in as actual exercise roles to prove both allowed and denied actions. A no-owner/no-acl data restore is insufficient.|
+|Approved and demonstrated RPO/RTO|No approved numeric targets or measured exercise evidence supplied|Business owner approves targets and scope; recovery owner records backup/transaction cutoff, observed loss, start/end and business-ready timestamps; obtain sign-off against targets.|
+|Production authorization and factory sign-off|Not authorized by this pass|Authorized infrastructure/security/factory owners approve the actual target, least-privilege environment, staging/factory acceptance and release. Write guard remains unchanged; no deployment performed.|
+
+These gates need external infrastructure and/or authorized personnel. No local
+software test, screenshot, synthetic role or scripted restore was substituted for
+their missing evidence. See the recovery runbook for the concrete procedure.

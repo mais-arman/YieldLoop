@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "7JScRvmlSmWBi9qRTkxIB"
+uri = "file://generated-artifacts/webgl-acceptance/before-200.png"
+type = "image"
+title = "Packaging before: 200 mm"
+description = "Actual software-WebGL canvas capture before changing the tray length."
+logical_id = "1ee1edee-7ab1-40c2-a11c-c15419d2e6b8"
+content_hash = "sha256:737cf0a75aab706208da126a473905f8d26491eb0429f70ae5af616d267abd67"
+size = 41810
+mtime_ms = 1791742004918
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/1ee1edee-7ab1-40c2-a11c-c15419d2e6b8/dd96c3c5-5187-4a20-8a19-c560cf68ffbe"
+storage_version_token = "1791742150210810"
+content_type = "image/png"
+
+[[outputs]]
+id = "G95liezqhWart6cJmCISC"
+uri = "file://generated-artifacts/webgl-acceptance/after-live-300.png"
+type = "image"
+title = "Live update: 300 mm"
+description = "Actual canvas after changing length to 300 mm, before validation or saving."
+logical_id = "b1af0cd3-6d92-4f18-a437-8b0681eec778"
+content_hash = "sha256:646ad152727080c0392a9396ddcb9442e2bc352e3d1422273a54ad0661b4f17e"
+size = 42671
+mtime_ms = 1791742007974
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/b1af0cd3-6d92-4f18-a437-8b0681eec778/6a70b72e-46ab-46f3-ae26-dc592c0a2d18"
+storage_version_token = "1791742150763165"
+content_type = "image/png"
+
+[[outputs]]
+id = "W21OHHBv7az3hI85_itsl"
+uri = "file://generated-artifacts/webgl-acceptance/reopened-revision-2.png"
+type = "image"
+title = "Reopened revision 2: 300 mm"
+description = "Saved and reopened model. This capture is byte-identical to the live 300 mm capture."
+logical_id = "3c18b063-91c2-4720-9ae1-203a16dae838"
+content_hash = "sha256:646ad152727080c0392a9396ddcb9442e2bc352e3d1422273a54ad0661b4f17e"
+size = 42671
+mtime_ms = 1791742012250
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/3c18b063-91c2-4720-9ae1-203a16dae838/7204f686-bda8-417e-8b86-764447408774"
+storage_version_token = "1791742151322978"
+content_type = "image/png"
