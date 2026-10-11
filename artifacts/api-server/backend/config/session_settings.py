@@ -1,7 +1,7 @@
-"""PENDING activation: never selected by existing startup commands.
+"""Active session profile; development writes require the verified target guard.
 
-Requires approved migrations and write enablement BEFORE authentication flows.
-This profile deliberately inherits the current read-only database safeguard.
+Production remains read-only until separately approved write-enablement work.
+No startup migration or production write exception is provided here.
 """
 # ruff: noqa: I001
 # Import ordering is intentional: session policy overrides the health profile.

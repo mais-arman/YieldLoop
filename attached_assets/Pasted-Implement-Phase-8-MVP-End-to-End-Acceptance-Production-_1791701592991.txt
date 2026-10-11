@@ -1,0 +1,89 @@
+Implement Phase 8: **MVP End-to-End Acceptance & Production Readiness Assessment** for YieldLoop.
+
+This phase validates and hardens the existing MVP. Do not start a broad redesign or add major new features. First inspect the current skills and `docs/phase-3.md` through `docs/phase-7.md`, existing architecture, role permissions, migrations, database safety guard, and all current tests.
+
+## 1. End-to-end workflow verification
+Create an isolated, repeatable acceptance test using dedicated test data and the PostgreSQL test database. Verify the complete supported workflow:
+
+1. Authenticate as each of the three roles.
+2. Create and manage a production job according to current permissions.
+3. Record material issued and output measurements.
+4. Verify reconciliation calculations, signed variance, rates, and correction/void behavior.
+5. Register reusable-offcut output in inventory and verify source traceability and inventory history.
+6. Verify inventory registration does not change reconciliation figures and that registered stock is not presented as confirmed physically reusable.
+7. Create, validate, save, reopen, and revise a cutting plan linked to the job.
+8. Compare scenarios and verify deterministic placement, rotation restrictions, boundaries, margins, kerf spacing, and unplaced quantities.
+9. Verify dashboards and reports against the authoritative persisted records, including corrections, voided records, filters, pagination, and role-based visibility.
+10. Verify logout, session revocation, CSRF protection, and access denial for unauthorized actions.
+
+Do not assume unsupported workflows exist. In particular, inventory reservation/consumption, job completion approval, and physical machine feasibility are outside the current implemented scope.
+
+## 2. Cross-module consistency
+Add tests for inconsistencies across jobs, materials, reconciliation snapshots, inventory records, cutting plans, and reports. Verify that corrections do not cause double counting, historical revisions remain traceable, and planning never silently changes actual production or inventory balances.
+
+Verify job lifecycle rules consistently across APIs and UI. Draft, Open, Cancelled, and any other existing states must follow the documented transition and permission rules.
+
+## 3. Security and data integrity
+Review:
+- Role enforcement on every write endpoint.
+- Cross-job object access and information leakage.
+- CSRF and session cookie configuration.
+- Login throttling and session revocation behavior.
+- Transaction boundaries, duplicate-request handling, concurrency, and stale revisions.
+- Append-only audit and revision history protections.
+- Input validation, decimal precision, geometry limits, and error handling.
+- Sensitive information in logs and API responses.
+- Dependency and configuration risks detectable within the current workspace.
+
+Fix verified defects within the existing design. Do not weaken security controls or invent credentials.
+
+## 4. Accessibility and UX acceptance
+Perform practical checks for:
+- Keyboard navigation and focus visibility.
+- Contrast and status indicators that do not rely on color alone.
+- Accessible labels and errors for forms.
+- Screen-reader-friendly status and validation feedback where practical.
+- Arabic/English switching and correct RTL/LTR layout.
+- Mobile usability for tables, filters, forms, and the Cutting Studio.
+- Loading, empty, error, and recovery states.
+- Browser console errors and failed API requests.
+
+Clearly report any checks that cannot be performed automatically or manually in the current environment.
+
+## 5. Data and migration safety
+- Use isolated test databases and clearly identified test accounts/records.
+- Preserve existing development data.
+- Never run production migrations, change production data, weaken the database write guard, or add startup migrations.
+- Do not create default credentials or expose passwords in prompts, logs, or reports.
+- Verify migration drift and document the required deployment migration sequence without executing it against production.
+
+## 6. Factory-policy readiness
+Create a concise, explicit list of unresolved decisions requiring approval from the factory, including:
+- Accepted reconciliation variance and tolerance policy.
+- Rework treatment.
+- Completion approval and who may close a job.
+- Operator measurement-recording authority.
+- Material identity and compatibility requirements.
+- Offcut suitability, reservation, consumption, and reversal rules.
+- Board dimensions, stock units, kerf, edge margins, grain direction, defects, clamping, machine limits, and cut sequencing.
+- Whether historical reports are current-balance reports or require true as-of historical snapshots.
+
+Do not silently choose factory policies or claim machine-ready optimization.
+
+## 7. Required verification
+Run the complete relevant backend test suite, lint, migration-drift checks, API schema checks, typecheck, frontend lint/build, and browser acceptance tests. Include tests covering all three roles and Arabic/English responsive behavior.
+
+Use deterministic isolated data. Report actual command results, test counts, skipped tests, failures, and limitations. Do not claim a check passed unless it was actually executed.
+
+## 8. Final deliverable
+Produce `docs/phase-8-acceptance.md` containing:
+- End-to-end scenarios and outcomes.
+- Verification commands and actual results.
+- Security and accessibility findings.
+- Cross-module consistency findings.
+- Known defects and remaining risks.
+- Factory decisions still awaiting approval.
+- Deployment prerequisites and a safe deployment/migration checklist.
+- A clear verdict: READY FOR CONTROLLED PILOT, NOT READY, or READY FOR PRODUCTION, with evidence and rationale.
+
+Do not deploy, publish, execute production migrations, enable inventory consumption, or change kilogram-based accounting in this phase. Stop after the assessment and report the evidence-based readiness verdict.

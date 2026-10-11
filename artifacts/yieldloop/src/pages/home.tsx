@@ -9,18 +9,18 @@ export default function HomePage({ user }: { user: Employee }) {
   const { t } = useI18n();
   const fullName = `${user.first_name} ${user.last_name}`.trim();
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+    <div className="min-w-0 [overflow-wrap:anywhere] animate-in fade-in slide-in-from-bottom-1 duration-500">
       <p className="text-sm text-muted-foreground">{t('welcome', { name: displayName(user) })}</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight" data-testid="text-page-title">{t('homeTitle')}</h1>
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{t('homeSubtitle')}</p>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-[1.4fr_1fr]">
-        <section className="rounded-lg border bg-card p-6" aria-labelledby="identity-h">
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <section className="min-w-0 rounded-lg border bg-card p-6" aria-labelledby="identity-h">
           <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-[hsl(222_47%_11%)] text-lg font-semibold text-[hsl(160_84%_55%)]" aria-hidden>
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[hsl(222_47%_11%)] text-lg font-semibold text-[hsl(160_84%_55%)]" aria-hidden>
               {initials(user)}
             </span>
-            <div>
+            <div className="min-w-0">
               <h2 id="identity-h" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('identity')}</h2>
               <div className="text-lg font-semibold" data-testid="text-user-name">{displayName(user)}</div>
             </div>

@@ -1,6 +1,7 @@
 # YieldLoop
 
-**Current status: Phase 7 rectangular Cutting Studio is implemented.**
+**Current status: Phase 8 acceptance assessed — NOT READY for operational release.**
+See [acceptance evidence, findings and release gates](docs/phase-8-acceptance.md).
 See [Phase 7 geometry rules, algorithm, permissions and verification](docs/phase-7.md).
 See [Phase 6 metric definitions, permissions and verification](docs/phase-6.md).
 See [Phase 5 inventory scope and policy limits](docs/phase-5.md). Reuse remains blocked.

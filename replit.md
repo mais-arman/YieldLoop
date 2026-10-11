@@ -51,7 +51,8 @@ Separate real API liveness and database readiness; manual retry; English/Arabic 
   existing role scope, no schema changes. See docs/phase-6.md.
   Phase 7 rectangular Cutting Studio is approved: explicit mm dimensions,
   spacing-only kerf/margins, deterministic shelf heuristic and audited saved proposals.
-  Plans never change kg accounting or inventory. See docs/phase-7.md. Stop after Phase 7;
+  Plans never change kg accounting or inventory. See docs/phase-7.md.
+  Phase 8 acceptance is documented in docs/phase-8-acceptance.md. Stop after assessment;
   no exports, optimization, AI, publishing or multi-tenant onboarding.
 - Django database-backed sessions supersede JWT. Use exactly Cutting Operator,
   Production Supervisor, and Manager roles; no public registration or tenant onboarding.
