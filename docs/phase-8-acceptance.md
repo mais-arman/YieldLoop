@@ -21,6 +21,8 @@ approval or verification of a real production-like staging environment.
 | Bilingual/accessibility coverage | UX — high | **verified** (bounded browser pass) | All roles in EN/AR, mobile pagination/read-only permissions, error associations and measured home contrast; scope and remaining gaps below. Physical devices/assistive technology remain unverified. |
 | Logical database recovery | Infrastructure — high | **verified** (isolated local scope) | Focused semantic follow-up passed: 104 constraints / 33 validated CHECKs, 9 equivalent array-cast rewrites, 792 INSERT/UPDATE outcomes, matching rows/sequences and unchanged source. Operational/disaster recovery remains blocked separately. |
 | Offsite backups, RPO/RTO and recovery ownership | Infrastructure — critical | **blocked** | Infrastructure/factory owners must approve objectives, retention, encryption and provider-specific disaster recovery; local drill is insufficient. |
+| Total-cluster-loss recovery | Infrastructure — critical | **blocked / not exercised** | No independent retrieval/restore timeline or approved provider-specific procedure supplied. Runbook now defines the proposed exercise and required evidence; owner must authorize a separate non-production cluster. |
+| Database roles, ownership and grants | Security/infrastructure — critical | **blocked / not verified** | Local drill explicitly excludes owners/ACLs. No approved role/grant baseline or dedicated disposable recovery cluster supplied; shared-cluster role mutations were not attempted. |
 | HTTPS, proxy, headers, secure session deployment | Infrastructure — critical | **blocked** | Offline production assertions verified; actual endpoint/certificate/proxy/SPA headers not deployed or measured. |
 | Logs, monitoring and load | Infrastructure — high | **blocked** | No live alert test, retention/access approval or realistic concurrent load exercise. Account-wide serialization and shared-peer throttle require sizing. |
 | Admin provisioning/recovery | Operations — high | **blocked** | Automated auth/revocation covered; operational recovery and responsible owner still need staging rehearsal/sign-off. |
@@ -114,6 +116,17 @@ Observed anonymous `/api/v1/auth/me` 401 and intentional Supervisor 403 were
 expected, not unexplained application failures.
 
 ### Recovery evidence and safety
+
+**Remaining readiness review (2026-10-11):** read-only local document/script
+inspection found no offsite retrieval receipt, named recovery-owner assignment,
+approved numeric RPO/RTO, or completed cluster-loss/role-ACL exercise evidence.
+These are missing evidence, not a claim that external backups do not exist.
+The runbook's “Remaining recovery-readiness review” contains the blocked-item
+matrix, proposed cluster-loss procedure, role/ownership/default-ACL acceptance
+checks, exact inspection commands and required human actions.
+No database/provider access, SQL mutation, restore or new regression tests ran
+in that review; no runtime code changed. The resolved CHECK-equivalence evidence
+below is preserved, not rerun. **Overall release remains NOT READY.**
 
 **Current follow-up:** local constraint equivalence is now demonstrated. See
 `docs/staging-recovery-runbook.md`, “Focused constraint verification”, for exact

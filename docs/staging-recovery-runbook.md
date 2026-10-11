@@ -225,3 +225,155 @@ offsite retention/encryption, total-cluster loss, actual deployment-role/ACL
 recovery, named ownership and approved/measured RPO/RTO are evidenced. This
 no-owner/no-ACL logical drill intentionally does not prove role/grant restoration.
 No claim of production readiness or release approval follows from this PASS.
+
+## Remaining recovery-readiness review (2026-10-11)
+
+**Disposition: BLOCKED. Overall release: NOT READY.** This is a local evidence
+review, not a new recovery exercise. The verified CHECK-equivalence section and
+its historical test results remain unchanged.
+
+### Evidence available and missing
+
+| Item | Actual evidence from this review | Status and required human action |
+|---|---|---|
+| Offsite backup availability | No independent backup inventory, retrieval receipt, retention policy or encrypted archive custody evidence in the reviewed project documents/scripts. The drill uses a temporary local archive and deletes it. | **BLOCKED.** Infrastructure owner must supply a redacted provider/storage inventory, backup timestamps/coverage, independent failure-domain location, retention/encryption/key-access policy, and a retrieval/checksum receipt. Absence of local evidence does not prove that no external backups exist. |
+| Cluster-loss recovery | Existing procedure restores a database on the same cluster using existing credentials; it cannot demonstrate loss of that cluster or its credentials. | **BLOCKED.** Infrastructure owner must identify the provider and recovery mechanism, approve an independent non-production recovery cluster, and perform the timed isolated exercise below. |
+| Roles, ownership and grants | recovery_drill.py uses `--no-owner --no-acl`; no reviewed desired-role/ownership/ACL manifest or actual restore comparison is supplied. | **BLOCKED / NOT RUN.** DBA/security owner must provide an approved sanitized baseline and a dedicated disposable cluster with separately managed credentials. Then execute and record the role/ACL exercise below. |
+| RPO approval | No numeric loss tolerance, scope, approval date or accountable approver is recorded. | **BLOCKED / NOT APPROVED IN AVAILABLE EVIDENCE.** Factory/data owner must sign a numeric target and acceptable loss window, with infrastructure owner confirming feasibility. |
+| RTO approval | No numeric recovery-time target, clock boundaries or approved service acceptance criteria are recorded. | **BLOCKED / NOT APPROVED IN AVAILABLE EVIDENCE.** Factory/operations owner must sign these definitions with infrastructure owner. |
+| RPO/RTO demonstration | No independently retrieved backup, recovery markers, exercise timeline or service-ready acceptance record was supplied. Earlier local test durations are not operational RPO/RTO measurements. | **BLOCKED / NOT DEMONSTRATED.** Exercise lead must capture the evidence below and compare results against signed targets. |
+| Recovery ownership | Documents name responsibility categories, not an assigned accountable individual/delegate. | **BLOCKED.** Sponsor must name the backup owner, restore operator/delegate, security approver and business acceptance owner, with escalation and credential-recovery arrangements. |
+
+No external infrastructure endpoint, recovery authorization, independently
+disposable PostgreSQL cluster, or approved deployment-role baseline has been
+provided for this exercise. No production/provider APIs, secrets or databases
+were inspected to discover them. A disposable database on a shared cluster is
+not adequate isolation for cluster-wide role creation, membership changes or a
+cluster-loss simulation. No CREATE/DROP ROLE or role/ACL mutation was attempted.
+Creating a made-up role set locally would not verify the intended deployment's
+ownership/grants and is not substituted for the missing baseline.
+
+### Cluster-loss exercise procedure — proposed, NOT EXECUTED
+
+The sequence below supplies the missing operational outline. It is not yet a
+provider-specific, approved executable procedure; provider commands, target
+identity, safe teardown plan and access authorizations remain prerequisites.
+
+1. Owners approve numeric RPO/RTO, clock boundaries, representative data volume,
+   scope (DB, roles, keys, application configuration), acceptance criteria and
+   recovery operator/delegate. Use synthetic non-production records only.
+2. Prepare an independent, disposable source/recovery exercise with no production
+   network access. Record cluster identities and allowlisted endpoints. Store
+   time-stamped synthetic durable commit markers and expected record hashes.
+3. Produce the approved backup set, including the role/ACL/ownership manifest and
+   required recovery/configuration material. Store it outside the source failure
+   domain. Record checksums, UTC backup start/end, coverage/recovery point,
+   retention and retrieval authorization. Never include secret values in reports.
+4. Record incident declaration time; make the **exercise source only** unavailable
+   to the restore operator through approved isolation, not deletion of any shared
+   or application system. Recovery must not depend on source-cluster reads,
+   local archive caches, source-held encryption keys or existing source roles.
+5. Provision the separate destination, recover independent credentials/keys and
+   retrieve the stored archive. Verify its checksum/decryption and actual recovery
+   point. Record elapsed provisioning, retrieval, decryption and restore times.
+6. Restore reviewed roles first, then database/schema objects with their intended
+   owners and ACLs, using the provider-approved mechanism. Execute the role/ACL
+   verification below. Managed-provider restrictions require a reviewed mapping;
+   do not silently replace all owners with an administrator.
+7. Verify row/sequence/schema integrity and the established CHECK-equivalence
+   criteria. Preserve the original local drill's fixed target safety checks;
+   do not point that script at an arbitrary new environment or bypass its guard.
+   Any separate exercise runner requires independent target-identity review.
+8. Validate service availability on an isolated recovery endpoint and approved
+   application smoke checks. The current application write guard stays unchanged;
+   any needed staging authorization is a separate approval, not part of this
+   review. Record the service-ready/business-acceptance timestamp, not merely
+   pg_restore completion.
+9. Calculate observed RPO/RTO, list discrepancies and obtain operator/security/
+   business sign-off. Remove only approved disposable exercise resources and
+   revoke temporary credentials after retaining redacted evidence. No production
+   cutover, failover, destructive simulation or deployment is authorized here.
+
+### Role, ownership and grant verification — required evidence, NOT RUN
+
+The DBA must first approve a sanitized baseline identifying:
+
+- Database/schema/table/view/sequence/function owners; explicit privilege grants
+  and grant options, PUBLIC access and default privileges for future objects.
+- Login/non-login role attributes, membership/inheritance/SET ROLE paths, relevant
+  role/database settings and provider-managed role restrictions. Compare names and
+  effective behavior, not instance-specific OIDs.
+- Approved separation of runtime, read-only, migration/owner and backup/restore
+  responsibilities (actual names and policies are not yet supplied).
+- Credentials obtained independently through the approved secrets system, not
+  plaintext/password hashes in the evidence report. A credential-free role
+  definition export alone does not demonstrate restored login access.
+
+On the dedicated disposable cluster, compare the restored catalog against that
+baseline: pg_roles, pg_auth_members, database/schema/object owners and ACLs,
+pg_default_acl and applicable role settings. Capture exact sanitized commands,
+tool versions, exit statuses and before/after differences. The current
+`--no-owner --no-acl` drill must not be cited as evidence for this comparison.
+
+Then connect as each actual exercise role (not merely an administrator using
+superuser privileges) and prove approved positive AND negative permissions.
+Examples to instantiate from the approved matrix: reader SELECT succeeds but
+INSERT/UPDATE/DELETE fail; runtime has only its allowed table and sequence access;
+runtime cannot create roles, escalate privileges or perform owner-only DDL;
+schema USAGE/CREATE, sequence access and PUBLIC privileges match policy.
+Test default privileges on a newly created synthetic object and membership
+inheritance where applicable. Successful operations are rolled back where
+possible; all remaining objects are confined to the disposable cluster.
+
+A role mapping imposed by a managed provider needs explicit security approval
+and effective-permission tests. Unexpected grants, denied required privileges,
+changed ownership or untested login paths keep this gate BLOCKED.
+
+### RPO/RTO acceptance evidence
+
+No target values are inferred or proposed as already approved.
+
+- **RPO:** signed maximum acceptable loss for the specified data/scope, backup/WAL
+  coverage and failure model; synchronized UTC failure cutoff and durable commit
+  markers; newest contiguous marker actually recovered; missing transactions and
+  detection granularity. Report the observed loss window (failure cutoff minus
+  last recovered marker, with marker resolution stated), not simply backup age.
+- **RTO:** signed start/end definition and maximum duration; timestamped incident
+  declaration, access/key recovery, provisioning, offsite retrieval, restore,
+  permission verification, application validation and service acceptance. Include
+  human delays and retries unless an explicit approved scope excludes them.
+- **Approval:** named accountable signatories, approval date, chosen numeric
+  targets and exercise scope; measured results no worse than those targets,
+  documented limitations and retained evidence. A fast local restore cannot
+  establish either objective for a total-cluster-loss scenario.
+
+### Commands actually run in this review
+
+Local read-only file inspection only:
+
+```sh
+cat docs/staging-recovery-runbook.md
+rg -n 'recovery|backup|RPO|RTO|owner|grant|retention|cluster' docs/phase-8-acceptance.md docs/factory-decision-register.md
+rg -n 'pg_dump|pg_restore|no-owner|no-acl|DROP|CREATE DATABASE|TARGET' artifacts/api-server/backend/recovery_drill.py
+rg --files docs scripts artifacts/api-server | grep -Ei 'backup|recover|restore|infrastructure|terraform|ansible|runbook|deploy'
+rg -n 'RPO|RTO|offsite|retention|cluster.loss|role.*restore|grant.*restore' docs
+git diff --check -- docs/staging-recovery-runbook.md docs/phase-8-acceptance.md
+```
+
+Results: relevant files were the existing runbook and local recovery/checker/test
+scripts. Reviewed documentation describes required recovery controls but supplies
+none of the missing external receipts, signed objectives or role/ACL results.
+The final documentation whitespace check passed.
+An initial file-list search included `.github`, which does not exist; the search
+was repeated over the existing directories shown above. Search scope is local
+and bounded, not proof about an external provider's actual backup configuration.
+
+No SQL, backup download, restore, new regression test, migration, provider API
+call or credential operation ran in this review. Runtime code did not change,
+so completed CHECK/accessibility/dependency tests were not repeated. Earlier
+PASS counts remain historical evidence, not results newly generated here.
+
+**Next required human action:** the project sponsor must assign an infrastructure/
+DBA recovery owner and obtain the independent backup evidence, approved role/ACL
+baseline, isolated recovery-cluster authorization, and business-approved numeric
+RPO/RTO. Then authorize the non-production exercise described above.
