@@ -1,0 +1,243 @@
+# YieldLoop — Final Integrated Implementation, Gap Closure, UX Cleanup, and Verification
+
+## Mission
+
+Work directly in the existing YieldLoop repository and complete one integrated implementation pass. The goal is to make the current application a coherent, reliable, usable factory pilot for Ibn Khaldoun Printing and Publishing.
+
+**Do not stop after auditing the code or writing a plan. Inspect the current implementation, implement the agreed fixes and missing features, run the appropriate tests, fix regressions, and report the actual results.**
+
+Use the existing stack and architecture. Do not rebuild the application from scratch, replace working modules unnecessarily, or introduce large dependencies without a clear need.
+
+Before editing, inspect the current application inventory, route and role policies, relevant frontend and backend code, database models, migrations, existing tests, and project instructions. Use the relevant skills available in the repository/environment for React, TypeScript, Django/DRF, PostgreSQL, secure authorization, testing, accessibility, and responsive design. Inspect available skills rather than assuming a skill name exists.
+
+Treat existing code and documented workflows as the source of truth. Preserve working behavior unless a specific issue below requires a change.
+
+## 1. Fix role permissions in the backend, not just the UI
+
+The frontend currently hides some Operator pages, but reporting/comparison APIs may still permit access to Open-job data. Close this gap.
+
+Enforce permissions in Django/DRF views, serializers, querysets, and object-level authorization wherever applicable. A hidden link or frontend route guard is not security.
+
+Use this role policy consistently across navigation, routes, direct URLs, API requests, and tests:
+
+### Cutting Operator
+- Can access their operational work area, permitted Open/In Progress jobs, Cutting Studio, and the inventory functions explicitly allowed to operators.
+- Can record and correct job data through the existing void-and-replace audit workflow.
+- Can close a job only when it meets the application’s defined closure rules.
+- Cannot access Reports, Job Comparison, employee administration, catalogue administration, job cancellation, or manager-only controls.
+- Cannot bypass restrictions by calling the API directly or changing a URL.
+
+### Production Supervisor
+- Can access the production overview, operational jobs, permitted inventory operations, Cutting Studio, Reports, Job Comparison, and the existing supervisor tools.
+- Can perform only the job and inventory actions permitted by the documented workflow.
+- Cannot manage employees or perform Manager-only actions.
+
+### Manager
+- Can access the operational areas, Reports, Job Comparison, employee management, job creation/cancellation, and catalogue-management controls assigned to the Manager role.
+- Retain existing account-creation, temporary-password, forced-password-change, session-revocation, and audit protections.
+
+Use the project’s actual role identifiers. Do not create new role names unnecessarily.
+
+Check every sensitive endpoint and any API response that could reveal restricted information. Ensure filtering is applied server-side before results are returned. A restricted role should receive an appropriate 403 response, or the project’s existing consistent authorization response, not sensitive data.
+
+Keep a minimal public liveness endpoint only if appropriate. `/health` must not expose secrets, credentials, detailed environment configuration, sensitive diagnostics, or unnecessary database details.
+
+Add backend tests for every role and every restricted endpoint, including direct API calls, object IDs belonging to another permitted scope, and cancelled/closed jobs.
+
+## 2. Complete rework accounting without double-counting material
+
+Separate rework recording is currently missing. Add it to the job recording and reconciliation workflow.
+
+Rework must be represented as a traceable material disposition, not merely a note or a percentage.
+
+Implement the following accounting model:
+
+**Issued material = Good output + Scrap + Reusable offcuts + Pending rework + Unexplained variance**
+
+Important rules:
+- A quantity pending rework is counted once as pending rework.
+- When rework succeeds, move that quantity from pending rework to good output.
+- When rework fails, move that quantity from pending rework to scrap and record the relevant reason.
+- Support partial rework resolution when the quantity allows it.
+- Never count a resolved rework quantity as both pending rework and final output.
+- Prevent resolving more than the outstanding pending quantity.
+- Preserve the existing decimal precision and units. Do not silently convert material units.
+- Record who made each change, when, the quantity, the disposition, and relevant reason/notes in the audit history.
+- Keep historical corrections traceable; do not erase history to make totals balance.
+
+Update the job form, job detail, reconciliation summary, relevant reports, and translations so users can see pending and resolved rework clearly.
+
+A job must not be shown as fully accounted for while unresolved rework is omitted from the reconciliation. Keep unexplained variance visible and distinct from scrap. Apply the current closure rules consistently and update them only as necessary for this accounting model.
+
+Create migrations safely and include tests for normal rework, partial recovery, failed rework, invalid quantities, corrections, closure, and reconciliation.
+
+Do not change existing IK-202 or IK-203 results simply to accommodate this new feature. Their supplied data contains no rework.
+
+## 3. Finish useful offcut inventory operations
+
+The inventory workflow currently registers offcut lots, but reserve, release, and consume operations are blocked. Complete these operations with reliable stock tracking.
+
+Implement:
+- Reserve an available quantity from a reusable-offcut lot.
+- Release a reservation.
+- Consume a reserved quantity and reduce the remaining stock.
+- Support partial quantities instead of forcing every operation to consume or reserve an entire lot.
+- Show original quantity, remaining quantity, reserved quantity, and available-to-reserve quantity accurately.
+- Keep an immutable movement/audit history showing the action, quantity, user, timestamp, source lot, and destination job when applicable.
+- Use database transactions and suitable locking or concurrency controls to prevent simultaneous operations from overspending the same stock.
+- Validate quantities, material compatibility, and any relevant material attributes already represented in the application.
+- Prevent negative stock, over-reservation, over-consumption, invalid releases, and unauthorized actions.
+- Keep voiding/correction rules safe. Never erase an offcut lot or its history if it has already been moved or consumed; use an audited reversal or correction process where appropriate.
+
+“Available” means recorded as available in the system. It does **not** prove that the material is physically present, defect-free, or suitable for a particular future job. Make this distinction clear in concise UI wording.
+
+Use this permission baseline:
+- Operators can view permitted inventory information and register offcuts through their authorized production workflow.
+- Supervisors and Managers can perform the appropriate stock-management operations.
+- Only Managers can perform privileged catalogue/administrative actions or exceptional corrections, unless the existing documented policy requires stricter rules.
+
+Use existing material and job fields; do not invent compatibility guarantees when the data is unavailable.
+
+Add complete tests for partial movements, invalid operations, permissions, concurrent operations where test infrastructure supports them, history, and reconciliation integrity.
+
+## 4. Make AI assistance honest and useful
+
+The environment currently reports that `YIELDLOOP_AI_API_KEY` is missing. Never fabricate an AI response, pretend a provider call succeeded, or expose an API key to the browser.
+
+- Keep deterministic, evidence-based production analysis available where it already works.
+- The application may report that IK-202 has 180 kg recorded under setup/layout scrap and recommend investigating the underlying record, but must not claim that an unverified root cause has been proven.
+- If a real AI provider is configured, call it securely from the backend with appropriate timeouts, error handling, and secret management.
+- If no provider is configured, hide or clearly disable the AI-only floating assistant entry point so it does not look functional. Do not show alarming configuration warnings in the normal factory workflow.
+- Do not disable useful non-AI evidence, reconciliation, or reporting features just because live AI is unavailable.
+- Any floating assistant panel must be accessible, dismissible, usable on mobile, and consistent with the existing design.
+- Distinguish factual database evidence, deterministic rules, and generated suggestions in the UI.
+- Add tests using mocked provider responses and tests for the missing-key, failure, timeout, and invalid-response cases. Do not require a real paid API key to run tests.
+
+Do not configure fake production credentials or commit secrets.
+
+## 5. Finish the existing Packaging Designer pragmatically
+
+Inspect the existing Packaging Designer first. It is currently conceptual and must not be presented as a manufacturing-validated dieline.
+
+Complete a practical, reusable parameter-based packaging designer using the existing architecture:
+- Support reusable templates/types rather than a pizza-box-only implementation. Include sensible generic starting templates such as a rectangular box/carton, tray, sleeve, and flat box where the existing geometry supports them.
+- Let users enter and edit supported dimensions in millimetres.
+- Generate a live 3D preview from the entered dimensions and selected template. The preview must update when valid parameters change.
+- Validate required dimensions and supported geometry; display useful errors rather than producing broken geometry.
+- Save and reopen designs using the existing persistence conventions, with revisions or clear version history where feasible.
+- Provide an honest export or summary of the saved parameters and geometry supported by the implementation.
+- Ensure keyboard use, responsive layout, and Arabic RTL/English LTR behavior.
+
+Do not build an unrestricted CAD platform, use AI-generated images as engineering geometry, or claim the preview is a verified production dieline. Clearly label the designer as a conceptual/parametric design tool until manufacturing rules, fold geometry, tolerances, material thickness, glue flaps, and production output have actually been validated.
+
+Prefer completing and testing a credible version of the existing module over replacing it with a large new framework.
+
+## 6. Finish the role-specific UX and remove remaining inconsistencies
+
+Preserve the current visual direction and the improvements already implemented. Apply a consistent design system across the application rather than redesigning each page independently.
+
+Review at minimum:
+- Login, password change, account menu, and language selection.
+- Operator landing page and My Work.
+- Supervisor production overview.
+- Manager dashboard and Employees.
+- Production Jobs and job details.
+- Cutting Studio.
+- Inventory and inventory movement history.
+- Reports, Job Comparison, and evidence/source records.
+- Packaging Designer and assistant entry point.
+- Empty, loading, error, forbidden, and success states.
+
+UX requirements:
+- Show each actor the pages and actions they actually need.
+- Keep Manager-only employee and administrative controls out of other roles’ normal navigation.
+- Align frontend route guards with backend authorization.
+- Reduce unnecessary explanatory paragraphs, duplicate filters, redundant timestamps, internal phase labels, and excessive numeric trailing zeros.
+- Avoid oversized whitespace and long forms that unnecessarily waste desktop space.
+- Use a clear page hierarchy, readable labels, aligned forms, and responsive layouts.
+- Use Previous/Next pagination controls instead of verbose pagination text where consistent with the existing design.
+- Keep empty states brief and actionable.
+- Do not claim that an offcut is confirmed physically reusable or that an unverified cause has been identified.
+- Keep Arabic and English complete and natural, including correct RTL/LTR layout, icons, table alignment, navigation, forms, validation, and errors.
+- Use animations only when they improve feedback or navigation. Respect reduced-motion preferences when applicable.
+- Make keyboard focus visible and controls accessible. Do not rely only on colour to convey status.
+- Ensure mobile layout does not hide critical actions or require horizontal scrolling for ordinary workflows.
+
+Do not remove information needed to trace a production issue. Keep details in their relevant record/detail views rather than repeating them on every page.
+
+## 7. Preserve and verify the production calculations
+
+Keep the core definitions consistent across job cards, dashboards, reports, and comparisons:
+
+- Good yield = good output / issued material.
+- Scrap rate = scrap / issued material.
+- Offcut rate = reusable offcuts / issued material.
+- Accounted quantity = good output + scrap + reusable offcuts + pending rework under the updated reconciliation model.
+- Unexplained variance = issued material minus all accounted disposition quantities.
+
+Do not count reusable offcuts as scrap. Do not silently classify unexplained variance as scrap. Do not calculate meaningful rates when issued quantity is zero.
+
+Keep totals based on compatible units and materials. If a report aggregates quantities, prevent invalid aggregation across incompatible materials or clearly require one selected material. Use weighted totals rather than averaging individual job percentages.
+
+Make the report date-filter behavior explicit: if filtering by job creation date and displaying the jobs’ current balances, say so accurately. Do not label current balances as historical “as-of” balances unless historical snapshots actually support that claim.
+
+Verify these supplied development scenarios without creating duplicate jobs:
+- **IK-202, CT-2:** 1,200 kg issued; 900 kg good; 180 kg setup/layout scrap; 60 kg damaged scrap; 60 kg reusable offcuts. Total scrap 240 kg, scrap rate 20%, good yield 75%, variance 0 kg.
+- **IK-203, CT-2:** 1,000 kg issued; 820 kg good; 100 kg scrap; 80 kg reusable offcuts. Total scrap 100 kg, scrap rate 10%, good yield 82%, variance 0 kg.
+- Comparison: IK-202 scrap rate is 10 percentage points higher and yield is 7 percentage points lower than IK-203.
+
+Keep the 100 kg scrap reason for IK-203 unspecified unless its actual source record provides a reason. Do not invent one.
+
+These are development validation cases, not permission to seed production data. Do not overwrite or duplicate existing records. Use isolated test fixtures for automated tests.
+
+## 8. Database safety, migrations, audit, and security
+
+- Inspect migration history and the configured database before running migration commands.
+- Add only necessary migrations, follow current Django conventions, and ensure existing valid records remain readable.
+- Do not point tests or migrations at production by accident.
+- Never drop, reset, or truncate a database to make tests pass.
+- Never modify production data, deploy the application, change production write guards, or use production credentials as part of this task.
+- Preserve authentication, session, CSRF, password-change, role, and audit protections.
+- Ensure stock movements, rework transitions, and job corrections are atomic and auditable.
+- Avoid logging passwords, tokens, API keys, or other secrets.
+- Check dependency changes for security and compatibility. Do not introduce unnecessary packages.
+- Add or update developer-facing documentation for the new accounting model, role/API policy, inventory operations, and packaging limitations.
+
+## 9. Required verification before declaring this pass complete
+
+Run all relevant available checks and report the actual command and result for each:
+- Backend tests, including existing authentication, session, audit, job, reconciliation, reporting, inventory, and permission tests.
+- Frontend tests.
+- TypeScript checks, lint, and production build.
+- Database-backed tests and migrations against the verified development/test database only.
+- Tests for all role permissions through direct API calls, not just frontend navigation.
+- Regression tests for IK-202/IK-203 metrics and comparison.
+- Arabic/English and RTL/LTR checks.
+- Browser checks on major workflows, including a mobile-sized viewport.
+- Tests that ensure closed/cancelled job rules and audit history remain intact.
+
+Fix failures caused by your changes. Do not weaken or delete existing tests just to obtain a passing result. Clearly distinguish tests not run, tests that failed for unrelated pre-existing reasons, and tests that passed.
+
+Use existing browser/device testing tools where available. Do not claim that physical factory devices, real touch hardware, external AI services, or production systems were tested unless they genuinely were.
+
+## 10. Release readiness: be precise, do not overclaim
+
+The project has previously been marked **NOT READY for production** because independent/offsite backup and cluster-loss recovery, restoration of roles/grants/ownership, documented RPO/RTO, a recovery owner, and staging/production configuration checks remain incomplete.
+
+Improve the code and documentation where useful, and provide an actionable release-gate checklist for the remaining environment-dependent work. Do not claim that these operational requirements are complete merely because local tests pass.
+
+Do not deploy, apply changes to production, or fabricate backup/restore evidence. If any gate still requires infrastructure access, a named owner, external credentials, or a real recovery exercise, mark it BLOCKED and explain the exact evidence needed.
+
+## 11. Final response required
+
+At the end, provide a concise but specific implementation report with:
+1. Features and bugs actually fixed.
+2. Permission changes made in both frontend and backend.
+3. Rework accounting rules and migration details.
+4. Inventory reserve/release/consume functionality completed.
+5. Packaging Designer status and limitations.
+6. Tests and commands run, with actual pass/fail counts.
+7. Any remaining bugs or unverified areas.
+8. A separate list of production-release blockers that cannot responsibly be declared complete from this coding pass.
+
+Do not return only a plan. Implement first, verify, then report. Do not claim success where there is no test evidence.
