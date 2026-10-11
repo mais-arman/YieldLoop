@@ -21,6 +21,7 @@ from accounts.models import User
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
 from django.db import connection
+from verify_pilot import setup_fixture, verify_target
 
 
 def main():
@@ -30,7 +31,9 @@ def main():
         cursor.execute("SELECT current_database(), system_identifier::text FROM pg_control_system()")
         name, cluster = cursor.fetchone()
     assert name == "test_yieldloop_phase2b" and cluster == os.environ["YIELDLOOP_DEV_CLUSTER"]
-    assert not User.objects.exists(), "Run the isolated test suite first; never overwrite existing test fixtures."
+    verify_target()
+    setup_fixture(None)
+    assert not User.objects.exists(), "Fresh isolated browser schema must be empty."
     root = Path(__file__).resolve().parents[2] / "yieldloop/dist/public"
     assert (root / "index.html").is_file(), "Build the frontend first."
     credentials = {}

@@ -6,6 +6,18 @@ production migrations, inventory consumption or accounting-policy changes.
 
 ## Release-gate remediation — current status
 
+### Final verification follow-on (2026-10-11)
+
+`docs/final-acceptance.md` supersedes the staged-test limitation: a single full
+124-test PostgreSQL application run passed, plus33 offline,4 recovery-checker and
+39 frontend tests (200 passed,0 failed,0 skipped), after the final code change.
+The isolated three-role browser walkthrough verified production, rework, stock,
+permissions, account provisioning/password replacement, cutting input/persistence,
+packaging revisions/export and Arabic mobile behavior. Functional core MVP/demo
+acceptance passes within this evidence; live3D remains visually unverified due
+to browser WebGL availability. Production remains **NOT READY** on the external
+recovery/approval gates. No business data, production system or write guard changed.
+
 ### Integrated pilot follow-on (2026-10-11)
 
 See `docs/integrated-pilot.md` for the implemented backend role restrictions,

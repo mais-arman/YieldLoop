@@ -1,5 +1,9 @@
 # Integrated pilot implementation — 2026-10-11
 
+> Follow-on: `docs/final-acceptance.md` records a complete green automated run and
+> expanded three-role browser verification. The staged counts below remain an
+> accurate history of this earlier implementation pass, not the latest test status.
+
 ## Scope and readiness
 
 Implemented on the existing Django/DRF/PostgreSQL and React/Vite stack, without

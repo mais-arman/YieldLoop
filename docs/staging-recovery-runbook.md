@@ -1,5 +1,11 @@
 # Staging and recovery release gates
 
+Final acceptance update: `docs/final-acceptance.md` records200 passing automated
+tests and supported browser workflows. Four of those tests exercise the recovery
+checker's fail-closed logic; **no new restoration, independent backup retrieval,
+role/ACL exercise or RPO/RTO approval is implied**. External gates below remain
+BLOCKED; production remains NOT READY.
+
 ## Integrated pilot scope note — 2026-10-11
 
 `docs/integrated-pilot.md` records the new development schema and isolated pilot

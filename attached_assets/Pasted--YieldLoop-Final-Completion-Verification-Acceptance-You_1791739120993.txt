@@ -1,0 +1,175 @@
+# YieldLoop — Final Completion, Verification & Acceptance
+
+You are working inside the existing YieldLoop application for Ibn Khaldun Printing & Publishing. This is the **final end-to-end completion task**. Do not create a new project, restart the architecture, or merely produce a plan/report. Inspect the existing codebase, implement the remaining required work, fix verified defects, and prove the result through tests.
+
+## 1. Main objective
+
+Bring the existing application to the most complete, stable, and demonstrably working state possible against the original requirements and the actual implemented code.
+
+**Do the work, not just describe it.** Reuse existing functionality, avoid duplicate features, preserve valid data, and do not waste time or credits on unnecessary rewrites, speculative enhancements, or cosmetic redesign before correctness is established.
+
+Start by reading the existing project documentation and acceptance criteria, especially:
+
+- `docs/yieldloop-current-application-inventory.md`
+- `docs/integrated-pilot.md`
+- `docs/phase-8-acceptance.md`
+- `docs/staging-recovery-runbook.md`
+
+Also inspect the current backend, frontend, permissions, database models and migrations, tests, routes, and existing implementation. Treat the actual code and original requirements as the source of truth; verify earlier completion claims instead of assuming they are correct.
+
+## 2. Preserve architecture and data
+
+Keep the existing Django/DRF, PostgreSQL, and React/Vite architecture unless a concrete defect requires a minimal change.
+
+- Preserve existing business records and database integrity.
+- Do not reset, drop, recreate, or seed over an existing database.
+- Do not run destructive commands or apply migrations to an unverified database.
+- Never expose secrets, passwords, API keys, or private environment values.
+- Do not add default production credentials.
+- Do not deploy to production, change production infrastructure, or weaken safety/write guards.
+- Do not replace session authentication with JWT.
+- Make the smallest reliable changes that solve verified issues.
+
+Before changing code, establish the actual repository state and available test commands. If a task is blocked by unavailable credentials, infrastructure, or external services, complete all safe work and document the precise blocker rather than faking success.
+
+## 3. Complete the original production-material workflow
+
+Verify and fix the full workflow for the original example records:
+
+**Job IK-202, machine CT-2**
+- Material issued: 1,200 kg
+- Good output: 900 kg
+- Setup/layout scrap: 180 kg
+- Damaged-material scrap: 60 kg
+- Reusable offcuts: 60 kg
+- Total accounted material: 1,200 kg
+- Scrap: 240 kg, or 20% of issued material
+- Yield: 75% of issued material
+
+**Job IK-203, machine CT-2**
+- Material issued: 1,000 kg
+- Good output: 820 kg
+- Scrap: 100 kg
+- Reusable offcuts: 80 kg
+- Total accounted material: 1,000 kg
+- Scrap rate: 10%
+- Yield: 82%
+
+Ensure these figures reconcile correctly and the UI clearly distinguishes good output, scrap, reusable offcuts, and unexplained variance. Do not silently force incorrect totals to balance.
+
+Verify that users can compare jobs on the same machine, identify the largest recorded scrap category, open the underlying source records, and understand the calculations without needing to inspect the database.
+
+Use test fixtures or a dedicated test database for verification. Do not overwrite real or existing business records to create demo data.
+
+## 4. Finish and verify every core workflow
+
+### Authentication and roles
+Verify login, logout, session persistence, page refresh, CSRF protection, password replacement, session revocation, throttling, and appropriate error handling.
+
+Test all three roles using real test accounts:
+
+- Cutting Operator
+- Production Supervisor
+- Manager
+
+Verify both frontend route restrictions and backend/API authorization. Hiding a button or page is not sufficient security. Operators must receive a proper denial for restricted reports, comparisons, employee administration, and unauthorized stock movements. Supervisors and Managers must have only the permissions intended for their roles. Confirm employee provisioning and management work without introducing insecure default credentials.
+
+### Production jobs and material reconciliation
+Verify job creation and lifecycle, material issues, production entries, scrap categories, reusable offcuts, rounding precision, variance, yield, and scrap-rate calculations. Test invalid quantities, missing data, duplicate submissions, corrections, closed jobs, and attempts to close jobs with unresolved material or rework.
+
+### Rework
+Verify that pending rework is visible and traceable; that it can be resolved into good output or reasoned scrap; that corrections retain audit history; and that a job cannot be closed while required rework remains unresolved. Prevent double counting when rework changes status or is corrected.
+
+### Offcut inventory
+Verify registration, reservation, release, consumption, receiving-job linkage, stock balances, movement history, revision protection, and concurrent update handling.
+
+Balances must be mathematically consistent: available stock, reserved stock, consumed stock, and remaining stock must not be counted twice. A receiving-job issue must be traceable and must not silently alter the original job's material reconciliation. Preserve the existing protections against unsupported reversals or independent voiding of accounting movements; implement reversals only if a complete, audited, safe workflow is supported by the existing design and requirements.
+
+### Cutting Studio
+Verify layout creation, piece placement, dragging, touch interactions, keyboard controls, rotation, numeric position inputs, validation, saving, reopening, revisions, and accurate restoration of manually positioned pieces. Confirm invalid or out-of-bounds positions are clearly rejected rather than silently changed.
+
+Do not claim industrial cutting optimization, machine-ready output, or manufacturing-grade nesting unless the implementation genuinely supports and validates it.
+
+### Packaging
+Verify packaging concepts can be created, saved, reopened, edited, versioned, and exported. Confirm dimensions drive the preview and that saved dimensions and exported data agree. Verify validation and error handling.
+
+Treat packaging previews as conceptual unless manufacturing-grade dielines and their correctness are independently implemented and validated. Do not present conceptual packaging as production-ready CAD.
+
+### Dashboards, reports, and navigation
+Verify role-specific landing pages, filters, totals, report calculations, source-record links, pagination, empty states, loading states, and error states. Ensure dashboard summaries agree with the underlying records and cannot expose data that the current role is not allowed to see.
+
+Remove or correct confusing, redundant, misleading, or unfinished UI text where it materially harms the workflow. Keep the interface clear and professional without starting a large visual redesign or adding decorative features unrelated to acceptance.
+
+### Arabic and English
+Verify language switching, Arabic right-to-left layout, English left-to-right layout, forms, tables, navigation, validation messages, dialogs, and mobile layouts. Fix broken, missing, or incorrectly directed text that is discovered during testing.
+
+### Optional AI assistant
+Keep AI optional and unobtrusive. If no valid provider configuration exists, show a clear unavailable state and do not display a fake assistant or fabricated response. If configured, verify that it uses authorized application records, explains the evidence behind observations, and does not claim an unproven root cause. Do not expose credentials or make core application workflows depend on AI availability.
+
+## 5. Run a genuine final verification
+
+After making the necessary changes, run the complete available verification suite **after the final code changes**, not just selected tests.
+
+Run applicable:
+
+- Backend tests
+- Frontend tests
+- Permission and API tests
+- Reconciliation, inventory, rework, and concurrency tests
+- Type checking
+- Linting
+- Production frontend build
+- Migration consistency/drift checks
+- Browser-based end-to-end tests for the major workflows
+- Arabic/RTL and responsive checks where the test environment supports them
+
+Fix failures caused by real application defects. Update outdated tests only when the intended behavior is established by the requirements and implementation; never weaken tests merely to obtain a green result.
+
+Do not report a test as passing unless it actually ran and passed. Do not call the project fully verified if the complete suite has not been run successfully. If a test requires unavailable infrastructure or physical devices, state exactly what was not verified and why.
+
+## 6. Production-readiness and recovery
+
+Keep the existing production write guard and release safeguards intact.
+
+Check the documented production blockers, including offsite backups, an independent cluster-loss recovery exercise, restoration of database roles/grants/ownership, and approved and demonstrated RPO/RTO targets.
+
+Complete safe documentation or code work that can genuinely be finished in this environment. Do not claim these infrastructure-dependent requirements are complete without evidence. Never simulate a successful backup restoration or disaster-recovery exercise.
+
+Clearly distinguish:
+1. Functional MVP/demo acceptance
+2. Production release readiness
+
+If infrastructure-dependent acceptance criteria remain unmet, leave production release marked **NOT READY**, explain the exact outstanding requirements, and provide actionable completion steps. Do not hide blockers to make the status appear green.
+
+## 7. Final acceptance run
+
+Perform one coherent end-to-end test using isolated test data and the three roles:
+
+1. Manager logs in and creates or accesses authorized production jobs.
+2. The application verifies the IK-202 and IK-203 reconciliation figures and calculations.
+3. Supervisor reviews production, resolves a rework item, reviews inventory movements, and opens reports and source records.
+4. Operator sees assigned/open work and performs only permitted cutting and production actions.
+5. Direct API attempts to access restricted data or perform unauthorized movements are denied.
+6. Offcut registration, reservation, consumption, and release preserve correct balances and traceability.
+7. Cutting layouts and packaging concepts save and reopen with their data intact.
+8. Reports and dashboard totals match the underlying records.
+9. Login survives a normal page refresh without duplicate login requests or accidental logout.
+10. Arabic and English navigation and core workflows remain usable.
+
+Use existing test fixtures and browser tooling where possible. Do not make up successful results for steps that cannot run.
+
+## 8. Final deliverable
+
+When the work is complete, provide a concise, evidence-based final report containing:
+
+- Changes actually implemented
+- Core workflows that passed end-to-end verification
+- The exact final test commands and results, including passed/failed/skipped counts
+- Any remaining defects or unverified behavior
+- Whether functional MVP/demo acceptance criteria are met
+- Whether production release is ready, with evidence and any blockers
+- Documentation files updated
+
+Do not finish with a plan for me to implement later what you could safely complete now. Inspect, implement, test, fix, and retest within the existing project. Prioritize correctness, security, traceability, data integrity, and demonstrated acceptance over adding new features.
+
+**Definition of done:** all safely addressable requirements in the existing scope are implemented, the final available test suite has been run after the last changes, genuine failures are fixed, and every remaining external blocker is clearly identified. Never label the application “fully complete” or “production-ready” without the evidence required to support that claim.
