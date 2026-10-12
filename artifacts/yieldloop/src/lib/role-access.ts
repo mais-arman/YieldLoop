@@ -3,8 +3,8 @@ import type { Role } from './auth';
 /**
  * Frontend presentation policy. The backend remains authoritative; these rules
  * only decide which routes, navigation entries, and contextual links a role sees.
- * Operator reports/dashboard/comparison hiding is a UI restriction, not a new
- * server policy (the reports endpoint still scopes Operators to Open jobs).
+ * Reports/dashboard/comparison are Manager/Supervisor-only in both UI and API.
+ * Backend ReportingAccess remains authoritative.
  */
 export type Area = 'dashboard' | 'jobs' | 'jobNew' | 'cutting' | 'inventory' | 'reports' | 'comparison' | 'employees' | 'packaging' | 'assistant' | 'health';
 
@@ -19,7 +19,7 @@ const ACCESS: Record<Area, Role[]> = {
   employees: ['manager'],
   // Operators keep contextual access (no backend restriction); omitted from their primary nav only.
   packaging: ['cutting_operator', 'production_supervisor', 'manager'],
-  assistant: ['cutting_operator', 'production_supervisor', 'manager'],
+  assistant: ['production_supervisor', 'manager'],
   health: ['manager'],
 };
 

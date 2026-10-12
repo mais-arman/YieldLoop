@@ -1,0 +1,59 @@
+## FIX THE CURRENT YIELDLOOP APP — IMPLEMENT, DON'T JUST EXPLAIN
+
+The Packaging Concepts screen still displays “Not a YieldLoop packaging concept file” and Saved Concepts shows 0. The previous attempt did not solve the problem. Do not repeat the same approach.
+
+### 1. Fix the failed JSON import
+- Inspect the actual frontend import handler, backend serializer/schema, and existing export implementation.
+- Identify the exact reason the file is rejected.
+- Remove the invalid sample file or example previously introduced; do not keep presenting an incompatible file.
+- Fix import/export compatibility using the application's actual schema.
+- Test by exporting a valid concept, importing that exact file, server-validating it, saving it, refreshing the page, and reopening it.
+- Provide one example JSON only after it has passed this real test.
+- If import is unnecessary or unreliable, remove the broken import UI rather than leaving a nonfunctional control. Preserve other working packaging features.
+
+### 2. Create and save real demo concepts
+- Seed at least one packaging concept that appears in Saved Concepts, not just in a temporary preview.
+- Include a pizza-box-style concept if the existing geometry supports it correctly; otherwise use the closest supported carton template and label it accurately.
+- Use plausible example dimensions in millimetres and board thickness.
+- Validate through the real server API, save through the real save flow, and confirm it survives refresh and reopening.
+- Never fake a successful validation or claim manufacturing approval.
+
+### 3. Populate the whole demo application
+Use an isolated, disposable demo database/schema. Preserve all existing real records.
+
+Seed connected, realistic demonstration data for Ibn Khaldoun Printing and Publishing:
+- Production jobs with different statuses, quantities, materials, and dimensions.
+- Material issuance, good output, scrap, and reusable offcuts with consistent reconciliations.
+- Inventory records and supported reservation/release/consumption workflows.
+- Report and comparison data, including the established IK-202 and IK-203 scenarios.
+- Cutting Studio layouts that can actually be opened and tested.
+- Saved packaging concepts.
+- Demo employees/accounts for Manager, Production Supervisor, and Cutting Operator.
+
+Ensure records are visible in the actual screens and role-specific dashboards. Make seeding repeatable without duplicates.
+
+### 4. Test every relevant page in the running app
+Use the real Replit Preview/browser. Sign in separately with each demo role and test all permitted routes and main actions. Verify create, edit, validation, save, refresh, and reopen where applicable. Check Arabic and English, RTL layout, browser console errors, failed API calls, and permission restrictions. Fix defects found.
+
+Provide a route-by-route report with Passed, Failed, and Not Tested statuses. Do not claim success without actually running the workflow.
+
+### 5. Remove unnecessary technical text from factory-facing screens
+Search all screens and Arabic/English translation files for repetitive technical explanations and disclaimers. Remove or shorten unnecessary wording, including:
+- Repeated “Compatibility: unverified” notices.
+- Repeated statements that inventory movements are records only.
+- Long layout-planner metric definitions and unsupported-feature lists.
+- Repeated geometric-concept disclaimers and implementation details.
+- Duplicate reconciliation explanations and verbose internal warnings.
+
+Keep only concise, relevant status labels and the one warning necessary to prevent users from mistaking a concept or proposed layout for an approved production instruction. Preserve essential audit history, validation errors, permissions, traceability, and truthful status information. Put detailed technical limitations in internal documentation rather than repeating them across factory screens.
+
+### 6. Final verification
+After implementing the changes:
+- Open Packaging Concepts and confirm Saved Concepts is no longer empty.
+- Open the saved demo concept after refreshing.
+- Confirm demo records are visible in Jobs, Inventory, Reports, Cutting Studio, and role-specific dashboards.
+- Confirm the invalid sample file is gone and JSON import works if the feature remains.
+- Run the relevant automated tests and browser acceptance tests.
+- Report the exact changes, tests actually run, failures, and remaining limitations.
+
+Do not respond with another plan. Make the changes in the codebase and verify them in the running application.

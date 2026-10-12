@@ -208,6 +208,7 @@ function Pager({ page, total, onPage, disabled, testId }: { page: number; total:
 
 /* ---------- filters ---------- */
 function FilterBar({ applied, go, serverFields }: { applied: Filters; go: (f: Filters) => void; serverFields: Record<string, string> }) {
+  const { lang } = useI18n();
   const s = useS();
   const { t } = useI18n();
   const [draft, setDraft] = useState<Filters>(applied);
@@ -288,6 +289,9 @@ function FilterBar({ applied, go, serverFields }: { applied: Filters; go: (f: Fi
         <Button type="submit" size="sm" data-testid="button-apply-filters">{s('apply')}</Button>
         <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(EMPTY); setErrs({}); go(EMPTY); }} data-testid="button-reset-filters">{s('reset')}</Button>
       </div>
+      <p className="mt-3 text-xs text-muted-foreground" data-testid="report-date-basis">{lang === 'ar'
+        ? 'التواريخ تختار الأوامر بحسب تاريخ إنشائها، لا تاريخ الإنتاج أو الإغلاق. تُعرض أحدث القياسات لهذه الأوامر، بما فيها التصحيحات اللاحقة.'
+        : 'Dates select jobs by creation date, not production or completion date. Results use those jobs’ latest measurements, including later corrections.'}</p>
     </form>
   );
 }

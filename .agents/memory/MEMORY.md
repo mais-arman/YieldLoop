@@ -5,3 +5,4 @@
 - [WebGL browser verification](webgl-browser-verification.md) — disabled WebGL and offscreen crops can create false rendering failures; verify interactions separately.
 - [Core challenge boundaries](core-challenge-boundaries.md) — approved Operator recording/closing, honest unspecified demo data, and optional 3D scope.
 - [Non-destructive test isolation](non-destructive-test-isolation.md) — real PostgreSQL concurrency without database reset/truncate; isolated schemas and fail-closed identity checks.
+- [User-visible demo isolation](preview-demo-isolation.md) — temporary loopback demos do not satisfy fixes requested in the actual Preview.

@@ -34,6 +34,8 @@ def require_edit(actor, job):
 
 
 def scenario_data(scenario, generate=False):
+    from .panel_kit import verify
+    verify(scenario)
     if not Material.objects.filter(pk=scenario["input"]["material_id"]).exists():
         raise NotFound()
     if generate:
@@ -69,6 +71,11 @@ def save(request, job_id, plan_id=None):
             if len({s["key"] for s in values["scenarios"]}) != len(values["scenarios"]):
                 fail("duplicate_scenario_key")
             scenarios = [scenario_data(s) for s in values["scenarios"]]
+            if plan:
+                linked = {s["key"]: s["source"] for s in plan.scenarios if s.get("source")}
+                updated = {s["key"]: s.get("source") for s in scenarios}
+                if any(updated.get(key) != source for key, source in linked.items()):
+                    fail("panel_source_immutable")
             if plan:
                 plan.revision += 1
                 plan.name, plan.scenarios = values["name"], scenarios

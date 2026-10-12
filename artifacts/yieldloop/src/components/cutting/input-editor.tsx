@@ -52,7 +52,8 @@ function NumField({ id, label, value, onChange, error, disabled, suffix = 'mm', 
   );
 }
 
-export function InputEditor({ form, errors, copies, onChange, disabled, canCreateMaterial, showErrors }: {
+export function InputEditor({ panelLinked = false, form, errors, copies, onChange, disabled, canCreateMaterial, showErrors }: {
+  panelLinked?: boolean;
   form: InputForm; errors: FormErrors; copies: number; onChange: (f: InputForm) => void;
   disabled: boolean; canCreateMaterial: boolean; showErrors: boolean;
 }) {
@@ -150,9 +151,9 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
                   <Input id={`${u}-p${i}-l`} value={p.label} maxLength={80} disabled={disabled} onChange={(e) => setPiece(i, { label: e.target.value })} aria-invalid={!!er(`p${i}.label`)} aria-describedby={er(`p${i}.label`) ? `${u}-p${i}-l-e` : undefined} data-testid={`input-piece-label-${i}`} />
                   <Err id={`${u}-p${i}-l-e`} k={er(`p${i}.label`)} />
                 </div>
-                <NumField id={`${u}-p${i}-w`} label={ct('width')} value={p.width} onChange={(v) => setPiece(i, squareWidthPatch(squares, p.key, v))} error={er(`p${i}.width`)} disabled={disabled} />
-                <NumField id={`${u}-p${i}-h`} label={ct('height')} value={p.height} onChange={(v) => setPiece(i, { height: v })} error={er(`p${i}.height`)} disabled={disabled || squares.has(p.key)} />
-                <NumField id={`${u}-p${i}-q`} label={ct('quantity')} value={p.quantity} onChange={(v) => setPiece(i, { quantity: v })} error={er(`p${i}.quantity`)} disabled={disabled} suffix="" intRange={[1, 100]} />
+                <NumField id={`${u}-p${i}-w`} label={ct('width')} value={p.width} onChange={(v) => setPiece(i, squareWidthPatch(squares, p.key, v))} error={er(`p${i}.width`)} disabled={disabled || panelLinked} />
+                <NumField id={`${u}-p${i}-h`} label={ct('height')} value={p.height} onChange={(v) => setPiece(i, { height: v })} error={er(`p${i}.height`)} disabled={disabled || panelLinked || squares.has(p.key)} />
+                <NumField id={`${u}-p${i}-q`} label={ct('quantity')} value={p.quantity} onChange={(v) => setPiece(i, { quantity: v })} error={er(`p${i}.quantity`)} disabled={disabled || panelLinked} suffix="" intRange={[1, 100]} />
                 <div className="flex flex-col gap-1">
                   <Label htmlFor={`${u}-p${i}-r`} className="text-xs">{ct('rotation')}</Label>
                   <Select value={p.rotation} onValueChange={(v) => setPiece(i, { rotation: v as 'yes' | 'no' })} disabled={disabled}>
@@ -164,13 +165,13 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
                   </Select>
                   <Err id={`${u}-p${i}-r-e`} k={er(`p${i}.rotation`)} />
                 </div>
-                {!disabled && (
+                {!disabled && !panelLinked && (
                   <Button type="button" variant="ghost" size="icon" className="self-end text-muted-foreground hover:text-destructive sm:mt-5 xl:mt-0" onClick={() => onChange({ ...form, pieces: form.pieces.filter((_, j) => j !== i) })} aria-label={`${ct('removePiece')} ${p.label}`} data-testid={`button-remove-piece-${i}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
-              {!disabled && (
+              {!disabled && !panelLinked && (
                 <button type="button" aria-pressed={squares.has(p.key)} data-testid={`button-square-${i}`}
                   onClick={() => { const r = toggleSquareLock(squares, p.key, p.width, p.height); setSquares(r.next); if (r.patch) setPiece(i, r.patch); }}
                   className={cn('mt-2 inline-flex items-center gap-1.5 rounded px-1.5 py-1 text-[11px] font-medium transition-colors', squares.has(p.key) ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
@@ -182,7 +183,7 @@ export function InputEditor({ form, errors, copies, onChange, disabled, canCreat
           ))}
         </ol>
         <Err id={`${u}-pieces-e`} k={showErrors || form.pieces.length > MAX_PIECES ? errors.pieces : undefined} />
-        {!disabled && (
+        {!disabled && !panelLinked && (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" variant="outline" size="sm" onClick={() => addPiece(false)} disabled={form.pieces.length >= MAX_PIECES} data-testid="button-add-piece">
               <RectangleHorizontal className="h-3.5 w-3.5" aria-hidden />{ut('addRectangle')}

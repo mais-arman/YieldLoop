@@ -5,11 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AssistanceAnswerAttentionJobsItem } from './assistanceAnswerAttentionJobsItem';
 import type { AssistanceAnswerLanguage } from './assistanceAnswerLanguage';
 import type { AssistanceEvidence } from './assistanceEvidence';
 import type { AssistanceLead } from './assistanceLead';
 
 export interface AssistanceAnswer {
+  /** @maxItems 2 */
+  related_evidence?: AssistanceEvidence[];
+  attention_truncated?: boolean;
+  attention_jobs?: AssistanceAnswerAttentionJobsItem[];
   evidence: AssistanceEvidence;
   advisory: true;
   language: AssistanceAnswerLanguage;

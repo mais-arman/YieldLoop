@@ -8,8 +8,18 @@
 import type { JobStatus } from './jobStatus';
 import type { ProductionJobCreatedBy } from './productionJobCreatedBy';
 import type { ProductionJobPermissions } from './productionJobPermissions';
+import type { ProductionJobSheetUnit } from './productionJobSheetUnit';
 
 export interface ProductionJob {
+  product_specification?: string;
+  cutting_instructions?: string;
+  /** @nullable */
+  sheet_width?: string | null;
+  /** @nullable */
+  sheet_height?: string | null;
+  sheet_unit?: ProductionJobSheetUnit;
+  /** @nullable */
+  planned_yield?: string | null;
   id: number;
   job_number: string;
   reference: string;

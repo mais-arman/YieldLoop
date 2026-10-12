@@ -1,0 +1,31 @@
+I’m having trouble logging into my Django application with the manager account.
+
+**Project context**
+- Backend: Django
+- Database: PostgreSQL
+- Database name: `heliumdb`
+- Custom user model: `accounts.User`
+- Manager username: `maisarman6@gmail.com`
+- The account exists, is active, and has the `manager` role.
+- The login page returns: `Username or password is incorrect.`
+- The Django shell previously showed `authenticate(username=..., password=...)` returning `None`.
+- I attempted to reset the password, but I have not been able to verify that the reset succeeded.
+- The project has custom authentication settings, password validation, role-based permissions, session versioning, and audit logging.
+
+**Please investigate and fix the root cause safely.**
+
+1. Inspect the login view, authentication serializer, custom user model, authentication backends, settings modules, database configuration, and frontend login request.
+2. Verify whether the frontend and backend are using the same database and Django settings environment.
+3. Check whether the login endpoint expects `username`, `email`, or another field, and ensure the frontend sends the correct payload.
+4. Check whether the custom user model’s `USERNAME_FIELD`, password hashing, and authentication configuration are consistent.
+5. Identify why authentication fails before making changes. Do not assume the password is the only problem.
+6. If a password reset is genuinely necessary, use Django’s supported password-reset mechanisms or a safe administrative command. Do not hardcode passwords, print credentials, or ask me to paste secrets into chat.
+7. Preserve the existing manager role, security controls, password policy, session invalidation, and audit-log integrity. Do not create a duplicate manager or bypass authentication checks.
+8. Add or update automated tests for successful manager login, invalid credentials, and the relevant login request format.
+9. Run the appropriate tests and report the actual root cause, files changed, test results, and any manual steps I must complete.
+
+**Important constraints**
+- Do not disable authentication, permissions, password validation, or security middleware to make login work.
+- Do not modify production data or reset any password without explaining the proposed action first.
+- Never expose secrets, database credentials, API keys, or password values in logs.
+- Start with diagnosis and explain your findings before making potentially destructive changes.

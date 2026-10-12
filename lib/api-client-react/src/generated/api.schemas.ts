@@ -56,6 +56,21 @@ export interface EvidenceJob {
   revision: number;
 }
 
+export type PanelSourceMethod = typeof PanelSourceMethod[keyof typeof PanelSourceMethod];
+
+
+export const PanelSourceMethod = {
+  separate_panels_v1: 'separate_panels_v1',
+} as const;
+
+export interface PanelSource {
+  /** @minimum 1 */
+  concept_id: number;
+  /** @minimum 1 */
+  revision: number;
+  method: PanelSourceMethod;
+}
+
 export type CuttingGeometryInputUnit = typeof CuttingGeometryInputUnit[keyof typeof CuttingGeometryInputUnit];
 
 
@@ -185,6 +200,7 @@ export interface CuttingResult {
 }
 
 export interface CuttingScenario {
+  source?: PanelSource;
   key: string;
   name: string;
   input: CuttingGeometryInput;
@@ -235,6 +251,15 @@ export interface AssistanceLead {
   next_step: string;
 }
 
+export type AssistanceAnswerAttentionJobsItem = {
+  job_id: number;
+  reference: string;
+  revision: number;
+  variance: string;
+  pending_rework: string;
+  href: string;
+};
+
 export type AssistanceAnswerLanguage = typeof AssistanceAnswerLanguage[keyof typeof AssistanceAnswerLanguage];
 
 
@@ -244,6 +269,10 @@ export const AssistanceAnswerLanguage = {
 } as const;
 
 export interface AssistanceAnswer {
+  /** @maxItems 2 */
+  related_evidence?: AssistanceEvidence[];
+  attention_truncated?: boolean;
+  attention_jobs?: AssistanceAnswerAttentionJobsItem[];
   evidence: AssistanceEvidence;
   advisory: true;
   language: AssistanceAnswerLanguage;
@@ -400,6 +429,7 @@ export const CuttingScenarioInputOrigin = {
 } as const;
 
 export interface CuttingScenarioInput {
+  source?: PanelSource;
   /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
   key: string;
   /**
@@ -886,6 +916,8 @@ export type MaterialStateEntries = {
 };
 
 export interface MaterialSummary {
+  /** @nullable */
+  offcut_rate?: string | null;
   issued: string;
   good: string;
   scrap: string;
@@ -1018,12 +1050,23 @@ export interface ScrapByReason {
   entry_ids: number[];
 }
 
+export type ProductionJobSheetUnit = typeof ProductionJobSheetUnit[keyof typeof ProductionJobSheetUnit];
+
+
+export const ProductionJobSheetUnit = {
+  '': '',
+  mm: 'mm',
+  cm: 'cm',
+  in: 'in',
+} as const;
+
 export type ProductionJobCreatedBy = {
   id: number;
   username: string;
 };
 
 export type ProductionJobPermissions = {
+  edit_card?: boolean;
   edit_title: boolean;
   edit_notes: boolean;
   edit_reference: boolean;
@@ -1032,6 +1075,15 @@ export type ProductionJobPermissions = {
 };
 
 export interface ProductionJob {
+  product_specification?: string;
+  cutting_instructions?: string;
+  /** @nullable */
+  sheet_width?: string | null;
+  /** @nullable */
+  sheet_height?: string | null;
+  sheet_unit?: ProductionJobSheetUnit;
+  /** @nullable */
+  planned_yield?: string | null;
   id: number;
   job_number: string;
   reference: string;
@@ -1073,7 +1125,34 @@ export interface JobComparison {
   differences: JobComparisonDifferences;
 }
 
+export type JobInputSheetUnit = typeof JobInputSheetUnit[keyof typeof JobInputSheetUnit];
+
+
+export const JobInputSheetUnit = {
+  '': '',
+  mm: 'mm',
+  cm: 'cm',
+  in: 'in',
+} as const;
+
 export interface JobInput {
+  /** @maxLength 5000 */
+  product_specification?: string;
+  /** @maxLength 5000 */
+  cutting_instructions?: string;
+  /**
+     * Positive decimal, up to 3 places. Width, height and unit must be supplied or cleared together.
+     * @nullable
+     */
+  sheet_width?: string | null;
+  /** @nullable */
+  sheet_height?: string | null;
+  sheet_unit?: JobInputSheetUnit;
+  /**
+     * Planned good weight yield percent, 0–100; not actual yield or geometric utilization.
+     * @nullable
+     */
+  planned_yield?: string | null;
   /**
      * @minLength 1
      * @maxLength 200
@@ -1087,7 +1166,28 @@ export interface JobInput {
   machine?: string;
 }
 
+export type JobUpdateSheetUnit = typeof JobUpdateSheetUnit[keyof typeof JobUpdateSheetUnit];
+
+
+export const JobUpdateSheetUnit = {
+  '': '',
+  mm: 'mm',
+  cm: 'cm',
+  in: 'in',
+} as const;
+
 export interface JobUpdate {
+  /** @maxLength 5000 */
+  product_specification?: string;
+  /** @maxLength 5000 */
+  cutting_instructions?: string;
+  /** @nullable */
+  sheet_width?: string | null;
+  /** @nullable */
+  sheet_height?: string | null;
+  sheet_unit?: JobUpdateSheetUnit;
+  /** @nullable */
+  planned_yield?: string | null;
   /** @minimum 1 */
   revision: number;
   /**
@@ -1156,6 +1256,24 @@ export interface ReadinessStatus {
 export interface HealthStatus {
   status: string;
 }
+
+export type GeneratePanelKit200Unit = typeof GeneratePanelKit200Unit[keyof typeof GeneratePanelKit200Unit];
+
+
+export const GeneratePanelKit200Unit = {
+  mm: 'mm',
+} as const;
+
+export type GeneratePanelKit200FoldLinesItem = { [key: string]: unknown };
+
+export type GeneratePanelKit200 = {
+  source: PanelSource;
+  pieces: CuttingPiece[];
+  unit: GeneratePanelKit200Unit;
+  production_validated: false;
+  /** @maxItems 0 */
+  fold_lines: GeneratePanelKit200FoldLinesItem[];
+};
 
 export type ListCuttingPlansParams = {
 /**
@@ -1231,6 +1349,14 @@ page?: number;
 page_size?: number;
 };
 
+export type GetPackagingDesignParams = {
+/**
+ * Exact historical revision; latest if omitted
+ * @minimum 1
+ */
+revision?: number;
+};
+
 export type GetPackagingDesignHistoryParams = {
 page?: number;
 page_size?: number;
@@ -1262,6 +1388,11 @@ page?: number;
  * @maximum 100
  */
 page_size?: number;
+/**
+ * Locate this job's source record and return its page. Hidden or wrong-job entries return 404.
+ * @minimum 1
+ */
+entry_id?: number;
 };
 
 export type ListProductionJobsParams = {

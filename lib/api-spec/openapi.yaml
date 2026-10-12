@@ -11,6 +11,28 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/packaging/panel-kit:
+    post:
+      operationId: generatePanelKit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PanelSource"}
+      responses:
+        "200":
+          description: Separate rectangular panel components, not a folded dieline
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [source, pieces, unit, production_validated, fold_lines]
+                properties:
+                  source: {$ref: "#/components/schemas/PanelSource"}
+                  pieces: {type: array, items: {$ref: "#/components/schemas/CuttingPiece"}}
+                  unit: {type: string, enum: [mm]}
+                  production_validated: {type: boolean, const: false}
+                  fold_lines: {type: array, maxItems: 0, items: {type: object}}
   /v1/assistance/status:
     get:
       operationId: getAssistanceStatus
@@ -364,6 +386,7 @@ paths:
       operationId: getPackagingDesign
       parameters:
         - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: revision, in: query, required: false, schema: {type: integer, minimum: 1}, description: Exact historical revision; latest if omitted}
       responses:
         "200":
           description: Saved concept
@@ -437,6 +460,7 @@ paths:
         - {name: id, in: path, required: true, schema: {type: integer}}
         - {name: page, in: query, schema: {type: integer, minimum: 1}}
         - {name: page_size, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: entry_id, in: query, schema: {type: integer, minimum: 1}, description: "Locate this job's source record and return its page. Hidden or wrong-job entries return 404."}
       responses:
         "200":
           description: Persisted reconciliation and paginated records at a consistent revision
@@ -825,6 +849,20 @@ components:
       type: object
       required: [evidence, advisory, language, answer, possible_leads, notice]
       properties:
+        related_evidence: {type: array, maxItems: 2, items: {$ref: "#/components/schemas/AssistanceEvidence"}}
+        attention_truncated: {type: boolean}
+        attention_jobs:
+          type: array
+          items:
+            type: object
+            required: [job_id, reference, revision, variance, pending_rework, href]
+            properties:
+              job_id: {type: integer}
+              reference: {type: string}
+              revision: {type: integer}
+              variance: {type: string}
+              pending_rework: {type: string}
+              href: {type: string}
         evidence: {$ref: "#/components/schemas/AssistanceEvidence"}
         advisory: {type: boolean, const: true}
         language: {type: string, enum: [en, ar]}
@@ -947,11 +985,20 @@ components:
         x: {$ref: "#/components/schemas/CuttingMillimetres"}
         y: {$ref: "#/components/schemas/CuttingMillimetres"}
         rotated: {type: boolean}
+    PanelSource:
+      type: object
+      additionalProperties: false
+      required: [concept_id, revision, method]
+      properties:
+        concept_id: {type: integer, minimum: 1}
+        revision: {type: integer, minimum: 1}
+        method: {type: string, enum: [separate_panels_v1]}
     CuttingScenarioInput:
       type: object
       additionalProperties: false
       required: [key, name, input, placements, origin]
       properties:
+        source: {$ref: "#/components/schemas/PanelSource"}
         key: {type: string, pattern: '^[A-Za-z0-9_-]{1,32}$'}
         name: {type: string, minLength: 1, maxLength: 80}
         input: {$ref: "#/components/schemas/CuttingGeometryInput"}
@@ -986,6 +1033,7 @@ components:
       type: object
       required: [key, name, input, placements, origin, result]
       properties:
+        source: {$ref: "#/components/schemas/PanelSource"}
         key: {type: string}
         name: {type: string}
         input: {$ref: "#/components/schemas/CuttingGeometryInput"}
@@ -1345,6 +1393,7 @@ components:
       type: object
       required: [issued, good, scrap, offcut, pending_rework, accounted, variance, yield_rate, scrap_rate, created_at]
       properties:
+        offcut_rate: {type: [string, "null"]}
         issued: {type: string}
         good: {type: string}
         scrap: {type: string}
@@ -1491,6 +1540,12 @@ components:
       additionalProperties: false
       required: [title]
       properties:
+        product_specification: {type: string, maxLength: 5000}
+        cutting_instructions: {type: string, maxLength: 5000}
+        sheet_width: {type: [string, "null"], description: "Positive decimal, up to 3 places. Width, height and unit must be supplied or cleared together."}
+        sheet_height: {type: [string, "null"]}
+        sheet_unit: {type: string, enum: ["", mm, cm, in]}
+        planned_yield: {type: [string, "null"], description: "Planned good weight yield percent, 0–100; not actual yield or geometric utilization."}
         title: {type: string, minLength: 1, maxLength: 200}
         notes: {type: string, maxLength: 5000}
         reference: {type: string, maxLength: 120}
@@ -1500,6 +1555,12 @@ components:
       additionalProperties: false
       required: [revision]
       properties:
+        product_specification: {type: string, maxLength: 5000}
+        cutting_instructions: {type: string, maxLength: 5000}
+        sheet_width: {type: [string, "null"]}
+        sheet_height: {type: [string, "null"]}
+        sheet_unit: {type: string, enum: ["", mm, cm, in]}
+        planned_yield: {type: [string, "null"]}
         revision: {type: integer, minimum: 1}
         title: {type: string, minLength: 1, maxLength: 200}
         notes: {type: string, maxLength: 5000}
@@ -1510,6 +1571,12 @@ components:
       type: object
       required: [id, job_number, reference, machine, is_demo, title, notes, status, revision, created_by, created_at, updated_at, permissions]
       properties:
+        product_specification: {type: string}
+        cutting_instructions: {type: string}
+        sheet_width: {type: [string, "null"]}
+        sheet_height: {type: [string, "null"]}
+        sheet_unit: {type: string, enum: ["", mm, cm, in]}
+        planned_yield: {type: [string, "null"]}
         id: {type: integer}
         job_number: {type: string}
         reference: {type: string}
@@ -1531,6 +1598,7 @@ components:
           type: object
           required: [edit_title, edit_notes, edit_reference, edit_machine, transitions]
           properties:
+            edit_card: {type: boolean}
             edit_title: {type: boolean}
             edit_notes: {type: boolean}
             edit_reference: {type: boolean}

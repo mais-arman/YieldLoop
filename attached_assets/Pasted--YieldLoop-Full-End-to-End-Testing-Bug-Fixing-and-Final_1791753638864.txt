@@ -1,0 +1,162 @@
+# YieldLoop — Full End-to-End Testing, Bug Fixing, and Final Acceptance Report
+
+Act as a senior QA engineer and full-stack developer. Your task is to thoroughly test the existing YieldLoop application through its actual user interface, verify the challenge requirements, fix confirmed bugs safely, rerun the tests, and produce a clear final acceptance report.
+
+**Do not just tell me how to test the app. Perform the testing yourself wherever the available tools permit.**
+
+I am not yet familiar with the website, so I need you to handle the technical testing and explain the results in simple, non-technical language.
+
+## 1. Inspect the current project first
+
+- Read `docs/final-acceptance.md` and `docs/job-card-completion.md`.
+- Inspect the current implementation, routes, permissions, migrations, existing tests, and available browser-testing tools.
+- Confirm the application starts correctly and open the actual running Preview.
+- Prefer real browser-based end-to-end testing using the tools already available in the environment.
+- If browser automation is unavailable, determine whether a safe Playwright-based test setup can be used. Do not claim browser tests were performed if they were not.
+- Reuse the existing test setup where possible. Do not duplicate the entire test suite unnecessarily.
+
+## 2. Test the actual website as a user
+
+Visit and test the relevant pages and workflows, including:
+
+- Login and role-based navigation.
+- Job list, job creation, job details, and editing.
+- Structured job-card fields: product specification, sheet dimensions and units, planned good-weight yield, and cutting instructions.
+- Material entry and validation.
+- Scrap, good output, reusable offcuts, pending rework, and reconciliation.
+- Reports and the comparison page.
+- Navigation from comparison results to the correct source material entries.
+- Error messages, loading states, empty states, and invalid inputs.
+- Arabic and English interfaces, including Arabic RTL layout.
+- Mobile and desktop layouts, checking for overflow, overlapping content, inaccessible controls, and broken navigation.
+
+Check that values remain correct after saving and reopening a record. Do not rely only on mocked frontend data or isolated API tests when the real UI workflow can be tested.
+
+## 3. Verify the challenge reference cases
+
+Use the existing reference data without modifying it.
+
+**IK-202**
+- Issued material: 1,200 kg
+- Good output: 900 kg
+- Setup/layout scrap: 180 kg
+- Damaged-material scrap: 60 kg
+- Total scrap: 240 kg
+- Reusable offcuts: 60 kg
+- Accounted total: 1,200 kg
+- Variance: 0 kg
+- Good yield: 75%
+- Scrap rate: 20%
+- Offcut rate: 5%
+
+**IK-203**
+- Issued material: 1,000 kg
+- Good output: 820 kg
+- Total scrap: 100 kg
+- Reusable offcuts: 80 kg
+- Accounted total: 1,000 kg
+- Variance: 0 kg
+- Good yield: 82%
+- Scrap rate: 10%
+- Offcut rate: 8%
+
+Do not invent a breakdown of IK-203's scrap reasons.
+
+**Comparison**
+- Scrap quantity difference, IK-202 minus IK-203: +140 kg
+- Good-yield difference: −7 percentage points
+- Scrap-rate difference: +10 percentage points
+- Offcut-rate difference: −3 percentage points
+- Both jobs use cutting machine CT-2.
+- IK-202's largest recorded scrap category is setup/layout at 180 kg.
+
+Verify that the UI displays the correct figures and labels, not merely that the backend calculates them correctly.
+
+## 4. Test important failure and security scenarios
+
+Use disposable test data in an isolated test environment wherever possible.
+
+Verify that:
+- Incomplete or unbalanced jobs cannot be completed.
+- Over-accounting displays a clear signed error rather than a misleading progress bar.
+- Offcuts are not incorrectly counted as scrap.
+- Pending rework is handled according to the application's existing rules.
+- Invalid dimensions, negative quantities, and invalid planned-yield values are rejected appropriately.
+- Users cannot access actions, pages, or APIs outside their assigned permissions.
+- Operators cannot access restricted reports or comparisons.
+- Comparing jobs with incompatible machines or materials does not present misleading calculated differences.
+- Comparison links open the correct source entry.
+- Saving and reopening planning fields preserves the saved values.
+- Existing records remain unchanged during testing.
+
+Do not arbitrarily change business policies that require factory approval, such as weight tolerance, zero-good-output job closure, mandatory scrap categories, or rework outcomes. Test the current documented behavior and report unresolved decisions separately.
+
+## 5. Fix confirmed bugs safely
+
+If a reproducible bug is found:
+1. Record the failing scenario and expected behavior.
+2. Identify the root cause.
+3. Fix it with the smallest appropriate change.
+4. Add or update a regression test.
+5. Rerun the affected tests and relevant regression suites.
+6. Repeat the browser scenario to confirm the fix.
+
+Do not make cosmetic or architectural changes unrelated to the findings. Do not introduce new features simply to increase the scope of the project.
+
+## 6. Protect all data and credentials
+
+This is mandatory:
+- Do not switch to the original database schema or access production data.
+- Do not reset passwords, modify users, change roles, or reveal credentials.
+- Do not reset the database, delete existing records, or run destructive migrations.
+- Do not modify IK-202 or IK-203 while testing.
+- Use an isolated test database or dedicated disposable test records for write operations.
+- Clean up only records created specifically for these tests, and only when cleanup is safe and unambiguous.
+- Never print secrets, tokens, passwords, or environment-variable values.
+- Do not deploy the app or make external changes.
+- Stop and report a blocker if safe testing requires credentials, permissions, or approval you do not have.
+
+## 7. Run the complete verification suite
+
+After testing and fixing confirmed issues, run all relevant:
+- Backend tests.
+- Frontend tests.
+- API contract/code-generation checks.
+- TypeScript checks.
+- Migration consistency checks.
+- Browser end-to-end tests.
+- Regression and permission tests.
+
+Report exact results: passed, failed, skipped, and not run. Distinguish automated tests from manual browser checks. Do not report a test as passed unless it was actually executed successfully.
+
+## 8. Produce a final report in plain language
+
+Update `docs/final-acceptance.md` with the evidence and exact commands used. Also provide a concise summary in your final response with these sections:
+
+**A. هل الموقع شغّال؟**
+State what actually worked when opening and navigating the application.
+
+**B. هل متطلبات التحدي مكتملة؟**
+List each requirement as PASS, FAIL, or BLOCKED, with a short explanation.
+
+**C. نتائج الاختبارات**
+Give exact counts and identify tests that could not be executed.
+
+**D. الأخطاء التي وجدتها وأصلحتها**
+List each confirmed issue and how it was verified after the fix.
+
+**E. أشياء تحتاج موافقتي أو قرارًا من المصنع**
+List unresolved business policies, missing credentials, or approval-dependent items.
+
+**F. هل هو جاهز للتسليم؟**
+Choose one:
+- READY FOR CHALLENGE DEMONSTRATION
+- READY WITH DOCUMENTED LIMITATIONS
+- NOT READY
+
+Explain the evidence behind the decision. Assess production readiness separately; do not call the app production-ready while external production recovery or release gates remain unresolved.
+
+**G. ماذا أفعل أنا الآن؟**
+Give me only the essential next steps in simple Arabic. Do not expect me to interpret stack traces or technical logs.
+
+Begin the inspection and execute the tests now. Do not stop after producing a plan. Report any limitations honestly.

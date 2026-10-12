@@ -48,11 +48,11 @@ const en = {
   vMachineMismatch: 'Not a same-machine comparison: the jobs ran on different machines.',
   vMaterialMismatch: 'Same machine, but different materials — differences are not computed.',
   vUnmeasured: 'Same machine, but at least one job has no material summary yet.',
-  issued: 'Issued', good: 'Good output', scrap: 'Total scrap', offcut: 'Reusable offcuts', pending_rework: 'Pending rework', variance: 'Variance', yield_rate: 'Good yield', scrap_rate: 'Scrap rate',
+  issued: 'Issued', good: 'Good output', scrap: 'Total scrap', offcut: 'Reusable offcuts', pending_rework: 'Pending rework', variance: 'Variance', yield_rate: 'Good yield', scrap_rate: 'Scrap rate', offcut_rate: 'Offcut rate',
   diff: 'A − B', kg: 'kg', pp: 'pp', ppNote: 'Rate differences are percentage points (pp), not percentage changes.',
   scrapByReason: 'Scrap by reason', noScrap: 'No scrap recorded.', records: 'Source records', openJob: 'Open job card', entries: '{n} entries',
   noSummary: 'No material summary.', loadError: 'Could not load the comparison.', noJobs: 'No matching jobs.', material: 'Material',
-  defs: 'Issued = all material issued. Good = acceptable product. Total scrap = sum of scrap categories. Offcuts = retained for reuse, not scrap. Variance = issued − (good + scrap + offcuts), must be exactly 0 to close. Good yield = good ÷ issued × 100. Scrap rate = total scrap ÷ issued × 100 (not 100 − yield). Rework is not recorded in this scope.',
+  defs: 'Rates = recorded category weight ÷ issued weight × 100. Reusable offcuts are not scrap. Variance = issued − (good + scrap + offcuts + pending rework). Completion requires exact balance and no pending rework. Planned yield and cutting-area utilization are different measurements.',
   largestScrap: 'Largest scrap category', largestScrapNote: 'Calculated from all active scrap records. Not AI — available even when the assistant provider is offline.', noLargestScrap: 'No active scrap recorded.',
 };
 type CKey = keyof typeof en;
@@ -77,11 +77,11 @@ const ar: Record<CKey, string> = {
   vMachineMismatch: 'ليست مقارنة على نفس الآلة: نُفذ الأمران على آلتين مختلفتين.',
   vMaterialMismatch: 'نفس الآلة لكن بمادتين مختلفتين — لم تُحسب الفروق.',
   vUnmeasured: 'نفس الآلة لكن أحد الأمرين بلا ملخص مواد بعد.',
-  issued: 'المصروف', good: 'الإنتاج الجيد', scrap: 'إجمالي الهالك', offcut: 'بواقٍ قابلة لإعادة الاستخدام', pending_rework: 'إعادة تشغيل معلّقة', variance: 'الفرق', yield_rate: 'نسبة الإنتاج الجيد', scrap_rate: 'نسبة الهالك',
+  issued: 'المصروف', good: 'الإنتاج الجيد', scrap: 'إجمالي الهالك', offcut: 'بواقٍ قابلة لإعادة الاستخدام', pending_rework: 'إعادة تشغيل معلّقة', variance: 'الفرق', yield_rate: 'نسبة الإنتاج الجيد', scrap_rate: 'نسبة الهالك', offcut_rate: 'نسبة البواقي',
   diff: 'أ − ب', kg: 'كغ', pp: 'نقطة', ppNote: 'فروق النسب بالنقاط المئوية وليست تغيراً نسبياً.',
   scrapByReason: 'الهالك حسب السبب', noScrap: 'لا يوجد هالك مسجل.', records: 'السجلات المصدرية', openJob: 'فتح بطاقة الأمر', entries: '{n} سجلات',
   noSummary: 'لا يوجد ملخص مواد.', loadError: 'تعذر تحميل المقارنة.', noJobs: 'لا توجد أوامر مطابقة.', material: 'المادة',
-  defs: 'المصروف = كل المادة المصروفة. الجيد = المنتج المقبول. إجمالي الهالك = مجموع فئات الهالك. البواقي = محفوظة لإعادة الاستخدام وليست هالكاً. الفرق = المصروف − (الجيد + الهالك + البواقي) ويجب أن يكون 0 تماماً للإغلاق. نسبة الإنتاج الجيد = الجيد ÷ المصروف × 100. نسبة الهالك = إجمالي الهالك ÷ المصروف × 100 (وليست 100 − المردود). إعادة التشغيل غير مسجلة في هذا النطاق.',
+  defs: 'النسب = وزن الفئة المسجل ÷ المصروف × 100. البواقي القابلة لإعادة الاستخدام ليست هالكاً. الفرق = المصروف − (الجيد + الهالك + البواقي + إعادة التشغيل المعلّقة). الإغلاق يتطلب توازناً تاماً وعدم وجود إعادة تشغيل معلّقة. المردود المخطط واستغلال مساحة القص قياسات مختلفة.',
   largestScrap: 'أكبر فئة هالك', largestScrapNote: 'محسوبة من جميع سجلات الهالك النشطة. ليست ذكاءً اصطناعياً — متاحة حتى عند تعطل مزود المساعد.', noLargestScrap: 'لا يوجد هالك نشط مسجل.',
 };
 export type { CKey };

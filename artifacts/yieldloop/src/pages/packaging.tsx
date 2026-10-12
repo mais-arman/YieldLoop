@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Box, Download, Loader2, RotateCw, Save, Sparkles, Upload } from 'lucide-react';
 import { SavedConcepts } from '@/components/packaging/saved-concepts';
@@ -13,14 +13,15 @@ import { useToast } from '@/hooks/use-toast';
 import { AuthError } from '@/lib/auth';
 import type { PackagingProposal as ProposeResponse } from '@workspace/api-client-react';
 import { proposePackaging, useAssistanceStatus, usePackagingTemplates, validatePackaging } from '@/lib/assistance';
-import { extraErrorText, hasFKey, localizeLimitation, useFt, type FKey } from '@/lib/feature-i18n';
+import { extraErrorText, hasFKey, useFt, type FKey } from '@/lib/feature-i18n';
 import { useI18n } from '@/lib/i18n';
 import { errorMessage } from '@/lib/session';
 import { blankParams, hasLid, isTemplateId, paramKeysFor, statesFor, switchTemplate, TEMPLATE_IDS, type PackagingDesign, type Params, type ParamKey, type TemplateId, type ViewState } from '@/lib/packaging-templates';
 import { LIMITS, toDims, validateDesign, type FieldErrors } from '@/lib/packaging-validation';
 import { buildPanels, externalSize } from '@/lib/packaging-geometry';
-import { conceptFileName, parseConceptFile, toConceptFile } from '@/lib/packaging-file';
+import { conceptFileName, parseConceptFile, sameConcept, toConceptFile } from '@/lib/packaging-file';
 import { cn } from '@/lib/utils';
+import { SendToCutting } from '@/components/packaging/send-to-cutting';
 
 const ConceptViewer = lazy(() => import('@/components/packaging/concept-viewer'));
 const TPL_LABEL: Record<TemplateId, { en: string; ar: string }> = {
@@ -67,15 +68,17 @@ export default function PackagingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const [saved, setSaved] = useState<{ id: number; revision: number } | null>(null);
+  const [savedDesign, setSavedDesign] = useState<PackagingDesign | null>(null);
   const [saveReason, setSaveReason] = useState('');
   const [opening, setOpening] = useState<number | null>(null);
   const saveReq = useRef(crypto.randomUUID());
   const save = useMutation({
     mutationFn: ({ asNew }: { asNew: boolean }) => {
-      const body = { design: design!, reason: saveReason.trim(), request_id: saveReq.current };
+      const body = { design: design!, reason: saveReason.trim() || ft(saved && !asNew ? 'pkRevisionNote' : 'pkCreationNote'), request_id: saveReq.current };
       return saved && !asNew ? updatePackagingDesign(saved.id, { ...body, revision: saved.revision }) : createPackagingDesign(body);
     },
     onSuccess: (r) => {
+      setSavedDesign(r.design);
       saveReq.current = crypto.randomUUID();
       setSaved({ id: r.id, revision: r.revision }); setSaveReason('');
       qc.invalidateQueries({ queryKey: PK_DESIGNS_KEY });
@@ -86,19 +89,24 @@ export default function PackagingPage() {
   const loadDesign = (d: PackagingDesign) => {
     setTemplate(isTemplateId(d.template) ? d.template : 'tray'); setName(d.name); setParams(d.parameters); setState(d.state); setErrors({}); setFormError(null);
   };
-  const openSaved = async (id: number) => {
+  const openSaved = async (id: number, revision?: number) => {
     setOpening(id);
     try {
-      const r = await getPackagingDesign(id);
+      const r = await getPackagingDesign(id, revision);
+      setSavedDesign(r.design);
       loadDesign(r.design); setDesign(r.design); setSaved({ id: r.id, revision: r.revision }); save.reset();
       toast({ description: ft('pkOpened', { n: r.design.name }) });
     } catch (err) { setFormError(errorMessage(err, t)); }
     finally { setOpening(null); }
   };
   const saveConflict = save.error instanceof AuthError && save.error.status === 409;
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (Number(p.get('concept')) > 0) void openSaved(Number(p.get('concept')), Number(p.get('revision')) || undefined);
+  }, []);
 
   const current: PackagingDesign = { template, name, parameters: params, state };
-  const stale = design !== null && JSON.stringify(design) !== JSON.stringify(current);
+  const stale = design !== null && !sameConcept(design, current);
 
   const errText = (code: FieldErrors[keyof FieldErrors], key: string) => {
     if (!code) return '';
@@ -156,8 +164,10 @@ export default function PackagingPage() {
     if (!file) return;
     const r = parseConceptFile(await file.text());
     if (!r.ok) { setFormError(ft(`pkFileErr_${r.code}` as FKey)); return; }
-    loadDesign(r.design);
-    validate.mutate(r.design, { onSuccess: () => toast({ description: ft('pkImported') }) });
+    validate.mutate(r.design, { onSuccess: () => {
+      setSaved(null); save.reset(); saveReq.current = crypto.randomUUID();
+      setSaveReason(''); toast({ description: ft('pkImported') });
+    } });
   };
 
   const tplLabel = (id: TemplateId) => templates.data?.templates.find((x) => x.id === id)?.label[lang] ?? TPL_LABEL[id][lang];
@@ -299,17 +309,13 @@ export default function PackagingPage() {
             </div>
             {(!design || stale) && <p className="mt-2 text-xs text-muted-foreground">{ft('pkSaveNeedsValid')}</p>}
             {save.error && <div className="mt-2"><FormAlert message={saveConflict ? ft('pkSaveConflict') : (save.error instanceof AuthError && extraErrorText(save.error.code, lang)) || errorMessage(save.error, t)} /></div>}
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{ft('pkNonProduction')}</p>
           </div>
           <SavedConcepts activeId={saved?.id ?? null} opening={opening} onOpen={openSaved} tplLabel={tplLabel}
             onLoadRevision={({ design: d }) => { loadDesign(d); validate.mutate(d); }} />
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
             <p className="font-medium text-amber-900">{ft('pkConceptNote')}</p>
-            {!!templates.data?.limitations.length && (
-              <ul className="mt-2 list-disc space-y-0.5 ps-5 text-xs text-muted-foreground">
-                {templates.data.limitations.map((l) => <li key={l}>{localizeLimitation(l, lang)}</li>)}
-              </ul>
-            )}
+            <SendToCutting saved={saved} ready={!!design && !stale && !!savedDesign && sameConcept(savedDesign, current) && !save.isPending && !validate.isPending}
+              supported={template === 'flat_box'} />
           </div>
         </section>
       </div>

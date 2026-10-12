@@ -59,6 +59,10 @@ def material_data(material):
     }
 
 
+class JobPageInput(PageInput):
+    entry_id = serializers.IntegerField(min_value=1, required=False)
+
+
 def entry_data(entry):
     void = getattr(entry, "void", None)
     return {

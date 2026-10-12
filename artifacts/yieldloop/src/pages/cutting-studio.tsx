@@ -51,7 +51,11 @@ function Studio({ job, user }: { job: ProductionJob; user: Employee }) {
   const ct = useCt();
   const [, navigate] = useLocation();
   const writable = canWriteCutting(user, job);
-  const [sel, setSel] = useState<{ id: number | null; nonce: number } | null>(null);
+  const [sel, setSel] = useState<{ id: number | null; nonce: number } | null>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return Number(p.get('plan')) > 0 ? { id: Number(p.get('plan')), nonce: 0 }
+      : p.has('concept') ? { id: null, nonce: 0 } : null;
+  });
   const dirty = useRef(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [plansOpen, setPlansOpen] = useState(false);
@@ -109,7 +113,7 @@ function Studio({ job, user }: { job: ProductionJob; user: Employee }) {
           </div>
           <PlanEditor key={sel.id === null ? `new-${sel.nonce}` : `plan-${sel.id}`} jobId={job.id} planId={sel.id} writable={writable}
             canCreateMaterial={user.role === 'manager'} onDirty={(d) => { dirty.current = d; }}
-            onSaved={(p) => { if (sel.id !== p.id) setSel({ id: p.id, nonce: Date.now() }); }} />
+            onSaved={(p) => { if (sel.id !== p.id) setSel({ id: p.id, nonce: Date.now() }); navigate(`/jobs/${job.id}/cutting?plan=${p.id}`, { replace: true }); }} />
         </div>
       )}
       <ConfirmDialog spec={confirm} onClose={() => setConfirm(null)} />

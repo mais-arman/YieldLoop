@@ -81,7 +81,6 @@ export function ResultPanel({ result, input, status, onRetry, readOnly, errorMsg
         <summary className="cursor-pointer font-medium text-foreground">{ct('definitions')}</summary>
         <ul className="mt-2 list-disc space-y-1 ps-4">{(['d1', 'd2', 'd3', 'd4', 'd5'] as const).map((k) => <li key={k}>{ct(k)}</li>)}</ul>
       </details>
-      <p className="text-[11px] text-muted-foreground">{ct('compatNote')}</p>
     </section>
   );
 }

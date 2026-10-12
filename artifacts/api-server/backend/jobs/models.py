@@ -24,6 +24,12 @@ class ProductionJob(models.Model):
     machine = models.CharField(max_length=120, blank=True, default="")
     is_demo = models.BooleanField(default=False)
     notes = models.CharField(max_length=5000, blank=True, default="")
+    product_specification = models.CharField(max_length=5000, blank=True, default="")
+    sheet_width = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    sheet_height = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    sheet_unit = models.CharField(max_length=2, choices=[("mm", "mm"), ("cm", "cm"), ("in", "in")], blank=True, default="")
+    planned_yield = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True)
+    cutting_instructions = models.CharField(max_length=5000, blank=True, default="")
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -37,6 +43,14 @@ class ProductionJob(models.Model):
             models.Index(fields=["-created_at", "-id"], name="job_created"),
         )
         constraints = (
+            models.CheckConstraint(condition=(
+                models.Q(sheet_width__isnull=True, sheet_height__isnull=True, sheet_unit="")
+                | models.Q(sheet_width__isnull=False, sheet_height__isnull=False, sheet_width__gt=0, sheet_height__gt=0, sheet_unit__in=["mm", "cm", "in"])
+            ), name="job_sheet_complete_positive"),
+            models.CheckConstraint(condition=(
+                models.Q(planned_yield__isnull=True)
+                | models.Q(planned_yield__isnull=False, planned_yield__gte=0, planned_yield__lte=100)
+            ), name="job_planned_yield_range"),
             models.CheckConstraint(condition=models.Q(status__in=["draft", "open", "cancelled", "completed"]), name="job_valid_status"),
             models.UniqueConstraint(Lower("reference"), condition=~models.Q(reference=""), name="job_reference_unique"),
             models.CheckConstraint(condition=~models.Q(status="completed") | models.Q(machine__regex=r"\S"), name="completed_job_has_machine"),
@@ -55,6 +69,8 @@ class JobEvent(models.Model):
     request_id = models.UUIDField(default=uuid.uuid4)
     event_type = models.CharField(max_length=8, choices=[("created", "Created"), ("updated", "Updated")])
     revision = models.PositiveIntegerField()
+    old_card = models.JSONField(null=True, blank=True)
+    new_card = models.JSONField(null=True, blank=True)
     old_title = models.CharField(max_length=200, null=True, blank=True)
     old_reference = models.CharField(max_length=120, null=True, blank=True)
     new_reference = models.CharField(max_length=120, blank=True, default="")

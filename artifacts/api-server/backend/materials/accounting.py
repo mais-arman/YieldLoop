@@ -5,6 +5,12 @@ from rest_framework.exceptions import ValidationError
 
 ZERO = Decimal("0.000")
 
+def percentage(quantity, issued):
+    """Shared authoritative percentage; undefined without positive issue."""
+    with localcontext() as context:
+        context.prec = 60
+        return (quantity / issued * 100).quantize(Decimal(".001"), rounding=ROUND_HALF_UP) if issued > 0 else None
+
 
 def calculate(entries, material_id):
     totals = dict.fromkeys(("issue", "good", "scrap", "offcut", "rework"), ZERO)
@@ -30,10 +36,7 @@ def calculate(entries, material_id):
                 raise ValidationError("Rework resolution exceeds pending quantity.")
         accounted = totals["good"] + totals["scrap"] + totals["offcut"] + pending
         def rate(quantity):
-            return (
-                (quantity / issued * 100).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
-                if issued > 0 else None
-            )
+            return percentage(quantity, issued)
         return {
             "issued": issued, **totals, "pending_rework": pending, "accounted": accounted, "variance": issued - accounted,
             "yield_rate": rate(totals["good"]), "scrap_rate": rate(totals["scrap"]),

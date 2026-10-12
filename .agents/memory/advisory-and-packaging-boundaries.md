@@ -33,3 +33,13 @@ convincing demo that claims unsupported manufacturing correctness.
 **How to apply:** Require explicit geometry/fold/manufacturing validation and
 user-approved, permission-checked integration before transferring designs into
 production cutting. Preserve existing rectangular Cutting Studio workflows.
+
+For the first packaging-to-cutting workflow, the user approved **separate
+rectangular panels**, not a folded carton blank.
+
+**Why:** The existing visual boxes represent panel-built geometry; folded blanks
+would require factory-supplied flap, glue-tab and fold allowances.
+
+**How to apply:** Label the result as a separate-panel kit and retain the exact
+source revision. Do not extend that approval to folded dielines or manufacturing
+approval.

@@ -15,6 +15,7 @@ export interface CuttingResult {
   unplaced: { piece_key: string; quantity: number; reason: "not_placed" | "cannot_fit" }[];
 }
 export interface CuttingScenario {
+  source?: PanelSource;
   key: string; name: string; input: CuttingInput; placements: Placement[];
   origin: "manual" | "shelf_v1"; result?: CuttingResult;
 }
@@ -40,8 +41,12 @@ export function useCuttingHistory(jobId: number, id: number | null, page = 1) {
     retry: false, staleTime: 0 });
 }
 const inputOnly = (scenario: CuttingScenario) => ({
+  ...(scenario.source ? { source: scenario.source } : {}),
   key: scenario.key, name: scenario.name, input: scenario.input, placements: scenario.placements, origin: scenario.origin,
 });
+export interface PanelSource { concept_id: number; revision: number; method: 'separate_panels_v1' }
+export interface PanelKit { source: PanelSource; pieces: CuttingPiece[] }
+export const fetchPanelKit = (source: PanelSource) => authRequest<PanelKit>('packaging/panel-kit', 'POST', source);
 export const evaluateCutting = (jobId: number, scenario: CuttingScenario, generate: boolean) =>
   authRequest<CuttingScenario>(`jobs/${jobId}/cutting/evaluate`, "POST", { scenario: inputOnly(scenario), generate });
 export const saveCutting = (jobId: number, id: number | null, values: {

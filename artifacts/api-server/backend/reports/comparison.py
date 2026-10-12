@@ -54,7 +54,7 @@ class ComparisonView(ProtectedView):
         differences = None
         if same and comparable and left["summary"] and right["summary"]:
             differences = {}
-            for key in ("issued", "good", "scrap", "offcut", "pending_rework", "variance", "yield_rate", "scrap_rate"):
+            for key in ("issued", "good", "scrap", "offcut", "pending_rework", "variance", "yield_rate", "scrap_rate", "offcut_rate"):
                 a, b = left["summary"][key], right["summary"][key]
                 differences[key] = format(Decimal(a) - Decimal(b), ".3f") if a is not None and b is not None else None
         return Response({"same_machine": same, "comparable_material": comparable,

@@ -1,4 +1,6 @@
 import { Pager } from '@/components/pager';
+import { useLocation } from 'wouter';
+import { missingSourceEntry } from '@/lib/source-entry';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Info, Loader2, Lock, Package, Plus, RotateCw, Scale } from 'lucide-react';
@@ -47,10 +49,27 @@ function useApplyState(jobId: number) {
 
 export function MaterialsSection({ job, canManageInventory = true }: { job: ProductionJob; canManageInventory?: boolean }) {
   const kt = useKt();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const [, navigate] = useLocation();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
-  const q = useJobMaterials(job.id, page);
+  const [entryId, setEntryId] = useState(() => {
+    const n = Number(new URLSearchParams(window.location.search).get('entry'));
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+  });
+  const q = useJobMaterials(job.id, page, entryId);
+  useEffect(() => {
+    if (!entryId || !q.data) return;
+    const id = entryId;
+    qc.setQueryData([...MATERIAL_STATE_KEY, job.id, q.data.entries.page], q.data);
+    setPage(q.data.entries.page);
+    setEntryId(null);
+    requestAnimationFrame(() => {
+      const row = document.getElementById(`entry-${id}`);
+      row?.scrollIntoView({ block: 'center' });
+      row?.focus({ preventScroll: true });
+    });
+  }, [entryId, q.data, job.id, qc]);
   const [formOpen, setFormOpen] = useState(false);
   const [voiding, setVoiding] = useState<MaterialEntry | null>(null);
   const [registering, setRegistering] = useState<MaterialEntry | null>(null);
@@ -81,9 +100,17 @@ export function MaterialsSection({ job, canManageInventory = true }: { job: Prod
         <div className="space-y-3 p-5 sm:p-6" aria-busy><Skeleton className="h-12 w-full" /><Skeleton className="h-28 w-full" /><Skeleton className="h-20 w-full" /></div>
       ) : q.isError && !s ? (
         <div className="p-6 text-center" role="alert">
+          {missingSourceEntry(entryId, q.error) ? <>
+            <p className="text-sm font-medium" data-testid="missing-source-entry">{lang === 'ar' ? 'سجل المادة المطلوب غير موجود في هذا الأمر.' : 'The requested material entry was not found in this job.'}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{lang === 'ar' ? 'أمر الإنتاج متاح. يمكنك عرض سجلاته الحالية.' : 'The production job is available. You can view its current records.'}</p>
+            <Button variant="outline" size="sm" className="mt-4" data-testid="button-show-all-materials" onClick={() => {
+              setEntryId(null); setPage(1); navigate(`/jobs/${job.id}#materials`, { replace: true });
+            }}>{lang === 'ar' ? 'عرض جميع سجلات المواد' : 'Show all material records'}</Button>
+          </> : <>
           <p className="text-sm font-medium">{t('matLoadError')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{matErrorMessage(q.error, t)}</p>
           <Button variant="outline" size="sm" className="mt-4" onClick={() => q.refetch()} data-testid="button-retry-materials-state"><RotateCw className="h-3.5 w-3.5" aria-hidden />{t('retry')}</Button>
+          </>}
         </div>
       ) : s ? (
         <div className="flex flex-col gap-6 p-5 sm:p-6">
@@ -151,7 +178,7 @@ const KIND_TONE: Record<Kind, { chip: string; bar: string }> = {
 };
 
 function Summary({ s }: { s: MaterialState }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const ft = useFt();
   const fmt = useFormatDate();
   const sum = s.summary;
@@ -178,7 +205,7 @@ function Summary({ s }: { s: MaterialState }) {
           <p className="flex items-baseline gap-1" data-testid="text-sum-accounted"><Qty v={sum.accounted} className="text-base font-semibold" />{kg}</p>
         </div>
         <div className="flex flex-col gap-3 rounded-md border p-4">
-          {issued > 0 && (
+          {issued > 0 && !sum.variance.startsWith('-') && (
             <div className="flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden>
               {outputs.map(([k, , v]) => <span key={k} className={KIND_TONE[k].bar} style={{ width: `${share(v)}%` }} />)}
             </div>
@@ -198,12 +225,19 @@ function Summary({ s }: { s: MaterialState }) {
           <dl className="flex flex-wrap gap-x-6 gap-y-1 border-t pt-2 text-xs">
             <div className="flex items-baseline gap-2"><dt className="text-muted-foreground">{t('matYield')}</dt><dd data-testid="text-sum-yield">{rate(sum.yield_rate, 'yield-na')}</dd></div>
             <div className="flex items-baseline gap-2"><dt className="text-muted-foreground">{t('matScrapRate')}</dt><dd data-testid="text-sum-scrap-rate">{rate(sum.scrap_rate, 'scrap-rate-na')}</dd></div>
+            <div className="flex items-baseline gap-2"><dt className="text-muted-foreground">{lang === 'ar' ? 'نسبة البواقي' : 'Offcut rate'}</dt><dd data-testid="text-sum-offcut-rate">{rate(sum.offcut_rate ?? null, 'offcut-rate-na')}</dd></div>
           </dl>
         </div>
       </div>
       {hasPending && (
         <p className="flex items-start gap-2 rounded-md border border-[hsl(280_40%_52%/0.35)] bg-[hsl(280_40%_52%/0.06)] px-3 py-2 text-xs" role="status" data-testid="text-pending-rework"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(280_45%_40%)]" aria-hidden /><span><span className="font-medium">{ft('rwPending')}: <Qty v={pending} /> {t('matUnitKg')}.</span> {ft('rwPendingHint')} {ft('rwBlocksClose')}</span></p>
       )}
+      {!zero && <p role="alert" className="rounded-md border-2 border-destructive bg-destructive/10 p-3 font-semibold text-destructive" data-testid="balance-error">
+        {sum.variance.startsWith('-')
+          ? lang === 'ar' ? 'المخرجات تتجاوز المصروف. صحّح القياسات قبل الإغلاق.' : 'Outputs exceed issued material. Correct the measurements before closing.'
+          : lang === 'ar' ? 'المادة المصروفة غير محتسبة بالكامل. لا يمكن الإغلاق.' : 'Issued material is not fully accounted for. Completion is blocked.'}
+        {' '}<bdi>{signed(sum.variance)} kg</bdi>
+      </p>}
       {zero ? (
         <p className="flex items-start gap-2 text-xs text-muted-foreground" data-testid="text-balanced"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{t('matBalanced')}</p>
       ) : (
@@ -415,7 +449,7 @@ function Entries({ s, canVoid, onVoid, canRegister, onRegister, onResolve, page,
             const pend = en.kind === 'rework' ? en.pending_rework ?? null : null;
             const hasRes = pend !== null && cmpDec(pend, en.quantity) < 0;
             return (
-              <li key={en.id} className={cn('flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:gap-4', v && 'bg-muted/30')} data-testid={`row-entry-${en.id}`}>
+              <li key={en.id} id={`entry-${en.id}`} tabIndex={-1} className={cn('flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:gap-4 target:bg-primary/10 focus:outline focus:outline-2 focus:outline-primary', v && 'bg-muted/30')} data-testid={`row-entry-${en.id}`}>
                 <div className="flex items-center gap-3 sm:w-48 sm:shrink-0">
                   <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', KIND_TONE[en.kind].chip, v && 'opacity-60')}>{t(`kind_${en.kind}` as MsgKey)}</span>
                   <span className={cn('text-sm font-semibold', v && 'text-muted-foreground line-through')} data-testid={`text-entry-qty-${en.id}`}><Qty v={en.quantity} /> <span className="text-xs font-normal">{t('matUnitKg')}</span></span>

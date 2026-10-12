@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { blankParams, paramKeysFor, statesFor, switchTemplate } from './packaging-templates';
 import { isValid, parseMm, toDims, validateDesign } from './packaging-validation';
 import { bounds, buildPanels, externalSize, lidPanels, sleevePanels, trayPanels } from './packaging-geometry';
-import { parseConceptFile, toConceptFile } from './packaging-file';
+import { parseConceptFile, sameConcept, toConceptFile } from './packaging-file';
 
 const core = { length: '200', width: '100', height: '50', thickness: '2' };
 
@@ -93,6 +93,11 @@ test('concept file roundtrip v1', () => {
   const design = { template: 'tray' as const, name: 'A', parameters: core, state: 'assembled' as const };
   const r = parseConceptFile(JSON.stringify(toConceptFile(design)));
   assert.ok(r.ok && r.design.name === 'A');
+  assert.deepEqual(parseConceptFile(JSON.stringify(design)), r);
+  assert.deepEqual(parseConceptFile('\uFEFF' + JSON.stringify(toConceptFile(design))), r);
+  assert.deepEqual(parseConceptFile(JSON.stringify(toConceptFile({
+    ...design, parameters: { ...core, length: '<script>alert(1)</script>' },
+  }))), { ok: false, code: 'shape' });
   assert.deepEqual(parseConceptFile('{'), { ok: false, code: 'json' });
   assert.deepEqual(parseConceptFile(JSON.stringify({ ...toConceptFile(design), version: 2 })), { ok: false, code: 'version' });
   assert.deepEqual(parseConceptFile(JSON.stringify({ ...toConceptFile(design), unexpected: 'no' })), { ok: false, code: 'format' });
@@ -101,6 +106,15 @@ test('concept file roundtrip v1', () => {
   for (const incompatible of [{ unit: 'cm' }, { dimension_basis: 'external' }, { concept: false }, { production_validated: true }]) {
     assert.deepEqual(parseConceptFile(JSON.stringify({ ...toConceptFile(design), ...incompatible })), { ok: false, code: 'format' });
   }
+});
+
+test('reopened JSONB concept ignores key order but detects real edits', () => {
+  const design = { template: 'tray' as const, name: 'Demo', parameters: core, state: 'assembled' as const };
+  const reopened = { state: design.state, parameters: Object.fromEntries(Object.entries(core).reverse()), name: design.name, template: design.template };
+  assert.equal(sameConcept(design, reopened), true);
+  assert.equal(sameConcept(design, { ...reopened, parameters: { ...core, length: '999' } }), false);
+  assert.equal(sameConcept(design, { ...reopened, state: 'open' }), false);
+  assert.equal(sameConcept(design, { ...reopened, name: 'Changed' }), false);
 });
 
 test('assembled panels meet without positive-volume intersections', () => {

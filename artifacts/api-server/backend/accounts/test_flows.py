@@ -35,6 +35,27 @@ class AuthFlowTests(TransactionTestCase):
     def patch(self, client, user, values):
         return client.patch(f"/api/v1/employees/{user.pk}", values, content_type="application/json")
 
+    def test_email_shaped_username_uses_username_payload_after_rejection(self):
+        manager = self.user("manager@example.test", "manager")
+        client = self.client_for()
+        response = client.post("/api/v1/auth/login", {
+            "email": manager.username, "password": PASSWORD,
+        }, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        response = client.post("/api/v1/auth/login", {
+            "username": manager.username, "password": "wrong",
+        }, content_type="application/json")
+        self.assertEqual(response.status_code, 401)
+        response = client.post("/api/v1/auth/login", {
+            "username": manager.username, "password": PASSWORD,
+        }, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["role"], "manager")
+        self.assertEqual(client.get("/api/v1/auth/me").json()["id"], manager.pk)
+        manager.refresh_from_db()
+        self.assertEqual(manager.session_version, 0)
+        self.assertNotIn(PASSWORD, response.content.decode())
+
     def test_anonymous_csrf_invalid_disabled_and_unknown_login(self):
         self.assertEqual(Client().get("/api/v1/auth/me").status_code, 401)
         response = Client(enforce_csrf_checks=True).post("/api/v1/auth/login", {})

@@ -8,7 +8,7 @@ from jobs.policy import require_creator, require_recorder, visible_jobs
 from jobs.services import ready_actor
 from rest_framework.exceptions import NotFound, ValidationError
 
-from .accounting import calculate
+from .accounting import calculate, percentage
 from .models import Material, MaterialEntry, MaterialVoid, Reconciliation
 from .serializers import entry_data, material_data
 
@@ -63,7 +63,11 @@ def visible_job(actor, pk, lock=False):
 
 def state(job, actor, values=None):
     snapshot = latest(job)
-    entries = MaterialEntry.objects.filter(job=job).select_related("created_by", "void__created_by")
+    entries = MaterialEntry.objects.filter(job=job).select_related("created_by", "void__created_by").order_by("-pk")
+    if values and values.get("entry_id"):
+        if not entries.filter(pk=values["entry_id"]).exists():
+            raise NotFound()
+        values = {**values, "page": entries.filter(pk__gt=values["entry_id"]).count() // values["page_size"] + 1}
     summary = None
     if snapshot:
         summary = {
@@ -71,6 +75,8 @@ def state(job, actor, values=None):
             for key in ("issued", "good", "scrap", "offcut", "pending_rework", "accounted", "variance", "yield_rate", "scrap_rate")
         }
         summary["created_at"] = snapshot.created_at.isoformat()
+        offcut_rate = percentage(snapshot.offcut, snapshot.issued)
+        summary["offcut_rate"] = format(offcut_rate, ".3f") if offcut_rate is not None else None
     return {
         "job_id": job.pk, "job_revision": job.revision,
         "revision": snapshot.revision if snapshot else 0,

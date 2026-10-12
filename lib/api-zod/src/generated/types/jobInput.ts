@@ -5,8 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { JobInputSheetUnit } from './jobInputSheetUnit';
 
 export interface JobInput {
+  /** @maxLength 5000 */
+  product_specification?: string;
+  /** @maxLength 5000 */
+  cutting_instructions?: string;
+  /**
+     * Positive decimal, up to 3 places. Width, height and unit must be supplied or cleared together.
+     * @nullable
+     */
+  sheet_width?: string | null;
+  /** @nullable */
+  sheet_height?: string | null;
+  sheet_unit?: JobInputSheetUnit;
+  /**
+     * Planned good weight yield percent, 0–100; not actual yield or geometric utilization.
+     * @nullable
+     */
+  planned_yield?: string | null;
   /**
      * @minLength 1
      * @maxLength 200

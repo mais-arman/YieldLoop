@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
-from . import advisory, packaging, provider
+from . import advisory, context, packaging, provider
 from .evidence import collect
 
 
@@ -31,6 +31,8 @@ def text_input(data, key, extras=()):
 
 class StatusView(ReadyView):
     def get(self, request):
+        if request.user.role not in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR):
+            return Response({"available": False, "provider": "openai", "model": None})
         return Response(provider.status())
 
 
@@ -43,17 +45,23 @@ class AnalyzeView(ReadyView):
     throttle_classes = (AssistanceThrottle,)
 
     def post(self, request, pk):
+        if request.user.role not in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR):
+            raise PermissionDenied()
         question = text_input(request.data, "question", ("include_notes",))
         include_notes = request.data.get("include_notes", False)
         if not isinstance(include_notes, bool):
             packaging.invalid({"include_notes": "boolean_required"})
         evidence = collect(request.user, pk, include_notes)
-        result = advisory.analyze(evidence, request.data["language"], question)
+        extra = context.collect_context(request.user, pk, question)
+        result = advisory.analyze(evidence, request.data["language"], question, extra)
         # Recheck visibility and revisions after the external call; never return stale
         # advice after a job becomes hidden from an Operator while the provider runs.
         actor = User.objects.get(pk=request.user.pk)
-        if not actor.is_active or actor.must_change_password:
+        if not actor.is_active or actor.must_change_password or actor.role not in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR):
             raise PermissionDenied()
+        if context.signature(extra) != context.signature(context.collect_context(actor, pk, question)):
+            from accounts.security import Conflict
+            raise Conflict(code="stale_revision")
         latest = collect(actor, pk)
         if (latest["job"] != evidence["job"] or latest["material_revision"] != evidence["material_revision"] or
                 [(p["plan_id"], p["revision"]) for p in latest["cutting"]] !=
@@ -78,6 +86,8 @@ class ProposeView(ReadyView):
 
     def post(self, request):
         description = text_input(request.data, "description")
+        if request.user.role not in (User.Role.MANAGER, User.Role.PRODUCTION_SUPERVISOR):
+            raise PermissionDenied()
         output = provider.complete(
             """Propose a packaging visual concept. Return JSON ONLY, exactly template,parameters,name.
             template must be tray,sleeve,lid_box or null for unsupported shapes.

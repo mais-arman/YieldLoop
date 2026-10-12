@@ -7,6 +7,8 @@
  */
 
 export interface MaterialSummary {
+  /** @nullable */
+  offcut_rate?: string | null;
   issued: string;
   good: string;
   scrap: string;

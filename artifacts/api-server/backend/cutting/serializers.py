@@ -57,7 +57,14 @@ class PlacementInput(StrictSerializer):
     rotated = serializers.BooleanField()
 
 
+class SourceInput(StrictSerializer):
+    concept_id = serializers.IntegerField(min_value=1)
+    revision = serializers.IntegerField(min_value=1)
+    method = serializers.ChoiceField(choices=["separate_panels_v1"])
+
+
 class ScenarioInput(StrictSerializer):
+    source = SourceInput(required=False)
     key = serializers.RegexField(r"^[A-Za-z0-9_-]{1,32}$")
     name = serializers.CharField(max_length=80)
     input = GeometryInput()

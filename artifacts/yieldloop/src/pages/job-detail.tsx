@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { JobCardFields } from '@/components/job-card-fields';
+import { cardValues, cardPayload, validCard } from '@/lib/job-card';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -83,6 +85,8 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
   const [notes, setNotes] = useState(job.notes ?? '');
   const [reference, setReference] = useState(job.reference ?? '');
   const [machine, setMachine] = useState(job.machine ?? '');
+  const [card, setCard] = useState(cardValues(job));
+  const baseCard = useRef(cardValues(job));
   const base = useRef({ title: job.title, notes: job.notes ?? '', reference: job.reference ?? '', machine: job.machine ?? '', revision: job.revision });
   const kt = useKt();
   const [, setLocation] = useLocation();
@@ -90,7 +94,8 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
   const [confirm, setConfirm] = useState<JobStatus | null>(null);
   const [reloading, setReloading] = useState(false);
 
-  const dirty = title !== base.current.title || notes !== base.current.notes || reference !== base.current.reference || machine !== base.current.machine;
+  const cardDirty = JSON.stringify(card) !== JSON.stringify(baseCard.current);
+  const dirty = title !== base.current.title || notes !== base.current.notes || reference !== base.current.reference || machine !== base.current.machine || cardDirty;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
 
@@ -102,6 +107,8 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
       setNotes(job.notes ?? '');
       setReference(job.reference ?? '');
       setMachine(job.machine ?? '');
+      baseCard.current = cardValues(job);
+      setCard(cardValues(job));
     }
   }, [job.revision, job.title, job.notes, job.reference, job.machine]);
 
@@ -111,6 +118,8 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
     setNotes(j.notes ?? '');
     setReference(j.reference ?? '');
     setMachine(j.machine ?? '');
+    baseCard.current = cardValues(j);
+    setCard(cardValues(j));
     qc.setQueryData([...JOBS_KEY, 'detail', j.id], j);
     qc.invalidateQueries({ queryKey: JOBS_KEY });
   };
@@ -122,6 +131,7 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
       if (job.permissions.edit_notes && notes !== base.current.notes) data.notes = notes;
       if (job.permissions.edit_reference && reference !== base.current.reference) data.reference = reference.trim();
       if (job.permissions.edit_machine && machine !== base.current.machine) data.machine = machine.trim();
+      if (job.permissions.edit_card && cardDirty) Object.assign(data, cardPayload(card));
       return updateJob(job.id, data);
     },
     onSuccess: (j) => { adopt(j); save.reset(); qc.invalidateQueries({ queryKey: MATERIAL_STATE_KEY }); qc.invalidateQueries({ queryKey: ['jobs', 'machines'] }); toast({ title: t('jobSaved') }); },
@@ -161,6 +171,7 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (!validCard(card)) return;
     if (!dirty || save.isPending || transition.isPending || reloading || stale || (job.permissions.edit_title && !title.trim())) return;
     save.mutate();
   };
@@ -171,7 +182,7 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
   }, []);
 
   const workFirst = job.status === 'open';
-  const discard = () => { setTitle(base.current.title); setNotes(base.current.notes); setReference(base.current.reference); setMachine(base.current.machine); save.reset(); };
+  const discard = () => { setTitle(base.current.title); setNotes(base.current.notes); setReference(base.current.reference); setMachine(base.current.machine); setCard(baseCard.current); save.reset(); };
 
   const close = useMutation({
     mutationFn: () => updateJob(job.id, { revision: base.current.revision, status: 'completed' }),
@@ -309,12 +320,13 @@ function JobView({ job, user, refetch }: { job: ProductionJob; user: Employee; r
               <p className="text-xs text-muted-foreground">{t('notesOnlyOpen')}</p>
             )}
           </div>
+          <JobCardFields value={card} onChange={job.permissions.edit_card ? setCard : undefined} disabled={save.isPending || stale} errors={fe} />
           <FieldError msg={fe.non_field_errors ?? fe.revision ?? fe.status} />
 
           {canEdit && (
             <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
               <Button type="button" variant="ghost" onClick={discard} disabled={!dirty || save.isPending} data-testid="button-discard">{t('discardChanges')}</Button>
-              <Button type="submit" disabled={!dirty || save.isPending || transition.isPending || reloading || stale || (job.permissions.edit_title && !title.trim())} data-testid="button-save-job">
+              <Button type="submit" disabled={!dirty || !validCard(card) || save.isPending || transition.isPending || reloading || stale || (job.permissions.edit_title && !title.trim())} data-testid="button-save-job">
                 {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
                 {save.isPending ? t('saving') : t('saveChanges')}
               </Button>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Columns2, Copy, Loader2, Plus, RotateCw, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AuthError } from '@/lib/auth';
-import { CUTTING_KEY, saveCutting, useCuttingPlan, type CuttingPlan } from '@/lib/cutting';
+import { CUTTING_KEY, saveCutting, useCuttingPlan, fetchPanelKit, type PanelKit, type CuttingPlan } from '@/lib/cutting';
 import { useI18n } from '@/lib/i18n';
 import { ScenarioWorkspace } from './scenario-workspace';
 import { CompareView } from './compare-view';
@@ -27,8 +27,20 @@ export function PlanEditor({ jobId, planId, writable, canCreateMaterial, onSaved
   onSaved: (p: CuttingPlan) => void; onDirty: (d: boolean) => void;
 }) {
   const ct = useCt();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const q = useCuttingPlan(jobId, planId);
+  const params = new URLSearchParams(window.location.search);
+  const linked = planId === null && params.has('concept');
+  const kit = useQuery({ queryKey: ['panel-kit', params.get('concept'), params.get('revision')],
+    enabled: linked, retry: false, queryFn: () => fetchPanelKit({
+      concept_id: Number(params.get('concept')), revision: Number(params.get('revision')), method: 'separate_panels_v1',
+    }) });
+  if (linked && kit.isPending) return <Skeleton className="h-40" />;
+  if (linked && kit.isError) return <div role="alert" className="space-y-3 rounded border p-4">
+    <p>{lang === 'ar' ? 'تعذر تحميل الطقم. يلزم تصوّر محفوظ لعلبة مسطحة وصلاحية مدير أو مشرف إنتاج.'
+      : 'Could not load the kit. A saved flat-box concept and Manager or Supervisor access are required.'}</p>
+    <Button variant="outline" onClick={() => kit.refetch()}>{t('retry')}</Button>
+  </div>;
   if (planId !== null && q.isPending) return <div className="space-y-3" aria-busy><Skeleton className="h-10 w-72 max-w-full" /><Skeleton className="h-96 w-full" /></div>;
   if (planId !== null && q.isError && !q.data) {
     return (
@@ -39,18 +51,28 @@ export function PlanEditor({ jobId, planId, writable, canCreateMaterial, onSaved
       </div>
     );
   }
-  return <Editor jobId={jobId} plan={q.data ?? null} refetch={() => q.refetch()} writable={writable} canCreateMaterial={canCreateMaterial} onSaved={onSaved} onDirty={onDirty} />;
+  return <Editor kit={linked ? kit.data : undefined} jobId={jobId} plan={q.data ?? null} refetch={() => q.refetch()} writable={writable} canCreateMaterial={canCreateMaterial} onSaved={onSaved} onDirty={onDirty} />;
 }
 
-function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, onDirty }: {
+function Editor({ kit, jobId, plan, refetch, writable, canCreateMaterial, onSaved, onDirty }: {
+  kit?: PanelKit;
   jobId: number; plan: CuttingPlan | null; refetch: () => Promise<{ data?: CuttingPlan }>; writable: boolean; canCreateMaterial: boolean;
   onSaved: (p: CuttingPlan) => void; onDirty: (d: boolean) => void;
 }) {
   const ct = useCt();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const init = () => (plan ? plan.scenarios.map(draftFromScenario) : [blankDraft(`${ct('scenario')} 1`)]);
+  const init = () => {
+    if (plan) return plan.scenarios.map(draftFromScenario);
+    const d = blankDraft(`${ct('scenario')} 1`);
+    if (kit) {
+      d.source = kit.source;
+      d.form.unit = 'mm'; d.form.cutting_mode = 'rectangular_spacing_only';
+      d.form.pieces = kit.pieces.map(p => ({ ...p, quantity: String(p.quantity), rotation: 'no' }));
+    }
+    return [d];
+  };
   const [name, setName] = useState(plan?.name ?? '');
   const [drafts, setDrafts] = useState<Draft[]>(init);
   const [view, setView] = useState<number | 'compare'>(0);
@@ -138,6 +160,12 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
+      {drafts.filter(d => d.source).map(d => <p key={d.key} className="rounded border bg-muted/40 p-3 text-sm" data-testid="panel-source-concept">
+        {lang === 'ar' ? 'طقم ألواح منفصلة — التصوّر' : 'Separate-panel kit — concept'}{' '}
+        <a target="_blank" rel="noopener" className="text-primary underline" href={`${import.meta.env.BASE_URL}packaging?concept=${d.source!.concept_id}&revision=${d.source!.revision}`}>
+          #{d.source!.concept_id} · {lang === 'ar' ? 'المراجعة' : 'revision'} {d.source!.revision}
+        </a>
+      </p>)}
       <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-end">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <Label htmlFor="plan-name" className="text-xs">{ct('planName')}</Label>
@@ -219,7 +247,7 @@ function Editor({ jobId, plan, refetch, writable, canCreateMaterial, onSaved, on
             {!readOnly && (
               <>
                 <Button size="sm" variant="outline" disabled={drafts.length >= MAX_SCENARIOS} onClick={() => addScenario(active)} data-testid="button-duplicate-scenario"><Copy className="h-3.5 w-3.5" aria-hidden />{ct('duplicateScenario')}</Button>
-                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={drafts.length <= 1} data-testid="button-remove-scenario"
+                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={drafts.length <= 1 || !!active.source} data-testid="button-remove-scenario"
                   onClick={() => setConfirm({ title: ct('removeScenarioTitle'), desc: ct('removeScenarioDesc'), action: ct('removeScenario'), onConfirm: () => { setDrafts((ds) => ds.filter((_, j) => j !== activeIdx)); setView(0); } })}>
                   <Trash2 className="h-3.5 w-3.5" aria-hidden />{ct('removeScenario')}
                 </Button>

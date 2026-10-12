@@ -13,10 +13,10 @@ export function useMaterials(page: number, search: string, enabled = true) {
     enabled, retry: false, staleTime: 0, refetchOnWindowFocus: true,
   });
 }
-export function useJobMaterials(id: number, page: number) {
+export function useJobMaterials(id: number, page: number, entryId?: number | null) {
   return useQuery({
-    queryKey: [...MATERIAL_STATE_KEY, id, page],
-    queryFn: () => authRequest<MaterialState>(`jobs/${id}/materials?page=${page}&page_size=20`),
+    queryKey: entryId ? [...MATERIAL_STATE_KEY, id, page, entryId] : [...MATERIAL_STATE_KEY, id, page],
+    queryFn: () => authRequest<MaterialState>(`jobs/${id}/materials?page=${page}&page_size=20${entryId ? `&entry_id=${entryId}` : ''}`),
     retry: false, staleTime: 0, refetchOnWindowFocus: true,
   });
 }

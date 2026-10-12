@@ -1,0 +1,141 @@
+# YieldLoop — Complete Packaging-to-Cutting Workflow and Practical AI Assistant
+
+Work in the existing YieldLoop application and its actual Replit Preview. Preserve the current architecture, design, database, role permissions, existing demo records, and all verified functionality.
+
+Do not rebuild the application, create a separate demo server, or weaken production safeguards.
+
+## 1. Connect Packaging Concepts to Cutting Studio properly
+
+Implement a real, validated workflow from a saved packaging concept to a cutting plan.
+
+### Packaging Concepts
+- Keep the existing concept creation, 3D preview, server validation, save, import/export, and revision history.
+- Add a clear action: **Send to Cutting Studio**.
+- Enable this action only when the concept has passed server validation and contains sufficient geometric information.
+- Preserve the original concept and its revision history.
+
+### Geometry conversion
+Do not simply copy the package's length and width into a rectangular cutting piece.
+
+For a concept that supports conversion:
+1. Generate the actual flat pattern from the supported package geometry.
+2. Include the base, walls, flaps, tabs, and separate lid panels where applicable.
+3. Account for board thickness, folds, glue tabs, clearances, and relevant geometry rules supported by the application.
+4. Represent fold lines and cut boundaries separately if the data model supports them.
+5. Define units explicitly in millimetres.
+6. Validate that the resulting pieces are geometrically consistent and suitable for the supported rectangular cutting planner.
+
+Do not invent missing geometry, manufacturing rules, or machine settings. If a required value is missing or the package type is unsupported, explain exactly what needs to be supplied and keep the conversion unavailable.
+
+### Cutting Studio
+When a valid design is sent:
+- Open Cutting Studio with a new, editable plan linked to the source concept and revision.
+- Populate the planner with the generated cutting pieces and their quantities.
+- Let the user select the board dimensions, margins, kerf, and permitted rotations.
+- Run the existing placement algorithm and display placed and unplaced pieces.
+- Show utilization and unplaced quantities using the existing validated calculations.
+- Preserve the link to the source concept and make it possible to return to it.
+- Save the plan using existing revision and stale-edit protections.
+
+Do not claim that the plan is an optimized industrial cutting solution or a manufacturing-approved dieline.
+
+If full conversion cannot be implemented safely for every package type, implement and test one clearly supported type end-to-end, such as a flat carton with a separate lid. Show a concise unsupported-type message for other designs instead of generating incorrect plans.
+
+## 2. Add a practical AI Assistant to the real workflow
+
+The assistant should help staff understand recorded production data and decide what to investigate next. It must not be an unrelated chatbot or a complicated new subsystem.
+
+### Where it appears
+Add a small, consistent AI Assistant entry point in the appropriate authenticated workspace, accessible to authorized Manager and Production Supervisor users. Keep the interface compact and consistent with the existing design.
+
+Do not expose AI controls to roles that are not authorized to use them.
+
+### Initial capabilities
+Support these simple, useful questions:
+- Why does IK-202 have a higher scrap rate than IK-203?
+- Which recorded scrap category is largest for this job?
+- Where did the issued material go?
+- Which jobs have unexplained variance or unresolved rework?
+- What should the supervisor investigate next?
+
+The assistant must retrieve the relevant data from authorized backend services and use actual saved records. Do not hardcode demo answers.
+
+### Evidence and accuracy
+For every answer:
+- Identify the job and the relevant recorded quantities.
+- Link to the supporting job, reconciliation, or scrap entries when available.
+- Distinguish recorded facts from suggestions.
+- Never claim an exact root cause without supporting operator evidence.
+- Never classify reusable offcuts as scrap.
+- Never invent machine settings, material compatibility, or production events.
+- Respect the same authorization rules as the underlying job and reporting data.
+
+For example, when comparing IK-202 and IK-203, it may report that IK-202 records 180 kg of setup/layout scrap and 60 kg of damaged-material scrap, while IK-203 records 100 kg of unspecified scrap. It may recommend reviewing setup records and operator notes, but must not claim that setup was proven to cause the difference.
+
+### Provider configuration
+- Inspect the existing AI provider integration before changing it.
+- If a provider is configured, implement the smallest practical integration and test a real request in an authorized non-production environment.
+- If no provider is configured, do not pretend that live AI is working.
+- Hide the assistant entry point when unavailable, or display one short, honest message explaining that an administrator must configure the provider.
+- Keep recorded evidence and normal application functionality available without AI.
+
+Do not expose API keys in the frontend or logs. Apply timeouts, safe error handling, and server-side authorization.
+
+## 3. Remove unnecessary technical text
+
+Review the packaging, Cutting Studio, inventory, reports, and AI interfaces in English and Arabic.
+
+Remove repetitive internal disclaimers and long technical paragraphs from normal factory workflows.
+
+Keep only concise, actionable messages:
+- What the user can do.
+- What action is needed next.
+- Why an action is blocked, if relevant.
+- Essential validation and safety warnings.
+
+Keep detailed engineering limitations in internal documentation, not repeated throughout the interface.
+
+Do not remove material quantities, audit history, validation errors, traceability, or warnings needed to prevent incorrect production use.
+
+## 4. Demonstration data and preservation
+
+Use the existing isolated development/demo environment.
+
+Preserve IK-202, IK-203, their original quantities, scrap reasons, machine CT-2, and reconciliation results. Do not duplicate them on every seed run.
+
+If more records are needed, create clearly identified additional demo records with consistent material accounting and traceable relationships.
+
+Do not modify production data, reset databases, weaken write guards, or deploy anything.
+
+## 5. Acceptance tests
+
+Run the complete workflow in the actual Replit Preview.
+
+### Packaging-to-cutting
+- Create or open a supported packaging concept.
+- Validate and save it.
+- Send it to Cutting Studio.
+- Confirm the generated pieces correspond to the supported flat pattern.
+- Run placement and validate boundaries, spacing, and rotation.
+- Save, refresh, reopen, and verify the plan and source link.
+- Test unsupported geometry and confirm it is safely rejected.
+
+### AI Assistant
+- Test a real provider request if credentials are configured.
+- Verify answers against saved IK-202 and IK-203 data.
+- Verify evidence links and Arabic/English output.
+- Verify unavailable-provider behavior if credentials are absent.
+- Test unauthorized access, provider errors, and missing evidence.
+
+### Final report
+Run relevant backend tests, frontend tests, type checking, lint, build, and browser checks.
+
+Provide:
+1. Implemented features.
+2. Passed, failed, and not-tested acceptance cases.
+3. Any unsupported package geometry.
+4. Whether a real AI provider request succeeded.
+5. Exact test commands and results.
+6. Remaining production blockers.
+
+Do not report completion based only on mocked AI tests or successful compilation. Do not claim manufacturing approval or production readiness unless independently verified.

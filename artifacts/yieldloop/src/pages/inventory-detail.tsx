@@ -130,7 +130,6 @@ export default function InventoryDetailPage({ id }: { id: number }) {
             <Row label={t('invCreated')} testId="text-lot-created">{fmt(l.created_at)}</Row>
             <Row label={t('invMaterial')} testId="text-lot-material"><span className="font-mono text-xs text-muted-foreground" dir="ltr">#{l.material_id}</span> {l.material_name}</Row>
             <Row label={t('invCompat').split(':')[0]} testId="text-lot-compat">{t('invCompat').split(':').slice(1).join(':').trim()}</Row>
-            <Row label={t('invPolicy').split(':')[0]} testId="text-lot-policy">{t('invPolicy').split(':').slice(1).join(':').trim()}</Row>
           </dl>
           <p className="text-xs text-muted-foreground">{t('invBlocked')}</p>
 

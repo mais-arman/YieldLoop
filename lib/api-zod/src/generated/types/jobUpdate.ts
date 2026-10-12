@@ -6,8 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { JobStatus } from './jobStatus';
+import type { JobUpdateSheetUnit } from './jobUpdateSheetUnit';
 
 export interface JobUpdate {
+  /** @maxLength 5000 */
+  product_specification?: string;
+  /** @maxLength 5000 */
+  cutting_instructions?: string;
+  /** @nullable */
+  sheet_width?: string | null;
+  /** @nullable */
+  sheet_height?: string | null;
+  sheet_unit?: JobUpdateSheetUnit;
+  /** @nullable */
+  planned_yield?: string | null;
   /** @minimum 1 */
   revision: number;
   /**

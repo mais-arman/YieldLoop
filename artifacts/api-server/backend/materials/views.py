@@ -12,6 +12,7 @@ from .models import Material
 from .serializers import (
     DefinitionInput,
     EntryInput,
+    JobPageInput,
     PageInput,
     VoidInput,
     material_data,
@@ -43,7 +44,7 @@ class JobMaterialsView(ProtectedView):
     def get(self, request, pk):
         # Same job lock as writers: page rows and the persisted totals share one revision.
         job = services.visible_job(request.user, pk, lock=True)
-        values = checked(PageInput, request.query_params.dict())
+        values = checked(JobPageInput, request.query_params.dict())
         return Response(services.state(job, request.user, values))
 
 

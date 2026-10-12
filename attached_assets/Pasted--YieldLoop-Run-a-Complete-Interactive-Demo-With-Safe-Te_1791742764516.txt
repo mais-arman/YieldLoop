@@ -1,0 +1,102 @@
+# YieldLoop — Run a Complete Interactive Demo With Safe Test Data
+
+I want to understand how the existing YieldLoop application works by watching a complete, realistic workflow in the actual website.
+
+Do not just write a test report or tell me how to do it. Set up and run the demo, enter the test data through the real application UI wherever possible, navigate through the screens, and show me the results so I can understand the product.
+
+## 1. Protect existing data
+
+Before doing anything, inspect the current environment and determine which database and application instance are being used.
+
+- Use an isolated, disposable development/demo database or a clearly separated test-data namespace.
+- Never reset, delete, overwrite, or modify existing business records.
+- Never enter demo records into production.
+- If safe isolation cannot be established, stop before creating records and explain what is needed.
+- Use clearly identifiable demo records with a prefix such as `DEMO-`.
+- Do not change production settings, permissions, or release safeguards.
+
+## 2. Prepare the demo accounts
+
+Use existing supported account-provisioning methods to create or reuse isolated demo accounts for:
+
+- Manager
+- Production Supervisor
+- Cutting Operator
+
+Use secure test-only credentials, never production credentials, and tell me how to access each demo role without exposing any real users' secrets.
+
+## 3. Enter the complete production scenario
+
+Using the actual application's UI and supported workflows, create or populate the following demo jobs on the same machine, `CT-2`.
+
+### Job DEMO-IK-202
+- Issued material: 1,200 kg
+- Good production: 900 kg
+- Setup/layout scrap: 180 kg
+- Damaged-material scrap: 60 kg
+- Reusable offcuts: 60 kg
+
+Expected results:
+- Accounted material: 1,200 kg
+- Unexplained variance: 0 kg
+- Scrap: 240 kg
+- Scrap rate: 20%
+- Yield: 75%
+
+### Job DEMO-IK-203
+- Issued material: 1,000 kg
+- Good production: 820 kg
+- Scrap: 100 kg
+- Reusable offcuts: 80 kg
+
+Expected results:
+- Accounted material: 1,000 kg
+- Unexplained variance: 0 kg
+- Scrap rate: 10%
+- Yield: 82%
+
+Use the application's actual forms and business rules. If a field or workflow does not support the required scenario, do not bypass validation or write directly to the database just to make the result appear correct. Explain the limitation and use an approved test setup if needed.
+
+## 4. Demonstrate the website by role
+
+Open the real browser UI and walk through these steps in order:
+
+1. **Manager:** log in, show the dashboard, create or access the two demo jobs, and explain where job creation and employee management are located.
+2. **Supervisor:** log in, open each job, show material reconciliation, scrap categories, reusable offcuts, variance, yield and scrap rate.
+3. Open the comparison for the two demo jobs on `CT-2`. Explain why the yield differs and identify the largest recorded scrap category without claiming an unproven root cause.
+4. Open the source records behind the dashboard and report figures so I can see where each number comes from.
+5. **Operator:** log in, show assigned/open work, demonstrate the permitted production workflow, and show which actions are unavailable to this role.
+6. Demonstrate offcut inventory using clearly marked demo records, including registration, reservation, consumption and release if supported by the current workflow. Explain how each action changes available and reserved balances.
+7. Open Cutting Studio, demonstrate a simple layout, change a piece position, save it and reopen it.
+8. Open the packaging concept, change its dimensions, save it and reopen it. Explain clearly that this is a conceptual preview, not manufacturing-validated CAD.
+9. Show the Arabic RTL interface and the English interface if both are supported.
+
+## 5. Make the demo understandable
+
+I am not yet familiar with the application. For every major step:
+
+- State which role is logged in.
+- Show the exact page or menu being used.
+- Enter the data and submit the form.
+- Show the resulting screen and explain the numbers in simple language.
+- Explain what I should notice and which page to visit next.
+- Capture genuine screenshots of the important resulting screens when browser tooling supports it.
+- Keep demo records visibly labelled so I can distinguish them from real records.
+
+Do not merely run automated API tests and claim that I saw the website. Use the real browser UI for the walkthrough wherever possible.
+
+## 6. Verify the demo
+
+After the walkthrough, verify the saved records and calculated figures using the application's reports and source records. Run focused tests if needed. Report any discrepancies honestly.
+
+At the end, give me:
+- The demo URL or preview link available in this environment.
+- How to log in to each demo role using test-only credentials.
+- A short list of the pages demonstrated and what each page does.
+- The actual screenshots or browser evidence captured.
+- Confirmation that existing business records were preserved.
+- How to remove only the isolated demo data when I no longer need it.
+
+Do not deploy to production, claim that external production-readiness gates have passed, or finish with instructions for me to perform the entire walkthrough myself.
+
+**The goal is for me to watch and understand the existing website working end to end, using safe demo data, before deciding on any further changes.**

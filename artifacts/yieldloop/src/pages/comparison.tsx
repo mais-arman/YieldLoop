@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 type Side = JobComparison['left'];
 const QTY = ['issued', 'good', 'scrap', 'offcut', 'pending_rework', 'variance'] as const;
-const RATE = ['yield_rate', 'scrap_rate'] as const;
+const RATE = ['yield_rate', 'scrap_rate', 'offcut_rate'] as const;
 
 function parseId(v: string | null): number | null {
   const n = Number(v);
@@ -221,14 +221,16 @@ function SideRecords({ s, label, kt }: { s: Side; label: string; kt: Kt }) {
         <ul className="mt-1 divide-y rounded-md border">
           {s.scrap_by_reason.map((r, i) => (
             <li key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-              <span className={cn(!r.reason?.trim() && 'italic text-muted-foreground')}>{scrapReasonText(r.reason, kt('unspecified'))}</span>
+              <span className={cn(!r.reason?.trim() && 'italic text-muted-foreground')}>{scrapReasonText(r.reason, kt('unspecified'))}
+                <span className="mt-1 flex flex-wrap gap-2 text-xs">{r.entry_ids.map(id => <Link key={id} href={`/jobs/${s.job.id}?entry=${id}#entry-${id}`} className="text-primary underline" aria-label={`${kt('records')} #${id}`}>#{id}</Link>)}</span>
+              </span>
               <span className="font-mono tabular-nums" dir="ltr">{r.quantity} {kt('kg')} <span className="text-xs text-muted-foreground">· {kt('entries', { n: r.entry_ids.length })}</span></span>
             </li>
           ))}
         </ul>
       )}
       <h4 className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kt('records')}</h4>
-      <p className="mt-1 text-xs text-muted-foreground" dir="ltr" style={{ textAlign: 'start' }}>{s.entry_ids.length ? s.entry_ids.map((id) => `#${id}`).join(', ') : '—'}</p>
+      <div className="mt-1 flex flex-wrap gap-2 text-xs" dir="ltr">{s.entry_ids.length ? s.entry_ids.map(id => <Link key={id} href={`/jobs/${s.job.id}?entry=${id}#entry-${id}`} className="text-primary underline" aria-label={`${kt('records')} #${id}`}>#{id}</Link>) : '—'}</div>
       <Link href={`/jobs/${s.job.id}#materials`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline" data-testid={`link-cmp-records-${s.job.id}`}>
         <ExternalLink className="h-3.5 w-3.5" aria-hidden />{kt('openJob')}
       </Link>

@@ -1,0 +1,274 @@
+# YieldLoop — Complete All Remaining Required Features and Fixes
+
+You are working on the existing YieldLoop application for the Ibn Khaldoun Printing and Publishing challenge: **Waste Analysis in a Cutting Job**.
+
+A detailed requirements and functional audit has already been completed. Your task now is to implement the remaining required functionality, fix confirmed gaps, and verify the results against the original challenge.
+
+**Do not stop after producing a plan. Inspect the actual codebase, implement the approved-scope changes described below, run the relevant tests, fix regressions, and report the completed work.**
+
+Preserve the existing architecture, working features, design conventions, authentication, authorization, audit history, and isolated Preview environment.
+
+Do not perform unrelated redesigns or introduce unnecessary complexity.
+
+# 1. Source of truth
+
+Use the original challenge requirements and the previous audit findings as the source of truth.
+
+The product must let factory staff account for all material issued to a cutting job, distinguish true scrap from reusable offcuts, validate the material balance, calculate yield and scrap rates correctly, and compare jobs on the same machine.
+
+Do not invent missing factory data. In particular, do not fabricate product specifications, sheet dimensions, planned yields, cutting instructions, scrap reasons, or real root causes.
+
+If a requirement needs a factory decision, implement a safe, configurable design where possible, document the unresolved decision, and do not silently impose an unsupported business rule.
+
+# 2. Complete the structured digital job card
+
+The existing audit found that job metadata is incomplete.
+
+Inspect the current `ProductionJob` model, job creation/editing forms, job-detail page, APIs, serializers, validation, and existing migration conventions.
+
+Implement the missing structured fields needed to support:
+
+- Product specification.
+- Sheet size, including explicit units and clear validation.
+- Planned yield, distinguished clearly from actual good yield.
+- Cutting instructions.
+- Optional job-related document attachments, if they can be implemented safely within the existing architecture.
+
+Requirements:
+
+1. Display these fields consistently on the job creation/editing form and job-detail page.
+2. Persist them through the existing backend and database.
+3. Validate input on the backend as well as the frontend.
+4. Handle missing values honestly. Existing jobs and the supplied reference cases must not receive invented specifications or dimensions.
+5. Clearly distinguish planned yield, actual good yield, and geometric cutting utilization. They are different measurements.
+6. Do not treat a material specification as a complete product specification.
+7. Keep optional attachments private and accessible only to authorized users. Validate file type and size, use safe storage practices, and prevent unauthorized access. If secure attachment support would require a separate infrastructure decision, implement the structured fields and document that limitation rather than adding an unsafe upload mechanism.
+8. Preserve backward compatibility with existing records and API clients where practical.
+9. Use migrations consistent with the project’s existing workflow. Do not apply destructive schema changes or reset databases.
+
+The original challenge does not supply the actual product specification, sheet dimensions, or planned yield for IK-202 or IK-203. Leave those values unset unless verified source data exists.
+
+# 3. Make offcut-rate presentation consistent
+
+The backend already calculates offcut rate correctly in reports. Reuse the authoritative backend calculations instead of introducing a competing formula.
+
+Implement:
+
+- An explicit offcut rate on each job card when issued weight is valid.
+- An explicit offcut rate for each side of the comparison.
+- The offcut-rate difference in percentage points in the comparison, using the same left-minus-right convention as the existing comparison.
+- Clear handling of missing values and zero denominators.
+- Consistent labels and precision across job details, reports, and comparison.
+
+Use these definitions:
+
+- Good yield = good output / issued material × 100.
+- Scrap rate = total scrap / issued material × 100.
+- Offcut rate = reusable offcuts / issued material × 100.
+
+Reusable offcuts must never be included in scrap.
+
+Do not duplicate calculations unnecessarily in the frontend. Do not change correct existing calculations or the current Decimal-based accounting.
+
+For the reference cases, the expected results are:
+
+- IK-202 offcut rate: 5%.
+- IK-203 offcut rate: 8%.
+- IK-202 minus IK-203 offcut-rate difference: −3 percentage points.
+
+# 4. Improve comparison drill-down
+
+Inspect the existing comparison API, `reports/comparison.py`, `pages/comparison.tsx`, and related material-record components.
+
+Make the manager’s comparison more useful by allowing navigation from a comparison result to the relevant source material records and scrap reasons.
+
+Requirements:
+
+- Clearly display each job’s issued, good, scrap, and reusable-offcut quantities.
+- Display good yield, scrap rate, and offcut rate.
+- Display differences using consistent units and clearly labeled percentage points.
+- Show scrap categories and their recorded quantities.
+- Link to the corresponding job and, where feasible within the existing architecture, directly to the relevant material entry.
+- Preserve the existing same-machine and same-material compatibility checks.
+- Do not display misleading calculated differences for incompatible jobs.
+- Do not fabricate a scrap-reason breakdown where only a total is recorded.
+
+The two supplied jobs use CT-2 and the same board material. The comparison must continue to support these records.
+
+# 5. Correct confirmed usability and consistency gaps
+
+Implement these small, directly relevant improvements:
+
+- Make an over-accounted job visually unmistakable. Display the signed variance and a clear validation error; do not let visual bars conceal the discrepancy.
+- Remove or correct stale role-permission comments that contradict current backend behavior.
+- Make report date-filter semantics explicit in the UI and documentation. Do not silently change the date basis without checking existing behavior.
+- Ensure missing specifications and missing scrap reasons are labeled honestly rather than replaced with invented values.
+- Keep loading, empty, error, and unavailable states consistent with the existing UI.
+- Preserve existing localization conventions, including Arabic/English support if already implemented.
+
+Avoid broad visual redesigns or unrelated feature additions.
+
+# 6. Review factory-policy ambiguities safely
+
+The audit identified several business decisions that are not fully specified by the challenge.
+
+Review each one:
+
+A. **Weight tolerance:** The existing implementation requires exact-zero variance at completion.
+
+B. **All-scrap jobs:** The existing implementation requires positive good output, which prevents closing a fully accounted job with no good product.
+
+C. **Rework:** The existing implementation blocks completion while pending rework remains.
+
+D. **Scrap reasons:** Existing records can contain an unspecified reason, and free-text categories may be fragmented by inconsistent spelling.
+
+E. **Reporting dates:** Reports currently filter by job creation date.
+
+Do not arbitrarily change these policies.
+
+For each, determine whether a safe improvement can be made without changing the business meaning. Where factory approval is needed, preserve the current behavior, document the decision, and identify the exact question that must be answered by the factory owner.
+
+Do not weaken balance validation or authorization to make a test pass.
+
+# 7. Preserve role-based security
+
+The intended users are Cutting Operator, Production Supervisor, and Manager.
+
+Verify backend authorization for all changed endpoints and actions, not just frontend visibility.
+
+Preserve these audited behaviors unless a demonstrated defect requires a correction:
+
+- Operators access Open jobs within their authorized scope.
+- Managers create jobs and manage employees.
+- Managers and Supervisors access reporting and comparison.
+- Unauthorized API requests are rejected.
+- Temporary-password, password-policy, CSRF/session protections, audit history, and session invalidation remain intact.
+
+Never hardcode credentials, bypass authentication, weaken permissions, or expose private credentials in logs or responses.
+
+Do not reset, create, disable, or modify existing Preview users.
+
+# 8. Mandatory reference-case acceptance tests
+
+Run the supplied cases through the actual accounting, reporting, and comparison logic. Use existing reference records for read-only checks and isolated test fixtures for mutations. Never modify the real Preview records to perform tests.
+
+## IK-202
+
+Issued: 1,200 kg.
+
+- Good product: 900 kg.
+- Setup/layout scrap: 180 kg.
+- Damaged-material scrap: 60 kg.
+- Reusable offcuts: 60 kg.
+
+Expected:
+
+- Total scrap: 240 kg.
+- Total accounted for: 1,200 kg.
+- Variance: 0 kg.
+- Good yield: 75%.
+- Scrap rate: 20%.
+- Offcut rate: 5%.
+- Largest scrap category: setup/layout, 180 kg.
+
+## IK-203
+
+Issued: 1,000 kg.
+
+- Good product: 820 kg.
+- Total scrap: 100 kg.
+- Reusable offcuts: 80 kg.
+
+Expected:
+
+- Total accounted for: 1,000 kg.
+- Variance: 0 kg.
+- Good yield: 82%.
+- Scrap rate: 10%.
+- Offcut rate: 8%.
+
+The source does not specify IK-203’s scrap breakdown. Do not invent one.
+
+## Comparison
+
+Both jobs use CT-2 and the same board material.
+
+Expected:
+
+- Scrap-rate difference: +10 percentage points for IK-202 relative to IK-203.
+- Offcut-rate difference: −3 percentage points for IK-202 relative to IK-203.
+- Scrap-quantity difference: +140 kg.
+- Good-yield difference: −7 percentage points.
+- The 60 kg of reusable IK-202 offcuts remain excluded from scrap.
+
+# 9. Additional regression tests
+
+Add or update tests for:
+
+- Structured job-field validation and persistence.
+- Missing optional specifications on existing jobs.
+- Correct offcut rates on job detail and comparison.
+- Percentage-point differences and zero-denominator handling.
+- Source-record navigation and authorization.
+- Over-accounted jobs displaying an obvious error and remaining impossible to complete.
+- Under-accounted jobs remaining impossible to complete.
+- Negative quantities and invalid units.
+- Same-machine/material comparison restrictions.
+- Operator, Supervisor, and Manager permissions.
+- Attachment validation and access controls if attachment support is implemented.
+- Existing job creation, material recording, voiding, rework, inventory, reports, sessions, and employee-administration regression tests.
+
+Use isolated fixtures or guarded test schemas for mutation tests. Do not run destructive cleanup against existing Preview data.
+
+# 10. Scope control
+
+The following existing capabilities are extensions, not blockers for the core challenge:
+
+- Offcut inventory reservation and consumption.
+- Rectangular Cutting Studio.
+- 3D packaging concepts.
+- Optional AI assistance.
+- Employee administration beyond what is needed for secure role management.
+
+Do not expand these features unnecessarily. Do not claim live AI works unless it is actually tested with an authorized, configured provider.
+
+Prioritize the job card, correct material accounting, comparison, permissions, and clear presentation.
+
+# 11. Execution and final verification
+
+Work in this order:
+
+1. Inspect the current implementation and identify the exact files that need changes.
+2. Implement the structured job-card fields and safe persistence.
+3. Implement consistent offcut-rate presentation and comparison drill-down.
+4. Correct the relevant usability/documentation gaps.
+5. Add or update automated tests.
+6. Run the backend test suites relevant to changed behavior.
+7. Run frontend tests and the TypeScript check.
+8. Inspect migration status and verify existing data remains compatible.
+9. Review the final diff for unrelated changes, secrets, destructive commands, and authorization regressions.
+10. Provide a concise but evidence-based completion report.
+
+The completion report must include:
+
+- Files changed and why.
+- Database migrations created and their status.
+- Features implemented.
+- Tests run and exact pass/fail counts.
+- Reference-case numerical results.
+- Any remaining factory-policy decisions.
+- Anything that could not be verified.
+- Any remaining gap against the original challenge.
+
+Do not claim a browser interaction, migration, test, attachment workflow, or live AI result was verified unless it actually was.
+
+**Data-safety constraints:**
+
+- Preserve the isolated Preview database and all existing demo records.
+- Do not switch to the original production schema.
+- Do not reset or modify user credentials.
+- Do not delete existing test schemas or business records.
+- Do not expose credentials, secrets, or private file contents.
+- Do not perform production deployment, external backup changes, or destructive database operations.
+
+Proceed with the implementation of the directly specified gaps. If you encounter a genuinely destructive, irreversible, or externally consequential action, stop before that action and ask for approval. Otherwise, complete the work and report the actual results.

@@ -145,7 +145,7 @@ export function ScenarioWorkspace({ jobId, draft, update, readOnly, canCreateMat
               })}><PencilLine className="h-3.5 w-3.5" aria-hidden />{ct('editInputs')}</Button>
             </div>
           )}
-          <InputEditor form={draft.form} errors={v.errors} copies={v.copies} disabled={locked} canCreateMaterial={canCreateMaterial} showErrors={showErrors}
+          <InputEditor panelLinked={!!draft.source} form={draft.form} errors={v.errors} copies={v.copies} disabled={locked} canCreateMaterial={canCreateMaterial} showErrors={showErrors}
             onChange={(f) => update((d) => ({ ...d, form: f, result: null, resultSig: null }))} />
         </section>
 

@@ -48,14 +48,13 @@ def decimal_text(value):
 
 
 def measures(values):
+    from materials.accounting import percentage
     result = {key: decimal_text(values[key]) for key in FIELDS}
     with localcontext() as ctx:
         ctx.prec = 60
         for name, numerator in (("yield_rate", "good"), ("scrap_rate", "scrap"), ("offcut_rate", "offcut")):
-            result[name] = (
-                format((values[numerator] / values["issued"] * 100).quantize(Decimal(".001"), rounding=ROUND_HALF_UP), ".3f")
-                if values["issued"] else None
-            )
+            rate = percentage(values[numerator], values["issued"])
+            result[name] = format(rate, ".3f") if rate is not None else None
     return result
 
 

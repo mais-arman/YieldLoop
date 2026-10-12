@@ -37,7 +37,6 @@ export function ReuseBlockedNotice({ compact = false }: { compact?: boolean }) {
       </summary>
       <div className="mt-2 flex flex-wrap gap-1.5 ps-6 text-xs">
         <span className="rounded border bg-card px-1.5 py-0.5 font-medium" data-testid="text-compat-unverified">{t('invCompat')}</span>
-        <span className="rounded border bg-card px-1.5 py-0.5 font-medium" data-testid="text-policy-missing">{t('invPolicy')}</span>
       </div>
     </details>
   );

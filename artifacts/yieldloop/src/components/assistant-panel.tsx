@@ -180,6 +180,7 @@ function AssistantBody({ jobId, setJobId, close }: { jobId: number | null; setJo
 
 function CompactAnswer({ answer }: { answer: AssistanceAnswer }) {
   const ft = useFt();
+  const ar = answer.language === 'ar';
   return (
     <section className="space-y-2 rounded-xl border bg-muted/40 p-3 text-sm" dir={answer.language === 'ar' ? 'rtl' : 'ltr'} data-testid="panel-assistant-answer">
       <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"><Sparkles className="h-3 w-3" aria-hidden />{ft('asAiBadge')}</span>
@@ -191,11 +192,27 @@ function CompactAnswer({ answer }: { answer: AssistanceAnswer }) {
               <p className="font-medium">{l.text}</p>
               <p className="mt-1 text-muted-foreground">{ft('asEvidenceNeeded')}: {l.evidence_needed}</p>
               <p className="text-muted-foreground">{ft('asNextStep')}: {l.next_step}</p>
-              {l.record_ids.length > 0 && <p className={cn('mt-1 flex flex-wrap gap-1')}>{l.record_ids.map((r) => <span key={r} className="rounded border px-1 font-mono text-[10px]" dir="ltr">{r}</span>)}</p>}
+              {l.record_ids.length > 0 && <p className={cn('mt-1 flex flex-wrap gap-1')}>{l.record_ids.map((r) => {
+                const job = [answer.evidence, ...(answer.related_evidence ?? [])].find(e => e.recorded_facts.some(f => f.id === r));
+                return <Link key={r} href={`/jobs/${job?.job.id ?? answer.evidence.job.id}`} className="rounded border px-1 font-mono text-[10px] text-primary underline" dir="ltr">{r}</Link>;
+              })}</p>}
             </li>
           ))}
         </ol>
       )}
+      {answer.related_evidence?.map(e => <div className="border-t pt-2 text-xs" key={e.job.id}>
+        <Link className="text-primary underline" href={`/jobs/${e.job.id}`}>{e.job.reference || e.job.job_number}</Link>
+        <p>{ar ? 'المصروف / الجيد / الهالك / القصاصات (كغ)' : 'Issued / good / scrap / offcut (kg)'}:
+          {' '}{[e.calculated_findings?.issued, e.calculated_findings?.good, e.calculated_findings?.scrap, e.calculated_findings?.offcut].map(v => v ?? '—').join(' / ')}</p>
+        {e.largest_scrap_category && <p>{e.largest_scrap_category.reason || (ar ? 'غير محدد' : 'Unspecified')}: {e.largest_scrap_category.quantity} kg</p>}
+      </div>)}
+      {answer.attention_jobs && <div className="border-t pt-2 text-xs">
+        <p className="font-medium">{ar ? 'أوامر ذات فرق أو إعادة عمل معلقة' : 'Jobs with variance or pending rework'}</p>
+        {answer.attention_jobs.length === 0 && <p>{ar ? 'لا توجد في السجلات المتاحة.' : 'None in the available records.'}</p>}
+        {answer.attention_jobs.map(j => <p key={j.job_id}><Link href={`/jobs/${j.job_id}`} className="underline text-primary">{j.reference}</Link>
+          {' — '}{ar ? 'الفرق' : 'Variance'} {j.variance} kg; {ar ? 'إعادة العمل' : 'Rework'} {j.pending_rework} kg</p>)}
+        {answer.attention_truncated && <p>{ar ? 'تظهر أول 20 نتيجة. افتح التقارير للمزيد.' : 'First 20 results. Open Reports for more.'}</p>}
+      </div>}
       <p className="border-t pt-2 text-[11px] text-muted-foreground">{answer.notice}</p>
     </section>
   );

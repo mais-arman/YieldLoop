@@ -8,6 +8,51 @@
 import * as zod from 'zod';
 
 
+
+
+
+
+export const GeneratePanelKitBody = zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+})
+
+
+
+export const generatePanelKitResponsePiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const generatePanelKitResponsePiecesItemLabelMax = 80;
+
+export const generatePanelKitResponsePiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const generatePanelKitResponsePiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const generatePanelKitResponsePiecesItemQuantityMax = 100;
+
+export const generatePanelKitResponseFoldLinesMax = 0;
+
+
+
+export const GeneratePanelKitResponse = zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(generatePanelKitResponsePiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(generatePanelKitResponsePiecesItemLabelMax),
+  "width": zod.string().regex(generatePanelKitResponsePiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(generatePanelKitResponsePiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(generatePanelKitResponsePiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})),
+  "unit": zod.enum(['mm']),
+  "production_validated": zod.literal(false),
+  "fold_lines": zod.array(zod.object({
+
+}).passthrough()).max(generatePanelKitResponseFoldLinesMax)
+})
+
+
 export const GetAssistanceStatusResponse = zod.object({
   "available": zod.boolean(),
   "provider": zod.enum(['openai']),
@@ -18,6 +63,8 @@ export const GetAssistanceStatusResponse = zod.object({
 export const GetAssistanceEvidenceParams = zod.object({
   "job_id": zod.coerce.number().int()
 })
+
+
 
 
 export const getAssistanceEvidenceResponseCuttingItemScenariosItemInputStockLabelMax = 120;
@@ -81,6 +128,11 @@ export const GetAssistanceEvidenceResponse = zod.object({
   "revision": zod.number().int(),
   "name": zod.string(),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -156,6 +208,42 @@ export const AnalyzeJobEvidenceBody = zod.object({
 })
 
 
+
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputStockLabelMax = 120;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardQuantityMax = 10;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardLeftRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardRightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardTopRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardBottomRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputKerfRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemLabelMax = 80;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemHeightRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemQuantityMax = 100;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesMax = 20;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemPieceKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemCopyMin = 0;
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemCopyMax = 99;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemBoardMin = 0;
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemBoardMax = 9;
+
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemXRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemYRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
+export const analyzeJobEvidenceResponseRelatedEvidenceMax = 2;
+
+
+
+
 export const analyzeJobEvidenceResponseEvidenceCuttingItemScenariosItemInputStockLabelMax = 120;
 
 export const analyzeJobEvidenceResponseEvidenceCuttingItemScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
@@ -188,6 +276,108 @@ export const analyzeJobEvidenceResponseEvidenceCuttingItemScenariosItemPlacement
 
 
 export const AnalyzeJobEvidenceResponse = zod.object({
+  "related_evidence": zod.array(zod.object({
+  "job": zod.object({
+  "id": zod.number().int(),
+  "job_number": zod.string(),
+  "reference": zod.string(),
+  "status": zod.string(),
+  "revision": zod.number().int()
+}),
+  "material_revision": zod.number().int(),
+  "generated_at": zod.string(),
+  "recorded_facts": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "quantity": zod.string(),
+  "unit": zod.string(),
+  "created_at": zod.string(),
+  "voided": zod.boolean(),
+  "note": zod.string().optional(),
+  "scrap_reason": zod.string().optional()
+})),
+  "calculated_findings": zod.record(zod.string(), zod.string().nullable()).nullable(),
+  "largest_scrap_category": zod.object({
+  "reason": zod.string().nullable(),
+  "quantity": zod.string()
+}).nullable(),
+  "cutting": zod.array(zod.object({
+  "plan_id": zod.number().int(),
+  "revision": zod.number().int(),
+  "name": zod.string(),
+  "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
+  "key": zod.string(),
+  "name": zod.string(),
+  "input": zod.object({
+  "unit": zod.enum(['mm']),
+  "material_id": zod.number().int().min(1),
+  "stock_label": zod.string().min(1).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputStockLabelMax),
+  "cutting_mode": zod.enum(['rectangular_spacing_only']),
+  "board": zod.object({
+  "width": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardQuantityMax),
+  "left": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardLeftRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "right": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardRightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "top": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardTopRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "bottom": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputBoardBottomRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.')
+}),
+  "kerf": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputKerfRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "pieces": zod.array(zod.object({
+  "key": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemKeyRegExp),
+  "label": zod.string().min(1).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemLabelMax),
+  "width": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemWidthRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "height": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemHeightRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "quantity": zod.number().int().min(1).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesItemQuantityMax),
+  "rotation_allowed": zod.boolean()
+})).min(1).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemInputPiecesMax)
+}),
+  "placements": zod.array(zod.object({
+  "piece_key": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemPieceKeyRegExp),
+  "copy": zod.number().int().min(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemCopyMin).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemCopyMax),
+  "board": zod.number().int().min(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemBoardMin).max(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemBoardMax),
+  "x": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemXRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "y": zod.string().regex(analyzeJobEvidenceResponseRelatedEvidenceItemCuttingItemScenariosItemPlacementsItemYRegExp).describe('Explicit mm, maximum 100000, dimensions positive and margins/kerf/coordinates nonnegative. Normalized to 3 decimal places.'),
+  "rotated": zod.boolean()
+})),
+  "origin": zod.enum(['manual', 'shelf_v1']),
+  "result": zod.object({
+  "board_count": zod.number().int(),
+  "available_boards": zod.number().int(),
+  "placed_count": zod.number().int(),
+  "unplaced_count": zod.number().int(),
+  "required_area": zod.string(),
+  "placed_area": zod.string(),
+  "board_area": zod.string(),
+  "used_board_area": zod.string(),
+  "unused_area": zod.string(),
+  "available_area": zod.string(),
+  "utilization": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "unplaced": zod.array(zod.object({
+  "piece_key": zod.string(),
+  "quantity": zod.number().int(),
+  "reason": zod.enum(['not_placed', 'cannot_fit'])
+}))
+})
+}))
+})),
+  "limitations": zod.array(zod.string())
+})).max(analyzeJobEvidenceResponseRelatedEvidenceMax).optional(),
+  "attention_truncated": zod.boolean().optional(),
+  "attention_jobs": zod.array(zod.object({
+  "job_id": zod.number().int(),
+  "reference": zod.string(),
+  "revision": zod.number().int(),
+  "variance": zod.string(),
+  "pending_rework": zod.string(),
+  "href": zod.string()
+})).optional(),
   "evidence": zod.object({
   "job": zod.object({
   "id": zod.number().int(),
@@ -218,6 +408,11 @@ export const AnalyzeJobEvidenceResponse = zod.object({
   "revision": zod.number().int(),
   "name": zod.string(),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -401,6 +596,8 @@ export const createCuttingPlanBodyRevisionMin = 0;
 
 export const createCuttingPlanBodyReasonMax = 1000;
 
+
+
 export const createCuttingPlanBodyScenariosItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
 export const createCuttingPlanBodyScenariosItemNameMax = 80;
 
@@ -446,6 +643,11 @@ export const CreateCuttingPlanBody = zod.object({
   "request_id": zod.string().uuid(),
   "reason": zod.string().min(1).max(createCuttingPlanBodyReasonMax),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string().regex(createCuttingPlanBodyScenariosItemKeyRegExp),
   "name": zod.string().min(1).max(createCuttingPlanBodyScenariosItemNameMax),
   "input": zod.object({
@@ -485,6 +687,8 @@ export const CreateCuttingPlanBody = zod.object({
 })
 
 
+
+
 export const createCuttingPlanResponseScenariosItemInputStockLabelMax = 120;
 
 export const createCuttingPlanResponseScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
@@ -522,6 +726,11 @@ export const CreateCuttingPlanResponse = zod.object({
   "name": zod.string(),
   "revision": zod.number().int(),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -587,6 +796,8 @@ export const EvaluateCuttingScenarioParams = zod.object({
   "job_id": zod.coerce.number().int()
 })
 
+
+
 export const evaluateCuttingScenarioBodyScenarioKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
 export const evaluateCuttingScenarioBodyScenarioNameMax = 80;
 
@@ -626,6 +837,11 @@ export const evaluateCuttingScenarioBodyScenarioPlacementsMax = 100;
 
 export const EvaluateCuttingScenarioBody = zod.object({
   "scenario": zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string().regex(evaluateCuttingScenarioBodyScenarioKeyRegExp),
   "name": zod.string().min(1).max(evaluateCuttingScenarioBodyScenarioNameMax),
   "input": zod.object({
@@ -666,6 +882,8 @@ export const EvaluateCuttingScenarioBody = zod.object({
 })
 
 
+
+
 export const evaluateCuttingScenarioResponseInputStockLabelMax = 120;
 
 export const evaluateCuttingScenarioResponseInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
@@ -698,6 +916,11 @@ export const evaluateCuttingScenarioResponsePlacementsItemYRegExp = new RegExp('
 
 
 export const EvaluateCuttingScenarioResponse = zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -761,6 +984,8 @@ export const GetCuttingPlanParams = zod.object({
 })
 
 
+
+
 export const getCuttingPlanResponseScenariosItemInputStockLabelMax = 120;
 
 export const getCuttingPlanResponseScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
@@ -798,6 +1023,11 @@ export const GetCuttingPlanResponse = zod.object({
   "name": zod.string(),
   "revision": zod.number().int(),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -870,6 +1100,8 @@ export const updateCuttingPlanBodyRevisionMin = 0;
 
 export const updateCuttingPlanBodyReasonMax = 1000;
 
+
+
 export const updateCuttingPlanBodyScenariosItemKeyRegExp = new RegExp('^[A-Za-z0-9_-]{1,32}$');
 export const updateCuttingPlanBodyScenariosItemNameMax = 80;
 
@@ -915,6 +1147,11 @@ export const UpdateCuttingPlanBody = zod.object({
   "request_id": zod.string().uuid(),
   "reason": zod.string().min(1).max(updateCuttingPlanBodyReasonMax),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string().regex(updateCuttingPlanBodyScenariosItemKeyRegExp),
   "name": zod.string().min(1).max(updateCuttingPlanBodyScenariosItemNameMax),
   "input": zod.object({
@@ -954,6 +1191,8 @@ export const UpdateCuttingPlanBody = zod.object({
 })
 
 
+
+
 export const updateCuttingPlanResponseScenariosItemInputStockLabelMax = 120;
 
 export const updateCuttingPlanResponseScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
@@ -991,6 +1230,11 @@ export const UpdateCuttingPlanResponse = zod.object({
   "name": zod.string(),
   "revision": zod.number().int(),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -1068,6 +1312,8 @@ export const GetCuttingHistoryQueryParams = zod.object({
 })
 
 
+
+
 export const getCuttingHistoryResponseResultsItemScenariosItemInputStockLabelMax = 120;
 
 export const getCuttingHistoryResponseResultsItemScenariosItemInputBoardWidthRegExp = new RegExp('^(0|[1-9]\\d{0,5})(\\.\\d{1,3})?$');
@@ -1108,6 +1354,11 @@ export const GetCuttingHistoryResponse = zod.object({
   "revision": zod.number().int(),
   "name": zod.string(),
   "scenarios": zod.array(zod.object({
+  "source": zod.object({
+  "concept_id": zod.number().int().min(1),
+  "revision": zod.number().int().min(1),
+  "method": zod.enum(['separate_panels_v1'])
+}).optional(),
   "key": zod.string(),
   "name": zod.string(),
   "input": zod.object({
@@ -1791,6 +2042,13 @@ export const GetPackagingDesignParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+
+
+
+export const GetPackagingDesignQueryParams = zod.object({
+  "revision": zod.coerce.number().int().min(1).optional().describe('Exact historical revision; latest if omitted')
+})
+
 export const getPackagingDesignResponseDesignNameMax = 160;
 
 
@@ -1942,9 +2200,11 @@ export const getJobMaterialsQueryPageSizeMax = 100;
 
 
 
+
 export const GetJobMaterialsQueryParams = zod.object({
   "page": zod.coerce.number().int().min(1).optional(),
-  "page_size": zod.coerce.number().int().min(1).max(getJobMaterialsQueryPageSizeMax).optional()
+  "page_size": zod.coerce.number().int().min(1).max(getJobMaterialsQueryPageSizeMax).optional(),
+  "entry_id": zod.coerce.number().int().min(1).optional().describe('Locate this job\'s source record and return its page. Hidden or wrong-job entries return 404.')
 })
 
 export const GetJobMaterialsResponse = zod.object({
@@ -1959,6 +2219,7 @@ export const GetJobMaterialsResponse = zod.object({
   "created_at": zod.coerce.date()
 }),zod.null()]),
   "summary": zod.union([zod.object({
+  "offcut_rate": zod.string().nullish(),
   "issued": zod.string(),
   "good": zod.string(),
   "scrap": zod.string(),
@@ -2055,6 +2316,7 @@ export const RecordMaterialEntryResponse = zod.object({
   "created_at": zod.coerce.date()
 }),zod.null()]),
   "summary": zod.union([zod.object({
+  "offcut_rate": zod.string().nullish(),
   "issued": zod.string(),
   "good": zod.string(),
   "scrap": zod.string(),
@@ -2140,6 +2402,7 @@ export const VoidMaterialEntryResponse = zod.object({
   "created_at": zod.coerce.date()
 }),zod.null()]),
   "summary": zod.union([zod.object({
+  "offcut_rate": zod.string().nullish(),
   "issued": zod.string(),
   "good": zod.string(),
   "scrap": zod.string(),
@@ -2212,6 +2475,12 @@ export const ListProductionJobsResponse = zod.object({
   "page_size": zod.number().int(),
   "total_pages": zod.number().int(),
   "results": zod.array(zod.object({
+  "product_specification": zod.string().optional(),
+  "cutting_instructions": zod.string().optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "id": zod.number().int(),
   "job_number": zod.string(),
   "reference": zod.string(),
@@ -2228,6 +2497,7 @@ export const ListProductionJobsResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "permissions": zod.object({
+  "edit_card": zod.boolean().optional(),
   "edit_title": zod.boolean(),
   "edit_notes": zod.boolean(),
   "edit_reference": zod.boolean(),
@@ -2241,6 +2511,10 @@ export const ListProductionJobsResponse = zod.object({
 /**
  * Manager only; CSRF required. Server assigns number, creator and Draft status.
  */
+export const createProductionJobBodyProductSpecificationMax = 5000;
+
+export const createProductionJobBodyCuttingInstructionsMax = 5000;
+
 export const createProductionJobBodyTitleMax = 200;
 
 export const createProductionJobBodyNotesMax = 5000;
@@ -2252,6 +2526,12 @@ export const createProductionJobBodyMachineMax = 120;
 
 
 export const CreateProductionJobBody = zod.object({
+  "product_specification": zod.string().max(createProductionJobBodyProductSpecificationMax).optional(),
+  "cutting_instructions": zod.string().max(createProductionJobBodyCuttingInstructionsMax).optional(),
+  "sheet_width": zod.string().nullish().describe('Positive decimal, up to 3 places. Width, height and unit must be supplied or cleared together.'),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish().describe('Planned good weight yield percent, 0–100; not actual yield or geometric utilization.'),
   "title": zod.string().min(1).max(createProductionJobBodyTitleMax),
   "notes": zod.string().max(createProductionJobBodyNotesMax).optional(),
   "reference": zod.string().max(createProductionJobBodyReferenceMax).optional(),
@@ -2259,6 +2539,12 @@ export const CreateProductionJobBody = zod.object({
 })
 
 export const CreateProductionJobResponse = zod.object({
+  "product_specification": zod.string().optional(),
+  "cutting_instructions": zod.string().optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "id": zod.number().int(),
   "job_number": zod.string(),
   "reference": zod.string(),
@@ -2275,6 +2561,7 @@ export const CreateProductionJobResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "permissions": zod.object({
+  "edit_card": zod.boolean().optional(),
   "edit_title": zod.boolean(),
   "edit_notes": zod.boolean(),
   "edit_reference": zod.boolean(),
@@ -2299,6 +2586,12 @@ export const GetJobComparisonResponse = zod.object({
   "comparable_material": zod.boolean(),
   "left": zod.object({
   "job": zod.object({
+  "product_specification": zod.string().optional(),
+  "cutting_instructions": zod.string().optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "id": zod.number().int(),
   "job_number": zod.string(),
   "reference": zod.string(),
@@ -2315,6 +2608,7 @@ export const GetJobComparisonResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "permissions": zod.object({
+  "edit_card": zod.boolean().optional(),
   "edit_title": zod.boolean(),
   "edit_notes": zod.boolean(),
   "edit_reference": zod.boolean(),
@@ -2330,6 +2624,7 @@ export const GetJobComparisonResponse = zod.object({
   "created_at": zod.coerce.date()
 }),zod.null()]),
   "summary": zod.union([zod.object({
+  "offcut_rate": zod.string().nullish(),
   "issued": zod.string(),
   "good": zod.string(),
   "scrap": zod.string(),
@@ -2350,6 +2645,12 @@ export const GetJobComparisonResponse = zod.object({
 }),
   "right": zod.object({
   "job": zod.object({
+  "product_specification": zod.string().optional(),
+  "cutting_instructions": zod.string().optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "id": zod.number().int(),
   "job_number": zod.string(),
   "reference": zod.string(),
@@ -2366,6 +2667,7 @@ export const GetJobComparisonResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "permissions": zod.object({
+  "edit_card": zod.boolean().optional(),
   "edit_title": zod.boolean(),
   "edit_notes": zod.boolean(),
   "edit_reference": zod.boolean(),
@@ -2381,6 +2683,7 @@ export const GetJobComparisonResponse = zod.object({
   "created_at": zod.coerce.date()
 }),zod.null()]),
   "summary": zod.union([zod.object({
+  "offcut_rate": zod.string().nullish(),
   "issued": zod.string(),
   "good": zod.string(),
   "scrap": zod.string(),
@@ -2408,6 +2711,12 @@ export const GetProductionJobParams = zod.object({
 })
 
 export const GetProductionJobResponse = zod.object({
+  "product_specification": zod.string().optional(),
+  "cutting_instructions": zod.string().optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "id": zod.number().int(),
   "job_number": zod.string(),
   "reference": zod.string(),
@@ -2424,6 +2733,7 @@ export const GetProductionJobResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "permissions": zod.object({
+  "edit_card": zod.boolean().optional(),
   "edit_title": zod.boolean(),
   "edit_notes": zod.boolean(),
   "edit_reference": zod.boolean(),
@@ -2440,6 +2750,10 @@ export const UpdateProductionJobParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+export const updateProductionJobBodyProductSpecificationMax = 5000;
+
+export const updateProductionJobBodyCuttingInstructionsMax = 5000;
+
 
 export const updateProductionJobBodyTitleMax = 200;
 
@@ -2452,6 +2766,12 @@ export const updateProductionJobBodyMachineMax = 120;
 
 
 export const UpdateProductionJobBody = zod.object({
+  "product_specification": zod.string().max(updateProductionJobBodyProductSpecificationMax).optional(),
+  "cutting_instructions": zod.string().max(updateProductionJobBodyCuttingInstructionsMax).optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "revision": zod.number().int().min(1),
   "title": zod.string().min(1).max(updateProductionJobBodyTitleMax).optional(),
   "notes": zod.string().max(updateProductionJobBodyNotesMax).optional(),
@@ -2461,6 +2781,12 @@ export const UpdateProductionJobBody = zod.object({
 })
 
 export const UpdateProductionJobResponse = zod.object({
+  "product_specification": zod.string().optional(),
+  "cutting_instructions": zod.string().optional(),
+  "sheet_width": zod.string().nullish(),
+  "sheet_height": zod.string().nullish(),
+  "sheet_unit": zod.enum(['', 'mm', 'cm', 'in']).optional(),
+  "planned_yield": zod.string().nullish(),
   "id": zod.number().int(),
   "job_number": zod.string(),
   "reference": zod.string(),
@@ -2477,6 +2803,7 @@ export const UpdateProductionJobResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "permissions": zod.object({
+  "edit_card": zod.boolean().optional(),
   "edit_title": zod.boolean(),
   "edit_notes": zod.boolean(),
   "edit_reference": zod.boolean(),

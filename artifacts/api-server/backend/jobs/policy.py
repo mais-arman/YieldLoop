@@ -28,6 +28,7 @@ def require_editor(user):
 
 def capabilities(user, job):
     fields = {"edit_reference": user.role == User.Role.MANAGER and job.status in ("draft", "open"),
+              "edit_card": user.role == User.Role.MANAGER and job.status in ("draft", "open"),
               "edit_machine": (user.role == User.Role.MANAGER and job.status in ("draft", "open")) or
               (user.role in (User.Role.CUTTING_OPERATOR, User.Role.PRODUCTION_SUPERVISOR) and job.status == "open")}
     if job.status in ("cancelled", "completed"):

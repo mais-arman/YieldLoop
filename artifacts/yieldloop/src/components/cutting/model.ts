@@ -13,6 +13,7 @@ export interface InputForm {
   pieces: PieceForm[];
 }
 export interface Draft {
+  source?: CuttingScenario['source'];
   key: string; name: string; form: InputForm; placements: Placement[];
   origin: 'manual' | 'shelf_v1'; result: CuttingResult | null; resultSig: string | null;
 }
@@ -102,7 +103,7 @@ export function draftFromScenario(s: CuttingScenario): Draft {
   const form = formFromInput(s.input);
   const input = validateForm(form).input;
   return {
-    key: s.key, name: s.name, form, placements: s.placements, origin: s.origin,
+    key: s.key, name: s.name, form, placements: s.placements, origin: s.origin, source: s.source,
     result: s.result ?? null, resultSig: s.result ? sig(input, s.placements) : null,
   };
 }
@@ -110,7 +111,7 @@ export function draftFromScenario(s: CuttingScenario): Draft {
 export function scenarioFromDraft(d: Draft): CuttingScenario | null {
   const input = validateForm(d.form).input;
   if (!input) return null;
-  return { key: d.key, name: d.name.trim(), input, placements: d.placements, origin: d.origin };
+  return { key: d.key, name: d.name.trim(), input, placements: d.placements, origin: d.origin, ...(d.source ? { source: d.source } : {}) };
 }
 
 /** Comparable snapshot for dirty detection (ignores results). */

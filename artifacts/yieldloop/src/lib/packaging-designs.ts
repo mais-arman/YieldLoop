@@ -9,6 +9,6 @@ export function usePackagingDesigns(page: number) {
 export function usePackagingDesignHistory(id: number | null, page: number) {
   return useQuery({ queryKey: [...PK_DESIGNS_KEY, "history", id, page], queryFn: () => authRequest<PackagingDesignHistoryPage>(`packaging/designs/${id}/history?page=${page}&page_size=10`), enabled: id !== null, retry: false, staleTime: 0 });
 }
-export const getPackagingDesign = (id: number) => authRequest<PackagingDesignRecord>(`packaging/designs/${id}`);
+export const getPackagingDesign = (id: number, revision?: number) => authRequest<PackagingDesignRecord>(`packaging/designs/${id}${revision ? `?revision=${revision}` : ''}`);
 export const createPackagingDesign = (data: PackagingDesignSaveInput) => authRequest<PackagingDesignRecord>("packaging/designs", "POST", data);
 export const updatePackagingDesign = (id: number, data: PackagingDesignUpdateInput) => authRequest<PackagingDesignRecord>(`packaging/designs/${id}`, "PUT", data);

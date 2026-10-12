@@ -65,6 +65,15 @@ class DesignsView(ReadyView):
 
 class DesignView(ReadyView):
     def get(self, request, pk):
+        if "revision" in request.query_params:
+            revision = request.query_params["revision"]
+            if not revision.isdigit() or len(revision) > 9:
+                raise NotFound()
+            row = PackagingRevision.objects.filter(package_id=pk, revision=int(revision)).first()
+            if row is None:
+                raise NotFound()
+            return Response({"id": pk, "revision": row.revision, "design": row.design,
+                             "updated_at": row.created_at.isoformat(), "production_validated": False})
         try:
             return Response(data(PackagingDesign.objects.get(pk=pk)))
         except PackagingDesign.DoesNotExist:

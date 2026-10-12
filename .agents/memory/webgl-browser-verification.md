@@ -34,3 +34,15 @@ packaging parameters were exported; parsing the saved JSON closed that gap.
 
 **How to apply:** Treat export transport and exported-content correctness as
 separate checks. A filesystem-tool limitation is not evidence of an app defect.
+
+Measure settled DOM geometry before screenshot redaction. Wait for fonts, sample
+stable frames, and compare document scrollWidth to clientWidth (not innerWidth).
+Redact screenshots afterward with visibility:hidden, not replacement text or
+display:none.
+
+**Why:** Redaction can alter intrinsic widths; scrollbar space and unsettled HMR
+renders can also confuse overflow diagnosis. A reported overflow did not reproduce
+in stable, unmodified English/Arabic DOM measurements.
+
+**How to apply:** Separate reproducible layout defects from transient observations;
+do not claim a CSS fix without a supported cause and before/after evidence.

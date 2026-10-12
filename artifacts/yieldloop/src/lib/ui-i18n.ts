@@ -71,7 +71,7 @@ const en = {
   asstGreeting: 'Ask about one job’s recorded material. Answers cite records and can be uncertain.',
   asstJob: 'Job', asstChooseJob: 'Choose a job', asstQuestion: 'Your question', asstPlaceholder: 'Ask about this job…', asstSend: 'Send',
   asstClose: 'Close assistant', asstSuggest: 'Suggestions', sgScrap: 'Why is scrap high in {job}?', sgMaterial: 'Where did the issued material go in {job}?',
-  sgCompare: 'Compare {a} with {b}', asstOneJob: 'Each question covers one job. Comparisons open the side-by-side view.', asstAskThis: 'Ask the assistant',
+  sgCompare: 'Compare {a} with {b}', asstOneJob: 'Mention another job reference to include its records.', asstAskThis: 'Ask the assistant',
   asstEvidenceLink: 'View evidence', asstNoJobs: 'No jobs available.', asstNew: 'New question',
 };
 export type UiKey = keyof typeof en;
@@ -146,7 +146,7 @@ const ar: typeof en = {
   asstGreeting: 'اسأل عن المواد المسجّلة لأمر واحد. تستند الإجابات إلى السجلات وقد تكون غير مؤكدة.',
   asstJob: 'الأمر', asstChooseJob: 'اختر أمرًا', asstQuestion: 'سؤالك', asstPlaceholder: 'اسأل عن هذا الأمر…', asstSend: 'إرسال',
   asstClose: 'إغلاق المساعد', asstSuggest: 'اقتراحات', sgScrap: 'ليش نسبة الهدر مرتفعة في {job}؟', sgMaterial: 'وين راحت المواد المصروفة في {job}؟',
-  sgCompare: 'قارن {a} مع {b}', asstOneJob: 'كل سؤال يخص أمرًا واحدًا. المقارنات تفتح العرض جنبًا إلى جنب.', asstAskThis: 'اسأل المساعد',
+  sgCompare: 'قارن {a} مع {b}', asstOneJob: 'اذكر مرجع أمر آخر لتضمين سجلاته.', asstAskThis: 'اسأل المساعد',
   asstEvidenceLink: 'عرض الأدلة', asstNoJobs: 'لا توجد أوامر متاحة.', asstNew: 'سؤال جديد',
 };
 

@@ -42,3 +42,59 @@ mtime_ms = 1791742012250
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/3c18b063-91c2-4720-9ae1-203a16dae838/7204f686-bda8-417e-8b86-764447408774"
 storage_version_token = "1791742151322978"
 content_type = "image/png"
+
+[[outputs]]
+id = "B0_Ry1fxt28pKMs7BRPcG"
+uri = "file://generated-artifacts/preview-fix/verified-concept.json"
+type = "unspecified"
+title = "Verified packaging concept JSON"
+description = "Actual browser export: imported, server-validated, saved and reopened in the real Preview. Flat carton with separate lid; conceptual only."
+logical_id = "5e6aeffd-fd83-4c8d-8e95-18e3fdc824cc"
+content_hash = "sha256:ecdad3240fe48cbfbfec9f66e5dede21d8b3c223297c191156f04b63eab08f7f"
+size = 462
+mtime_ms = 1791746548290
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/5e6aeffd-fd83-4c8d-8e95-18e3fdc824cc/6c9b54c4-5adf-4810-8961-44506524acad"
+storage_version_token = "1791748138184665"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "TQq2My5qympR6nmcDgK6A"
+uri = "file://generated-artifacts/preview-fix/reopened-in-preview.png"
+type = "image"
+title = "Saved carton reopened in the actual Preview"
+description = "Concept #4 rendered with software WebGL; correct dimensions, enabled Save/Export, and no stale-state warning."
+logical_id = "7187b8df-99a4-49f6-9261-c6950055d668"
+content_hash = "sha256:240ab4b7d35e3d64e4ae3fa318984327885ab543ecfc5035dd9532bedc154a77"
+size = 209591
+mtime_ms = 1791747995106
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/7187b8df-99a4-49f6-9261-c6950055d668/113b4a13-7bb6-47ed-beb6-1afdbd54ab58"
+storage_version_token = "1791748138754391"
+content_type = "image/png"
+
+[[outputs]]
+id = "T1ZuRZvXvjH3FQhvnRT9w"
+uri = "file://generated-artifacts/panel-kit/saved-plan.png"
+type = "image"
+title = "Saved panel-kit cutting plan"
+description = "Actual Preview: ten placed panels, 36.625% utilization, and the saved source-concept revision."
+logical_id = "8e7ece3d-f8ac-4511-8788-396a8a51453a"
+content_hash = "sha256:a184b128c898f321f5e49a717f38b8569321f24bc0b412cdd49a4b8ab360604c"
+size = 163328
+mtime_ms = 1791749821322
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/8e7ece3d-f8ac-4511-8788-396a8a51453a/abe01f97-81b0-46a5-816e-09a2695ffaca"
+storage_version_token = "1791749991396757"
+content_type = "image/png"
+
+[[outputs]]
+id = "kpwOrgwwM9_pY6Vef17aS"
+uri = "file://docs/presentation-guide-ar.md"
+type = "text"
+title = "دليل عرض YieldLoop بالعربية"
+description = "المسارات والصلاحيات وعناصر الصفحات ونصوص الشرح، مع توضيح الأدلة والحدود وصورتين فعليتين للصفحات العامة."
+logical_id = "9f5adc28-7f69-44fa-83f9-96c08e765333"
+content_hash = "sha256:b1e9c08885932b62e08238753fbff1d1a3a3e0669c0d8d2c25e02fa6538276fd"
+size = 35193
+mtime_ms = 1791784382794
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fe928e01-1eb0-4032-afba-7da3fd771957/9f5adc28-7f69-44fa-83f9-96c08e765333/223d24f1-53bc-4d6c-9335-b87b27993abc"
+storage_version_token = "1791784392004260"
+content_type = "text/markdown"

@@ -16,4 +16,9 @@ page?: number;
  * @maximum 100
  */
 page_size?: number;
+/**
+ * Locate this job's source record and return its page. Hidden or wrong-job entries return 404.
+ * @minimum 1
+ */
+entry_id?: number;
 };

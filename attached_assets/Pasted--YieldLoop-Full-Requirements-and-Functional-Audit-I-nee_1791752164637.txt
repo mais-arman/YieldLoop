@@ -1,0 +1,204 @@
+# YieldLoop — Full Requirements and Functional Audit
+
+I need a comprehensive audit of the existing YieldLoop application against the business requirements below. This is an internship project proposal for Ibn Khaldoun Printing and Publishing: a cutting material yield tool that tracks where issued board goes, separates true scrap from reusable offcuts, validates job weight balance, and compares cutting jobs.
+
+**Important: Audit first. Do not implement changes yet.**
+
+Inspect the actual codebase, database models, API endpoints, frontend routes and components, authentication, role permissions, and existing Preview data. Run safe tests where possible. Do not assume a feature works just because a page or button exists.
+
+Do not reset passwords, create or delete users, modify business records, change database schemas, or expose credentials. Do not switch Preview databases or alter the existing demo data. If a test requires modifying records, use isolated test data and explain what you intend to do first.
+
+## 1. Business requirements and acceptance criteria
+
+### A. Job card and material issue
+An operator must be able to:
+- Open a job card and identify the job.
+- Select the material and cutting machine.
+- Record the total material issued in kilograms.
+- Access the product specification, sheet size, planned yield, and cutting instructions attached to the job, where these records are available.
+
+### B. Job-close recording
+Staff must be able to record the final material quantities separately:
+- Good cut product.
+- Scrap by reason, including setup/layout scrap and damaged-material scrap.
+- Reusable offcuts.
+- Rework, recorded separately where supported.
+
+The application must clearly distinguish scrap from reusable offcuts. Reusable offcuts must not be counted as scrap.
+
+Inspect how rework is represented and included in the material balance. Identify any ambiguity in the business rules rather than inventing a calculation.
+
+### C. Weight balance validation
+The application must reject an unbalanced job and explain the discrepancy.
+
+The core balance is:
+
+Issued material = Good output + Scrap + Reusable offcuts
+
+For the supplied cases, no separate rework quantity is specified. Check whether the implementation validates the balance correctly, handles missing values, prevents invalid negative quantities, and avoids rounding or unit-conversion errors.
+
+Do not assume the application validates this rule just because it displays a total.
+
+### D. Yield and scrap calculations
+Use these explicit definitions:
+
+- Good yield (%) = Good output ÷ Issued material × 100
+- Scrap rate (%) = Total scrap ÷ Issued material × 100
+- Reusable offcuts (%) = Reusable offcuts ÷ Issued material × 100
+
+All percentages must use issued material as the denominator. Verify the formulas in the backend as well as the frontend, and confirm that reusable offcuts are excluded from scrap.
+
+### E. Job comparison
+The manager must be able to compare two jobs on the same machine and inspect the underlying records behind the difference.
+
+The tool should display the relevant quantities, yields, scrap rates, reusable offcuts, and scrap reasons. Confirm whether machine matching is enforced or whether the UI merely allows users to select a machine.
+
+### F. Roles and permissions
+The intended users are:
+- Cutting operator.
+- Production supervisor.
+- Manager.
+
+Inspect what each role can actually view and do, including job creation, editing, closing, viewing reports, comparing jobs, and managing users if applicable.
+
+Check both frontend access controls and backend/API authorization. A hidden button alone does not establish secure role-based access.
+
+Do not assume particular permissions without finding evidence in the existing implementation.
+
+### G. Largest scrap category and optional AI summary
+For IK-202, the system should identify setup/layout scrap as the largest category at 180 kg.
+
+If AI assistance exists, inspect whether its summary is based on recorded job data and whether it distinguishes an observed loss category from a confirmed root cause. It must not claim that setup or layout caused the loss without supporting operator evidence.
+
+AI is optional, not a mandatory requirement.
+
+## 2. Mandatory test cases
+
+Verify the following reference cases using existing tests, read-only inspection, or isolated test data. Do not alter the existing business records.
+
+**Case 1 — IK-202**
+
+Issued board: 1,200 kg
+- Good product: 900 kg
+- Setup/layout scrap: 180 kg
+- Damaged-material scrap: 60 kg
+- Reusable offcuts: 60 kg
+
+Expected results:
+- Total scrap = 240 kg
+- Total accounted for = 1,200 kg
+- Balance difference = 0 kg
+- Good yield = 75%
+- Scrap rate = 20%
+- Reusable offcuts rate = 5%
+- Largest scrap category = setup/layout, 180 kg
+
+**Case 2 — IK-203**
+
+Issued board: 1,000 kg
+- Good product: 820 kg
+- Total scrap: 100 kg
+- Reusable offcuts: 80 kg
+
+Expected results:
+- Total accounted for = 1,000 kg
+- Balance difference = 0 kg
+- Good yield = 82%
+- Scrap rate = 10%
+- Reusable offcuts rate = 8%
+
+The source does not provide a breakdown of IK-203 scrap by reason. Do not invent one.
+
+**Comparison — IK-202 versus IK-203**
+
+Both jobs use cutting machine CT-2.
+
+Expected:
+- IK-202 scrap rate = 20%
+- IK-203 scrap rate = 10%
+- Difference = 10 percentage points, not merely “10% higher”
+- IK-202 has 140 kg more total scrap, although its issued material is 200 kg greater.
+- The 60 kg of reusable offcuts in IK-202 must not be counted as scrap.
+- The manager must be able to inspect the records explaining the comparison.
+
+**Negative and edge cases**
+
+Check safely, using isolated test data where necessary:
+- A job whose accounted material is less than the issued material.
+- A job whose accounted material exceeds the issued material.
+- Zero or missing issued weight.
+- Negative quantities.
+- Missing scrap reasons or duplicate reason entries.
+- Decimal quantities and percentage rounding.
+- A job that is not closed yet.
+- An attempt by an unauthorized role to perform a restricted action.
+
+Document tests that cannot safely or reliably be executed.
+
+## 3. Page-by-page application audit
+
+Discover every actual page, route, modal, major form, dashboard, and report in the application.
+
+For each page, report:
+1. Exact page name and URL/route.
+2. Its intended user and business purpose.
+3. What data it displays.
+4. What actions the user can perform.
+5. Which backend endpoints and database models support it.
+6. Which business requirements it satisfies.
+7. Whether each important action actually works.
+8. Whether validation, error handling, loading states, and empty states work.
+9. Any security or permission issues.
+10. Missing functionality, redundant UI, confusing labels, or unnecessary features.
+
+Do not invent pages. If a route is inaccessible or a feature cannot be tested, state that explicitly.
+
+## 4. Requirements traceability matrix
+
+Create a table with these columns:
+
+- Requirement ID.
+- Requirement.
+- Status: PASS, PARTIAL, FAIL, or NOT VERIFIED.
+- Evidence: exact file paths, functions/components, endpoints, and test results where possible.
+- Page or screen affected.
+- Gap or risk.
+- Recommended next action.
+
+Cover all requirements in this prompt, including the formulas, weight balance, offcut treatment, machine comparison, largest scrap category, role permissions, and optional AI.
+
+Distinguish between:
+- Implemented and tested.
+- Implemented but not verified.
+- Partially implemented.
+- Missing.
+- Extra functionality not required by the proposed challenge.
+
+## 5. Scope and product fit
+
+Identify:
+- Any requirements from the challenge that are missing.
+- Any implemented features that go beyond the challenge.
+- Whether those extras provide real value or make the tool unnecessarily complicated.
+- Any business rules that need clarification from the factory owner.
+- Whether the current implementation is suitable for a factory demonstration using IK-202 and IK-203.
+
+Do not mark a requirement as complete based only on a UI element or a function name.
+
+## 6. Final report format
+
+Return the audit in this order:
+
+1. Executive summary and overall readiness.
+2. Complete page/route inventory.
+3. Page-by-page functional findings.
+4. Requirements traceability matrix.
+5. Numerical verification of IK-202, IK-203, and their comparison.
+6. Role and authorization audit.
+7. Bugs, risks, missing requirements, and unnecessary features, prioritized as Critical / High / Medium / Low.
+8. Test results, including tests that could not be performed.
+9. Recommended implementation plan, ordered by priority.
+
+For every significant finding, include concrete evidence from the repository rather than assumptions. Include exact file paths and relevant function/component names. When a calculation is wrong, show the actual implementation and the expected formula.
+
+**Final restriction:** This is an audit only. Do not fix bugs, redesign pages, seed new records, or make any other changes until I review the report and explicitly approve the next steps.

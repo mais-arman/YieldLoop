@@ -8,6 +8,7 @@ from assistance.views import (
     TemplatesView,
     ValidateView,
 )
+from cutting.panel_views import PanelKitView
 from cutting.views import EvaluateView, HistoryView, PlansView, PlanView
 from django.urls import path
 from inventory.views import (
@@ -25,6 +26,7 @@ from reports.views import OverviewView
 from .urls import urlpatterns as health_patterns
 
 urlpatterns = [
+    path("api/v1/packaging/panel-kit", PanelKitView.as_view()),
     path("api/v1/packaging/designs", DesignsView.as_view()),
     path("api/v1/packaging/designs/<int:pk>", DesignView.as_view()),
     path("api/v1/packaging/designs/<int:pk>/history", DesignHistoryView.as_view()),

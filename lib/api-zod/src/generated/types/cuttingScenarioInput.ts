@@ -8,8 +8,10 @@
 import type { CuttingGeometryInput } from './cuttingGeometryInput';
 import type { CuttingPlacement } from './cuttingPlacement';
 import type { CuttingScenarioInputOrigin } from './cuttingScenarioInputOrigin';
+import type { PanelSource } from './panelSource';
 
 export interface CuttingScenarioInput {
+  source?: PanelSource;
   /** @pattern ^[A-Za-z0-9_-]{1,32}$ */
   key: string;
   /**

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "sh ./run.sh",
+    "dev": "sh ./run-demo.sh",
     "build": "cd ../.. && uv sync --frozen && uv run --frozen python artifacts/api-server/backend/manage.py check",
     "start": "sh ./run.sh",
     "typecheck": "tsc -p tsconfig.json --noEmit"

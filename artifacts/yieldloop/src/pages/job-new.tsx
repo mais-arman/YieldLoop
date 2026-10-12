@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { createJob, JOBS_KEY } from '@/lib/jobs';
 import { useI18n } from '@/lib/i18n';
 import { jobLabel } from '@/lib/core-helpers';
+import { JobCardFields } from '@/components/job-card-fields';
+import { cardValues, cardPayload, validCard } from '@/lib/job-card';
 
 export default function JobNewPage() {
   const { t } = useI18n();
@@ -20,8 +22,9 @@ export default function JobNewPage() {
   const [, navigate] = useLocation();
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+  const [card, setCard] = useState(cardValues());
   const m = useMutation({
-    mutationFn: () => createJob({ title: title.trim(), notes: notes.trim() || undefined }),
+    mutationFn: () => createJob({ title: title.trim(), notes: notes.trim() || undefined, ...cardPayload(card) }),
     onSuccess: (job) => {
       qc.invalidateQueries({ queryKey: JOBS_KEY });
       toast({ title: t('jobCreated', { num: jobLabel(job) }) });
@@ -31,7 +34,7 @@ export default function JobNewPage() {
   const fe = jobFieldErrors(m.error, t);
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || m.isPending) return;
+    if (!title.trim() || m.isPending || !validCard(card)) return;
     m.mutate();
   };
   return (
@@ -54,10 +57,11 @@ export default function JobNewPage() {
           <Textarea id="j-notes" rows={6} value={notes} onChange={(e) => setNotes(e.target.value)} aria-invalid={!!fe.notes} data-testid="input-job-notes" />
           <FieldError msg={fe.notes} />
         </div>
+        <JobCardFields value={card} onChange={setCard} disabled={m.isPending} errors={fe} />
         <FieldError msg={fe.non_field_errors} />
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => navigate('/jobs')}>{t('cancel')}</Button>
-          <Button type="submit" disabled={!title.trim() || m.isPending} data-testid="button-submit-job">
+          <Button type="submit" disabled={!title.trim() || m.isPending || !validCard(card)} data-testid="button-submit-job">
             {m.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <FilePlus2 className="h-4 w-4" aria-hidden />}
             {m.isPending ? t('creating') : t('createJob')}
           </Button>

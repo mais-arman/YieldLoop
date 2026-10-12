@@ -16,7 +16,8 @@ from .policy import (
 
 
 def snapshot(job):
-    return {field: getattr(job, field) for field in ("title", "notes", "status", "reference", "machine")}
+    from .card import data
+    return {**{field: getattr(job, field) for field in ("title", "notes", "status", "reference", "machine")}, "card": data(job)}
 
 
 def record_event(job, actor, old=None):
@@ -75,6 +76,9 @@ def update_job(request, pk, values):
     for field in ("title", "notes", "reference", "machine"):
         if field in values and not allowed[f"edit_{field}"]:
             raise PermissionDenied()
+    from .card import FIELDS
+    if any(field in values for field in FIELDS) and not allowed["edit_card"]:
+        raise PermissionDenied()
     # Selecting a configured machine is production recording, not catalogue management.
     if ("machine" in values and actor.role != User.Role.MANAGER and
             (not values["machine"] or not ProductionJob.objects.filter(machine=values["machine"]).exists())):
@@ -89,7 +93,7 @@ def update_job(request, pk, values):
         if status not in allowed["transitions"]:
             raise PermissionDenied()
     before = snapshot(job)
-    for field in ("title", "notes", "status", "reference", "machine"):
+    for field in ("title", "notes", "status", "reference", "machine", *FIELDS):
         if field in values:
             setattr(job, field, values[field])
     if values.get("status") == "completed":

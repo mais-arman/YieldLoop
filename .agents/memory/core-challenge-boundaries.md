@@ -26,3 +26,13 @@ historical production times.
 **How to apply:** Label missing categories/specifications as unspecified; do not
 infer manufacturing dimensions or operator evidence from the supplied weights.
 The 3D designer is optional and cannot block original-challenge completion.
+
+Planned good-weight yield, actual good-weight yield, and geometric cutting
+utilization are distinct; do not infer one from another or backfill the reference
+jobs with invented planning metadata.
+
+**Why:** The user explicitly separated these measurements and said that the
+challenge supplies no product specifications, dimensions or planned yields.
+
+**How to apply:** Preserve unset values. Keep exact closure, all-scrap, rework,
+reason-taxonomy and reporting-period policy changes pending factory approval.

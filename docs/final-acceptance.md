@@ -289,3 +289,253 @@ Temporary browser/server processes were stopped and private credentials removed.
 These gates need external infrastructure and/or authorized personnel. No local
 software test, screenshot, synthetic role or scripted restore was substituted for
 their missing evidence. See the recovery runbook for the concrete procedure.
+
+## Packaging-to-cutting follow-up — 2026-10-11
+
+The approved separate-panel flat-box workflow is implemented and verified in the
+actual Preview: ten panels, validated placement, save/refresh/reopen, immutable
+source-revision link, and Manager/Supervisor permissions. See
+[`packaging-to-cutting-acceptance.md`](packaging-to-cutting-acceptance.md) for exact
+geometry, commands, results and remaining limitations.
+
+Focused checks:42 backend tests passed, one additional positive variance/rework
+test passed, one existing causation test repeated after prompt cleanup passed,
+and41 frontend tests passed. Codegen/types/lint/build passed. These are focused
+runs, not a rerun of the earlier full baseline. Live AI remains unverified because
+no provider is configured. Production readiness remains **NOT READY**.
+
+## 2026-10-12 — Required job-card and comparison completion
+
+Implemented optional, Manager-editable planning fields (product specification,
+sheet width/height/unit, planned good-weight yield, cutting instructions) with
+backend/frontend validation, DB CHECK constraints, revision protection and
+old/new audit snapshots. Existing metadata is not inferred. Added shared Decimal
+offcut percentages to material summaries/comparison, including left-minus-right
+percentage-point differences. Scrap category/source links locate the authorized
+entry's page and focus it. Over-accounting now hides the misleading stacked bar
+and shows a signed destructive balance alert. Creation-date reporting semantics
+and existing rework/role help text are clarified in English and Arabic.
+
+### Exact automated checks
+
+```sh
+DJANGO_SETTINGS_MODULE=config.test_settings python -B artifacts/api-server/backend/verify_pilot.py accounts.test_flows jobs.tests jobs.test_core jobs.test_card materials.tests materials.test_integrated reports.tests inventory.tests
+```
+
+**91 passed, 0 failed in 254.757s.** Guarded test DB only; 89 isolated schemas
+retained. Includes the prior 85 focused backend checks plus six planning/rates/
+navigation regression tests; this is not a rerun of every historical project test.
+
+```sh
+pnpm --filter @workspace/yieldloop exec tsx --test 'src/lib/*.test.ts'
+pnpm --filter @workspace/api-spec run codegen
+pnpm --filter @workspace/yieldloop run typecheck
+```
+
+**44 frontend tests passed, 0 failed/skipped**, including three new planning
+validation tests. Codegen, shared-library TypeScript build and app typecheck
+passed. No packages added or authentication/security settings changed.
+
+```sh
+DJANGO_SETTINGS_MODULE=config.demo_settings python -B scripts/verify_job_card_preview.py --migrate
+DJANGO_SETTINGS_MODULE=config.demo_settings python -B artifacts/api-server/backend/manage.py makemigrations --check --dry-run
+DJANGO_SETTINGS_MODULE=config.demo_settings python -B artifacts/api-server/backend/manage.py showmigrations jobs
+DANGEROUSLY_ALLOW_GIT=1 git diff --check
+```
+
+**Passed.** Additive `jobs.0003_production_planning_card` applied only to the
+guard-verified `yieldloop_preview_demo` schema. No pending model migrations.
+Before/after business fingerprints matched for **15 tables** (new columns
+excluded); original values/rows preserved. Both supplied cases retain unset
+planning fields. No seeds, user changes, business-record test writes, schema
+resets or production migrations were performed. The existing write guard was
+not altered. The Git command is read-only; its prefix satisfies the environment's
+index-lock scrutiny, not a commit or reset.
+
+### Current reference results
+
+Read-only authenticated view dispatch against actual Preview data, corroborated
+by isolated fixture tests and the signed-in comparison browser check:
+
+|Reference|Issued|Good|Scrap|Offcut|Variance|Yield|Scrap rate|Offcut rate|
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+|IK-202|1200|900|240|60|0|75%|20%|5%|
+|IK-203|1000|820|100|80|0|82%|10%|8%|
+
+CT-2/same material; left-minus-right: scrap **+140 kg/+10 pp**, good yield
+**−7 pp**, offcut rate **−3 pp**. Largest recorded IK-202 category is Setup/layout,
+180 kg. IK-203 breakdown remains unspecified; offcuts are excluded from scrap.
+
+### Browser evidence and boundaries
+
+First read-only actual-Preview pass verified both blank planning cards,
+offcut summary rates, comparison results and the Setup/layout link to focused
+entry 34. It also verified invalid new-job planning inputs show useful feedback,
+without submitting. Initial mobile check found horizontal overflow, prompting
+the focused follow-up below. Screenshots: `51mswl` (card), `yawve5` (comparison),
+`3iivgp` (focused entry), `e0xmgd` (initial mobile validation).
+
+Follow-up **passed** after removing the new fieldset's intrinsic minimum width:
+at 390×844 the viewport client width, document scrollWidth and body scrollWidth
+all measured **375px**, with no page overflow. New-job and job-detail pages and
+comparison were verified in Arabic/RTL. Comparison's wide table remains inside
+its intended horizontal-scroll wrapper, not overflowing the document. Arabic
+Reports displayed the exact creation-date/latest-corrections explanation.
+No crashes on the rechecked pages; only Vite/React informational logs. Screenshots:
+`wb0khs` (fixed mobile), `gfpuc1` (Arabic job), `9cb404` (Arabic comparison),
+`l5p4hk` (Arabic new-job), `fdetp1` (report date semantics).
+
+Browser writes to business records were prohibited; create/edit persistence and
+permission mutations were verified by the isolated API tests, not by saving
+Preview jobs. No password/account resets. No live AI, fresh WebGL or recovery
+claim is made.
+
+### Remaining decisions and delivery manifest
+
+See `docs/job-card-completion.md` for exact factory questions: weight tolerance,
+all-scrap closure, rework outcomes, required scrap categories and reporting dates.
+Current behavior is preserved. Private document attachments are explicitly
+deferred pending an approved secure storage/access/retention design.
+
+Files changed for this completion:
+- Backend `jobs/{card.py,models.py,policy.py,serializers.py,services.py,test_card.py}`
+  and `jobs/migrations/0003_production_planning_card.py`: planning data/authorization,
+  immutable audit snapshots, schema and regression tests.
+- Backend `materials/{accounting.py,serializers.py,services.py,views.py}` and
+  `reports/{views.py,comparison.py}`: shared percentages and authorized entry paging.
+- Frontend `components/job-card-fields.tsx`, `lib/job-card.ts`,
+  `lib/job-card.test.ts`, `pages/{job-new.tsx,job-detail.tsx}`: planning form/read views.
+- Frontend `components/materials/materials-section.tsx`,
+  `lib/{materials.ts,core.ts,role-access.ts}`, `pages/{comparison.tsx,reports.tsx}`:
+  rates, source links, balance feedback and localized clarity fixes.
+- `lib/api-spec/openapi.yaml` and regenerated API client/Zod files: compatible
+  optional planning fields, offcut rate, edit capability and entry_id query.
+- `scripts/verify_job_card_preview.py`, this acceptance addendum and
+  `docs/job-card-completion.md`: safety checks and evidence.
+
+Existing unrelated workspace changes were preserved. Production remains
+**NOT READY** pending the previously documented external release gates.
+
+## 2026-10-12 — Full interactive core acceptance and bug remediation
+
+**Demonstration verdict: READY WITH DOCUMENTED LIMITATIONS.**
+**Production verdict: NOT READY.** This does not supersede unresolved recovery
+requirements. Existing browser credentials for Operator/Supervisor were rejected;
+no resets, account edits or role changes were attempted.
+
+### Actual UI results
+
+Initial browser pass: **17 atomic checks — 12 PASS, 1 PARTIAL, 2 FAIL, 2 BLOCKED**.
+One failure was fixed and verified; the other (mobile overflow) did not reproduce
+in the controlled follow-up. All follow-up checks passed. The two role-login
+blocks remain; no claim is made that their signed-in browser flows passed.
+
+| Requirement | Result/evidence |
+|---|---|
+| Manager login/navigation, lists and empty search | PASS through actual Preview; Clear filters restored the list |
+| Create/edit/reopen structured planning card | PASS, QA job 17: specification, 210×297 mm, planned yield 82.5%, cutting instructions; CT-2 persisted |
+| Open job, material issue/output/scrap/offcut/rework | PASS through real UI, not a mocked successful request |
+| Pending rework and unbalanced closure prevention | PASS; pending 10 kg prevented completion; resolved through UI to Good |
+| Balanced completion and read-only reopening | PASS; job 17 completed with issued/accounted100, good80, scrap10, offcut10, pending0, variance0; rates80/10/10 |
+| Negative quantity/invalid planned yield | PASS; −1 rejected; yield110 disabled Save; Discard preserved revision |
+| Invalid dimensions | PASS automated regression; not independently completed as a new browser assertion in this pass |
+| Under/over-accounting | PASS, job18 showed +100 kg and −10 kg signed variance and prevented closing |
+| Scrap reason recording | PARTIAL in first end-to-end job: tester entered “QA trim” in note, leaving reason unspecified. Dedicated reason field subsequently verified on job18 entry59, then that QA-only entry was voided. Not an app defect |
+| Reference cases and comparison | PASS in actual UI: all quantities/rates from the preceding reference table, CT-2/board, Setup/layout180, IK-203 reasons unspecified; deltas+140kg/−7pp/+10pp/−3pp |
+| Source entry navigation | PASS: #34 and #39 opened and received focus on their correct jobs |
+| Incompatible comparisons | PASS: jobs18/17 mismatched machines; follow-up17/10 same CT-2 but different materials showed warning/dashes, no deltas |
+| Reports | PASS Manager UI and creation-date/latest-measurements explanation |
+| English/Arabic/mobile | PASS inspected screens; stable EN/AR job17 and missing-entry routes fit390px; login also checked both locales |
+| Operator/Supervisor browser permissions | BLOCKED: both available credential attempts returned401. Runtime API permission tests passed separately |
+| Artificially delayed loading/network-error retry | NOT RUN in browser; do not infer coverage from ordinary successful loads |
+
+All browser writes were limited to new, explicitly labelled QA records:
+- Job17 `QA-E2E-CORE-1791753799841`, completed, reference `YL-15613AC78FF4`.
+- Job18 `QA-E2E-VARIANCE-1791753945829`, Open, reference `YL-7A4EEC7B45B8`;
+  intentionally over-accounted, machine `QA-E2E-ALT-MACHINE`.
+- New material `QA-E2E-MAT-CORE-1791753849283`; entries51–59.
+These records were retained, not deleted. They may appear in unfiltered demo
+reports; do not mistake job18's deliberately invalid balance for factory data.
+
+### Confirmed bug, fix and focused browser confirmation
+
+**Missing source entry:** `/jobs/17?entry=999999#entry-999999` previously said
+the *job* did not exist, although the completed job remained visible. Root cause:
+the materials panel reused the generic404 job error for an entry lookup404.
+Added a distinct authorized-job/source-entry error and localized recovery button
+which clears the entry query and returns to `/jobs/17#materials`.
+
+Changed `components/materials/materials-section.tsx`; added pure classifier
+`lib/source-entry.ts` and regression `lib/source-entry.test.ts`. The regression
+distinguishes missing entry from no requested entry,401/403/409/500/503 and network
+errors. Server visibility, geometry, revision and write guards are unchanged.
+
+Focused real-browser confirmation **PASS in EN and AR**: recovery restored all
+six entries and balanced100kg; job17 stayed Completed/read-only. Screenshots
+`n16c5n`, `ncmbjf`.
+
+**Mobile observation, not a claimed CSS repair:** initial document width465px
+was not reproducible after restart/stable-font measurement. No speculative CSS
+change was made. Before any masking, stable EN/AR valid-job client/document/body
+widths were390px; missing-entry routes measured375px each (15px vertical
+scrollbar). No element crossed the viewport. Screenshots masked with
+visibility:hidden only after measurement: `1i5p4t`, `73bqqf`. Material mismatch
+evidence: `laflxn`.
+
+### Exact commands and results
+
+```sh
+DJANGO_SETTINGS_MODULE=config.demo_settings python -B scripts/verify_e2e_records.py capture /tmp/yieldloop-e2e-baseline.json
+DJANGO_SETTINGS_MODULE=config.test_settings python -B artifacts/api-server/backend/verify_pilot.py accounts.tests accounts.test_flows audit.tests jobs.tests jobs.test_core jobs.test_card materials.tests materials.test_integrated inventory.tests reports.tests reports.test_acceptance assistance.tests cutting.tests cutting.test_panel_kit config.test_demo_profile config.test_request_limits config.tests health.tests
+python -B artifacts/api-server/backend/manage.py test accounts.tests audit.tests health config.tests --settings=config.schema_settings
+pnpm --filter @workspace/yieldloop exec tsx --test 'src/lib/*.test.ts'
+pnpm --filter @workspace/api-spec run codegen
+pnpm --filter @workspace/yieldloop run typecheck
+pnpm --filter @workspace/yieldloop run lint
+PORT=22517 BASE_PATH=/ pnpm --filter @workspace/yieldloop run build
+DJANGO_SETTINGS_MODULE=config.demo_settings python -B artifacts/api-server/backend/manage.py makemigrations --check --dry-run
+DJANGO_SETTINGS_MODULE=config.demo_settings python -B scripts/verify_e2e_records.py verify /tmp/yieldloop-e2e-baseline.json
+```
+
+- Initial combined backend invocation: **172 run,170 passed,2 failed,0 skipped**,
+  334.809s. Both failures were **incorrect test-profile selection**, not app
+  regressions: offline DB expected dummy rather than PostgreSQL; offline routes
+  expected404 rather than runtime unauthenticated401. Preserved tests and guards.
+- Correctly rerun offline group: **31/31 passed**,2.829s. The other **141 runtime
+  checks already passed** in their correct guarded PostgreSQL environment.
+  Thus **172 distinct backend checks have passing evidence across appropriate
+  profiles**; do not call the original combined command a clean successful run.
+  Retained117 isolated schemas, prefix `ylpilot_b1d008f2351c`.
+- Frontend before fix: **44/44 passed**. After fix: **45/45 passed**,0 failed,
+  0 skipped,2873.905ms. Typecheck and lint passed again after the fix.
+- Codegen/shared-library type build passed; contract unchanged by UI fix.
+- Initial bare build lacked the workflow-supplied PORT and stopped at configuration.
+  Correct invocation with explicit non-secret development build settings passed;
+  repeated after fix, **passed in23.08s**. Existing >500kB chunk warning remains,
+  not a build failure and not addressed with unrelated refactoring.
+- Migration consistency: **No changes detected**. No migration executed.
+- New `scripts/verify_e2e_records.py`: hash-only capture/verification under
+  positively identified isolated Preview. **All94 original business rows across
+  15 tables unchanged;32 newly created test rows retained**. No credential content
+  stored in evidence. No production access or original-schema switch.
+- Actual managed Preview frontend/browser and backend were used. Frontend
+  workflow restarted after the UI fix; protected views checked by the authenticated
+  tester. No mock positive persistence, external changes or deployment.
+
+### Remaining limits and approvals
+
+1. Authorized existing Operator/Supervisor login is required to complete their
+   actual UI coverage. Existing supplied credentials were rejected. Obtain valid
+   access privately; any reset requires explicit approval. Backend permission
+   checks do not substitute for their unexecuted browser scenarios.
+2. Factory decisions remain unchanged: exact-zero tolerance, positive-good/all-
+   scrap closure, pending-rework outcomes, required reasons, report time basis.
+3. Attachments remain deferred pending approved private storage/access/retention.
+4. No live AI/provider, new WebGL interaction, external backup, independent
+   cluster-loss restore, target role/grant/ownership recovery or approved/measured
+   RPO/RTO was demonstrated in this pass. Existing production blockers remain.
+
+For demonstration, use IK-202, IK-203 and their comparison. QA17 illustrates a
+saved/closed full workflow; QA18 intentionally illustrates a rejected balance.
+Complete the blocked role logins before claiming comprehensive all-role UI
+acceptance. Production remains **NOT READY**.

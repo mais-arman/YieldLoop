@@ -9,8 +9,10 @@ import type { CuttingGeometryInput } from './cuttingGeometryInput';
 import type { CuttingPlacement } from './cuttingPlacement';
 import type { CuttingResult } from './cuttingResult';
 import type { CuttingScenarioOrigin } from './cuttingScenarioOrigin';
+import type { PanelSource } from './panelSource';
 
 export interface CuttingScenario {
+  source?: PanelSource;
   key: string;
   name: string;
   input: CuttingGeometryInput;

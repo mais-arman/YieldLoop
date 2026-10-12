@@ -163,7 +163,7 @@ class AssistanceTests(TransactionTestCase):
         operator = self.clients["cutting_operator"]
         with patch("assistance.provider.complete") as model:
             self.assertEqual(operator.get(self.base + "/evidence").status_code, 404)
-            self.assertEqual(self.post(self.base, {"language": "en", "question": "Summarize"}, operator).status_code, 404)
+            self.assertEqual(self.post(self.base, {"language": "en", "question": "Summarize"}, operator).status_code, 403)
         model.assert_not_called()
         self.assertEqual(self.manager.get("/api/v1/jobs/999999/assistance/evidence").status_code, 404)
         self.assertEqual(self.clients["production_supervisor"].get(self.base + "/evidence").status_code, 200)
@@ -197,7 +197,7 @@ class AssistanceTests(TransactionTestCase):
             ProductionJob.objects.filter(pk=self.job.pk).update(status="draft")
             return self.output
         with patch("assistance.provider.complete", side_effect=downgrade):
-            self.assertEqual(self.analyze().status_code, 404)
+            self.assertEqual(self.analyze().status_code, 403)
 
     def test_revision_change_rejects_stale_advice(self):
         def mutate(*args):
